@@ -32,3 +32,4 @@
 
 ## New AI Features
 - [x] decompose - Use AI to decompose a task into smaller subtasks
+- [x] chat - Interact with an AI project management assistant

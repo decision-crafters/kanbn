@@ -98,12 +98,14 @@ async function getProjectContext() {
       projectDescription: index.description,
       columns: Object.keys(index.columns),
       taskCount: tasks.length,
-      tasksByColumn: Object.keys(index.columns).reduce((acc, column) => {
-        acc[column] = tasks.filter(task => 
-          kanbn.findTaskColumn(task.id) === column
-        ).length;
+      tasksByColumn: await Object.keys(index.columns).reduce(async (pAcc, column) => {
+        const acc = await pAcc;
+        const taskColumns = await Promise.all(
+          tasks.map(t => kanbn.findTaskColumn(t.id))
+        );
+        acc[column] = taskColumns.filter(c => c === column).length;
         return acc;
-      }, {}),
+      }, Promise.resolve({})),
       tags: [...new Set(tasks.flatMap(task => 
         task.metadata.tags || []
       ))],
