@@ -1,0 +1,23 @@
+{
+  "name": "AI Task Decomposition",
+  "commands": [
+    "decompose",
+    "d"
+  ],
+  "args": {
+    "boolean": [
+      "interactive"
+    ],
+    "string": [
+      "task",
+      "description"
+    ],
+    "alias": {
+      "interactive": ["i"],
+      "task": ["t"],
+      "description": ["d"]
+    }
+  },
+  "controller": "./src/controller/decompose",
+  "help": "./docs/commands/decompose.txt"
+}

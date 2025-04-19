@@ -1,0 +1,23 @@
+Usage:
+  kanbn decompose [options]
+  kanbn d [options]
+
+Description:
+  Use AI to decompose a task into smaller, actionable subtasks.
+  This command creates child tasks linked to the parent task with parent-child relationships.
+
+Options:
+  -i, --interactive  Decompose a task interactively
+  -t, --task         Specify the task ID to decompose
+  -d, --description  Provide a custom description for decomposition (optional)
+  -h, --help         Show help
+
+Examples:
+  kanbn decompose --task my-task
+  kanbn d -i
+  kanbn d -t my-task -d "Custom description for AI decomposition"
+
+Notes:
+  - Requires an OpenRouter API key set as OPENROUTER_API_KEY environment variable
+  - Creates parent-child relationships between tasks
+  - Logs AI interactions for tracking and analysis
