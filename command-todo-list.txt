@@ -1,0 +1,34 @@
+# Kanbn Commands Todo List
+
+## Core Commands
+- [x] help - Show help menu
+- [x] version - Show package version
+- [x] init - Initialize kanbn board
+
+## Task Management
+- [x] board - Show the kanbn board
+- [x] task - Show a kanbn task
+- [x] add - Add a kanbn task
+- [x] edit - Edit a kanbn task
+- [x] rename - Rename a kanbn task
+- [x] move - Move a kanbn task to another column
+- [x] comment - Add a comment to a task
+- [x] remove - Remove a kanbn task
+
+## Search and Status
+- [x] find - Search for kanbn tasks
+- [x] status - Get project and task statistics
+
+## Organization
+- [x] sort - Sort a column in the index
+- [x] sprint - Start a new sprint
+- [x] burndown - View a burndown chart
+- [x] validate - Validate index and task files
+
+## Archive Management
+- [x] archive - Archive a task
+- [x] restore - Restore a task from the archive
+- [x] remove-all - Remove the kanbn board and all tasks
+
+## New AI Features
+- [x] decompose - Use AI to decompose a task into smaller subtasks
