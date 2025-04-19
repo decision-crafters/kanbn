@@ -28,6 +28,38 @@ kanbn decompose --task my-task
 - An OpenRouter API key set as `OPENROUTER_API_KEY` environment variable
 - Internet connection (falls back to basic decomposition when offline)
 
+## Project Management Chat
+
+The `chat` command provides an AI-powered project management assistant that understands your Kanbn board and can help with project management.
+
+```
+kanbn chat
+```
+
+### How It Works
+
+1. The AI assistant analyzes your project context (tasks, columns, statistics)
+2. You can ask questions about your project, get advice, or discuss task management
+3. The assistant provides insights based on your project data
+4. All chat interactions are logged for tracking and analysis
+
+### Options
+
+- `-m, --message`: Send a one-off message to the assistant without entering interactive mode
+- `-h, --help`: Show help
+
+### Interactive Mode
+
+By default, the chat command enters interactive mode, allowing for continuous conversation:
+
+```
+📊 Kanbn Project Assistant 📊
+Type "exit" or "quit" to end the conversation
+
+You: What's the status of my project?
+Project Assistant: Your project "Example Project" has 12 tasks across 4 columns...
+```
+
 ## AI Interaction Tracking
 
 Kanbn automatically logs all AI interactions, allowing you to:

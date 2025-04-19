@@ -39,6 +39,7 @@ Where <command> is one of:
   restore ....... Restore a task from the archive
   remove-all .... Remove the kanbn board and all tasks
   decompose ..... Use AI to break down tasks into subtasks
+  chat .......... Chat with AI project assistant
 
 For more help with commands, try:
 
@@ -59,6 +60,16 @@ Break down complex tasks into smaller, actionable subtasks using AI:
 ```
 kanbn decompose --task my-task
 kanbn d -i  # Interactive mode
+```
+
+### Project Management Chat
+
+Chat with an AI assistant that understands your project context:
+
+```
+kanbn chat
+kanbn c
+kanbn chat --message "Summarize my project status"
 ```
 
 ### Parent-Child Task Relationships

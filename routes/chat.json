@@ -1,0 +1,21 @@
+{
+  "name": "AI Project Chat",
+  "commands": [
+    "chat",
+    "c"
+  ],
+  "args": {
+    "boolean": [
+      "help"
+    ],
+    "string": [
+      "message"
+    ],
+    "alias": {
+      "help": ["h"],
+      "message": ["m"]
+    }
+  },
+  "controller": "./src/controller/chat",
+  "help": "./docs/commands/chat.txt"
+}
