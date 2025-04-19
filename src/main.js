@@ -1727,6 +1727,50 @@ class Kanbn {
       if (Object.keys(assignedTasks).length > 0) {
         result.assigned = assignedTasks;
       }
+      
+      // Calculate AI interaction metrics
+      const aiInteractions = tasks.filter(task => 
+        task.metadata.tags && 
+        task.metadata.tags.includes('ai-interaction')
+      );
+      
+      if (aiInteractions.length > 0) {
+        result.aiMetrics = {
+          total: aiInteractions.length,
+          byType: {}
+        };
+        
+        for (let interaction of aiInteractions) {
+          if (interaction.metadata.tags) {
+            for (let tag of interaction.metadata.tags) {
+              if (tag !== 'ai-interaction') {
+                if (!(tag in result.aiMetrics.byType)) {
+                  result.aiMetrics.byType[tag] = 0;
+                }
+                result.aiMetrics.byType[tag]++;
+              }
+            }
+          }
+        }
+      }
+      
+      // Calculate parent-child relationship metrics
+      const parentTasks = tasks.filter(task => 
+        task.relations && 
+        task.relations.some(relation => relation.type === 'parent-of')
+      );
+      
+      const childTasks = tasks.filter(task => 
+        task.relations && 
+        task.relations.some(relation => relation.type === 'child-of')
+      );
+      
+      if (parentTasks.length > 0 || childTasks.length > 0) {
+        result.relationMetrics = {
+          parentTasks: parentTasks.length,
+          childTasks: childTasks.length
+        };
+      }
 
       // If any sprints are defined in index options, calculate sprint statistics
       if ("sprints" in index.options && index.options.sprints.length) {

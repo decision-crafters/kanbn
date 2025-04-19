@@ -10,3 +10,4 @@ To get started quickly, check out the [Quick Start](quick-start.md) guide.
 - [Index Structure](index-structure.md)
 - [Task Structure](task-structure.md)
 - [Advanced Configuration](advanced-configuration.md)
+- [AI Features](ai-features.md)
