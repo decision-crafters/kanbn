@@ -21,6 +21,25 @@ This will create a task file `.kanbn/tasks/my-new-task.md`.
 
 Run `kanbn add --help` for more information on creating tasks.
 
+## Using AI Features
+
+### Break down complex tasks
+
+```
+kanbn decompose --task "my-complex-task"
+```
+
+This will use AI to break down your complex task into smaller, manageable subtasks.
+
+### Get AI assistance
+
+```
+kanbn chat
+kanbn chat --message "Summarize my project status"
+```
+
+Chat with an AI assistant that understands your project context and can help with task management.
+
 ## View the kanbn board
 
 ```
@@ -59,4 +78,13 @@ This will add a "Huge" tag to the task and modify the task's updated date. If yo
 
 Run `kanbn edit --help` for more information on editing tasks.
 
+## Prerequisites for AI Features
+
+- Set up your OpenRouter API key:
+  ```
+  export OPENROUTER_API_KEY=your_api_key_here
+  ```
+- Ensure you have an active internet connection for AI features
+
 See [index structure](index-structure.md) for more information on project settings, tags and workload calculations.
+For detailed information about AI features, see [AI Features](ai-features.md).

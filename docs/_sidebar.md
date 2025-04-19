@@ -1,0 +1,32 @@
+* Getting Started
+  * [Quick Start](quick-start.md)
+  * [Advanced Configuration](advanced-configuration.md)
+
+* Documentation
+  * [Index Structure](index-structure.md)
+  * [Task Structure](task-structure.md)
+  * [AI Features](ai-features.md)
+
+* Commands
+  * [add](commands/add.txt)
+  * [archive](commands/archive.txt)
+  * [board](commands/board.txt)
+  * [burndown](commands/burndown.txt)
+  * [chat](commands/chat.txt)
+  * [comment](commands/comment.txt)
+  * [decompose](commands/decompose.txt)
+  * [edit](commands/edit.txt)
+  * [find](commands/find.txt)
+  * [help](commands/help.txt)
+  * [init](commands/init.txt)
+  * [move](commands/move.txt)
+  * [remove](commands/remove.txt)
+  * [remove-all](commands/remove-all.txt)
+  * [rename](commands/rename.txt)
+  * [restore](commands/restore.txt)
+  * [sort](commands/sort.txt)
+  * [sprint](commands/sprint.txt)
+  * [status](commands/status.txt)
+  * [task](commands/task.txt)
+  * [validate](commands/validate.txt)
+  * [version](commands/version.txt)
