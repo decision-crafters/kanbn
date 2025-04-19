@@ -9,7 +9,7 @@ This guide explains how to publish the Kanbn package to npm.
    ```
    npm login
    ```
-3. Verify you have the necessary permissions to publish to the `@basementuniverse` organization
+3. Verify you have the necessary permissions to publish to the `@tosin2013` organization
 
 ## Preparing for Publication
 
@@ -38,7 +38,7 @@ This guide explains how to publish the Kanbn package to npm.
 
 2. Verify the package is published:
    ```
-   npm view @basementuniverse/kanbn
+   npm view @tosin2013/kanbn
    ```
 
 ## Publishing a New Version
@@ -77,7 +77,7 @@ This guide explains how to publish the Kanbn package to npm.
 Users can install the package using:
 
 ```
-npm install -g @basementuniverse/kanbn
+npm install -g @tosin2013/kanbn
 ```
 
 For the AI features, users will need to set the OpenRouter API key:

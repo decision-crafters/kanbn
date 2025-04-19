@@ -1,6 +1,6 @@
 {
-  "name": "@basementuniverse/kanbn",
-  "version": "0.10.0",
+  "name": "@tosin2013/kanbn",
+  "version": "0.10.2",
   "description": "A CLI Kanban application",
   "main": "index.js",
   "scripts": {
@@ -10,11 +10,11 @@
   "bin": {
     "kanbn": "bin/kanbn"
   },
-  "author": "Gordon Larrigan <gordonlarrigan@gmail.com> (https://gordonlarrigan.com)",
+  "author": "Tosin Akinosho <tosin@decisioncrafters.com> (https://github.com/tosin2013)",
   "homepage": "",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/basementuniverse/kanbn.git"
+    "url": "git+https://github.com/decision-crafters/kanbn.git"
   },
   "engines": {
     "node": ">=16.0.0"

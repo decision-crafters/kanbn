@@ -7,7 +7,7 @@ Documentation can be found [here](./docs/index.md).
 ## Installation
 
 ```
-npm install -g @basementuniverse/kanbn
+npm install -g @tosin2013/kanbn
 ```
 
 ## Usage
