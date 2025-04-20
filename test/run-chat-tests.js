@@ -21,8 +21,9 @@ QUnit.log((details) => {
   }
 });
 
-// Load only the chat controller tests
+// Load chat tests
 require('./integration/chat-controller.test.js');
+require('./integration/chat-domain-events.test.js');
 
 // Start QUnit
 QUnit.start();
