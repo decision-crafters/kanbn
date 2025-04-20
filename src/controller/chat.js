@@ -42,6 +42,11 @@ async function callOpenRouterAPI(message, projectContext) {
       tags: []
     };
 
+    // Ensure columns is an array
+    if (!safeContext.columns) {
+      safeContext.columns = [];
+    }
+
     // Check if we're in a test environment or CI environment
     if (process.env.KANBN_ENV === 'test' || process.env.CI === 'true') {
       console.log('Skipping actual API call for testing or CI environment...');
@@ -138,7 +143,19 @@ async function logAIInteraction(type, input, output) {
       ]
     };
 
-    await kanbn.createTask(taskData, null, true);
+    try {
+      // Get the index to check if it has columns
+      const index = await kanbn.getIndex();
+      if (!index || !index.columns || Object.keys(index.columns).length === 0) {
+        // If there are no columns, we can't create a task
+        console.log('Skipping AI interaction logging: No columns defined in the project');
+        return taskId;
+      }
+
+      await kanbn.createTask(taskData, null, true);
+    } catch (createError) {
+      console.log('Skipping AI interaction logging:', createError.message);
+    }
 
     return taskId;
   } catch (error) {
@@ -154,13 +171,19 @@ async function logAIInteraction(type, input, output) {
 async function getProjectContext() {
   try {
     const kanbn = new Kanbn();
+    const { findTaskColumn } = require('../main');
     const index = await kanbn.getIndex();
     const tasks = await kanbn.loadAllTrackedTasks();
     const status = await kanbn.status(false, false, false, null, null);
 
-    if (!index || !index.columns) {
+    if (!index) {
       console.error('Error getting project context: Invalid index structure');
       return null;
+    }
+
+    // Ensure index.columns exists
+    if (!index.columns) {
+      index.columns = {};
     }
 
     return {
@@ -171,9 +194,7 @@ async function getProjectContext() {
       tasksByColumn: await Object.keys(index.columns).reduce(async (pAcc, column) => {
         const acc = await pAcc;
         if (tasks && tasks.length > 0) {
-          const taskColumns = await Promise.all(
-            tasks.map(t => kanbn.findTaskColumn(t.id))
-          );
+          const taskColumns = tasks.map(t => findTaskColumn(index, t.id));
           acc[column] = taskColumns.filter(c => c === column).length;
         } else {
           acc[column] = 0;
