@@ -105,7 +105,7 @@ module.exports = async args => {
   }
 
   // Get column name if specified
-  const currentColumnName = await kanbn.findTaskColumn(taskId);
+  const currentColumnName = findTaskColumn(index, taskId);
   let columnName = currentColumnName;
   if (args.column) {
     columnName = utility.strArg(args.column);
