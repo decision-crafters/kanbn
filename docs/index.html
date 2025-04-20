@@ -17,7 +17,6 @@
       loadSidebar: true,
       subMaxLevel: 2,
       auto2top: true,
-      relativePath: true,
       routerMode: 'hash',
       homepage: 'index.md',
       search: {
@@ -37,12 +36,10 @@
         nextText: 'Next',
         crossChapter: true
       },
-      notFoundPage: {
-        '/': '_404.md'
-      },
-      fallbackLanguages: ['en']
+      notFoundPage: '_404.md'
     };
   </script>
+  <!-- Docsify v4 -->
   <script src="//cdn.jsdelivr.net/npm/docsify@4"></script>
   <script src="//cdn.jsdelivr.net/npm/docsify/lib/plugins/search.min.js"></script>
   <script src="//cdn.jsdelivr.net/npm/docsify-copy-code/dist/docsify-copy-code.min.js"></script>
