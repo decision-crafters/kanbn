@@ -178,8 +178,13 @@ QUnit.test('should log AI interaction when OpenRouter API key is not available',
     // Get the decompose module with our mocks
     const decompose = require('../../src/controller/decompose');
 
-    const originalEnv = process.env.OPENROUTER_API_KEY;
+    // Save original environment variables
+    const originalApiKey = process.env.OPENROUTER_API_KEY;
+    const originalUseRealApi = process.env.USE_REAL_API;
+
+    // Set environment variables for testing
     process.env.OPENROUTER_API_KEY = undefined;
+    process.env.USE_REAL_API = undefined;
 
     try {
       await decompose({
@@ -191,7 +196,9 @@ QUnit.test('should log AI interaction when OpenRouter API key is not available',
       // Instead, we'll verify that our mock was called correctly
       assert.ok(true, 'Decompose function executed without errors');
     } finally {
-      process.env.OPENROUTER_API_KEY = originalEnv;
+      // Restore original environment variables
+      process.env.OPENROUTER_API_KEY = originalApiKey;
+      process.env.USE_REAL_API = originalUseRealApi;
     }
 });
 

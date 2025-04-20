@@ -163,8 +163,13 @@ QUnit.test('should get project context correctly', async function(assert) {
 });
 
 QUnit.test('should log AI interaction when chat is used', async function(assert) {
-    // Set environment variable for testing
-    process.env.OPENROUTER_API_KEY = 'test-api-key';
+    // Set environment variables for testing
+    process.env.OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY || 'test-api-key';
+
+    // Ensure we're using the mock in tests unless explicitly requested
+    if (!process.env.USE_REAL_API) {
+      process.env.USE_REAL_API = undefined;
+    }
 
     // Get the chat module with our mocks
     const chat = require('../../src/controller/chat');

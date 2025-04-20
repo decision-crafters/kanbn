@@ -22,25 +22,72 @@ async function callOpenRouterAPI(message, projectContext) {
     }
     console.log('API key found, length:', apiKey.length);
 
-    console.log('Skipping actual API call for testing...');
-    const mockResponse = `I'm a project management assistant for your Kanbn board.
-    
+    // Use the model specified in the environment or default to a cost-effective option
+    const model = process.env.OPENROUTER_MODEL || 'google/gemma-3-4b-it:free';
+    console.log(`Using model: ${model}`);
+
+    // Check if we're in a test environment
+    if (process.env.KANBN_ENV === 'test' && !process.env.USE_REAL_API) {
+      console.log('Skipping actual API call for testing...');
+      const mockResponse = `I'm a project management assistant for your Kanbn board.
+
 Your project "${projectContext.projectName}" has ${projectContext.taskCount} tasks across ${projectContext.columns.length} columns.
-    
+
 Based on your project data, here's a summary:
 - Project name: ${projectContext.projectName}
 - Project description: ${projectContext.projectDescription}
 - Tasks: ${projectContext.taskCount}
 - Columns: ${projectContext.columns.join(', ')}
-    
+
 How can I help you manage your project today?`;
-    
+
+      console.log('Logging AI interaction...');
+      await logAIInteraction('chat', message, mockResponse);
+
+      return mockResponse;
+    }
+
+    // Make the actual API call
+    console.log('Making API call to OpenRouter...');
+    const response = await axios.post(
+      'https://openrouter.ai/api/v1/chat/completions',
+      {
+        model: model,
+        messages: [
+          {
+            role: 'system',
+            content: `You are a project management assistant for a Kanbn board.
+            Here is the context of the project:
+            Project name: ${projectContext.projectName}
+            Project description: ${projectContext.projectDescription}
+            Number of tasks: ${projectContext.taskCount}
+            Columns: ${projectContext.columns.join(', ')}
+            Tags used: ${projectContext.tags ? projectContext.tags.join(', ') : 'None'}
+
+            Provide helpful, concise responses to help the user manage their project.`
+          },
+          {
+            role: 'user',
+            content: message
+          }
+        ]
+      },
+      {
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'HTTP-Referer': 'https://github.com/decision-crafters/kanbn',
+          'X-Title': 'Kanbn Project Assistant'
+        }
+      }
+    );
+
+    const aiResponse = response.data.choices[0].message.content;
     console.log('Logging AI interaction...');
-    await logAIInteraction('chat', message, mockResponse);
-    
-    return mockResponse;
+    await logAIInteraction('chat', message, aiResponse);
+
+    return aiResponse;
   } catch (error) {
-    console.error('Error in mock OpenRouter API:', error);
+    console.error('Error in OpenRouter API:', error);
     return `I'm having trouble with the project assistant. ${error.message}`;
   }
 }
@@ -56,7 +103,7 @@ async function logAIInteraction(type, input, output) {
     const taskId = 'ai-interaction-' + Date.now();
     const username = getGitUsername() || 'unknown';
     const date = new Date();
-    
+
     const taskData = {
       name: `AI ${type} interaction at ${date.toISOString()}`,
       description: `This is an automatically generated record of an AI interaction.`,
@@ -73,9 +120,9 @@ async function logAIInteraction(type, input, output) {
         }
       ]
     };
-    
+
     await kanbn.createTask(taskData, null, true);
-    
+
     return taskId;
   } catch (error) {
     console.error('Error logging AI interaction:', error.message);
@@ -92,7 +139,7 @@ async function getProjectContext() {
     const index = await kanbn.getIndex();
     const tasks = await kanbn.loadAllTrackedTasks();
     const status = await kanbn.status(false, false, false, null, null);
-    
+
     return {
       projectName: index.name,
       projectDescription: index.description,
@@ -106,7 +153,7 @@ async function getProjectContext() {
         acc[column] = taskColumns.filter(c => c === column).length;
         return acc;
       }, Promise.resolve({})),
-      tags: [...new Set(tasks.flatMap(task => 
+      tags: [...new Set(tasks.flatMap(task =>
         task.metadata.tags || []
       ))],
       statistics: status
@@ -126,9 +173,9 @@ async function getProjectContext() {
 async function interactiveChat(projectContext) {
   console.log(chalk.blue.bold('\n📊 Kanbn Project Assistant 📊'));
   console.log(chalk.gray('Type "exit" or "quit" to end the conversation\n'));
-  
+
   let chatActive = true;
-  
+
   while (chatActive) {
     try {
       const answers = await inquirer.prompt([
@@ -138,21 +185,21 @@ async function interactiveChat(projectContext) {
           message: chalk.green('You:')
         }
       ]);
-      
+
       const message = answers.message.trim();
-      
+
       if (message.toLowerCase() === 'exit' || message.toLowerCase() === 'quit') {
         console.log(chalk.blue('Project Assistant: Goodbye! Happy organizing!'));
         chatActive = false;
         continue;
       }
-      
+
       console.log(chalk.yellow('Project Assistant: ') + chalk.gray('Thinking...'));
-      
+
       const response = await callOpenRouterAPI(message, projectContext);
-      
+
       process.stdout.write('\r\x1b[K');
-      
+
       console.log(chalk.yellow('Project Assistant: ') + response + '\n');
     } catch (error) {
       console.error('Error in chat:', error.message);
@@ -180,7 +227,7 @@ module.exports = async args => {
 
     try {
       const projectContext = await getProjectContext();
-      
+
       if (args.message) {
         const message = utility.strArg(args.message);
         const response = await callOpenRouterAPI(message, projectContext);

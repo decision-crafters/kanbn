@@ -19,10 +19,27 @@ async function callOpenRouterAPI(description) {
       throw new Error('OpenRouter API key not found. Please set the OPENROUTER_API_KEY environment variable.');
     }
 
+    // Use the model specified in the environment or default to a cost-effective option
+    const model = process.env.OPENROUTER_MODEL || 'google/gemma-3-4b-it:free';
+    console.log(`Using model: ${model}`);
+
+    // Check if we're in a test environment
+    if (process.env.KANBN_ENV === 'test' && !process.env.USE_REAL_API) {
+      console.log('Skipping actual API call for testing...');
+      // Return a simple mock decomposition
+      const mockSubtasks = [
+        { text: `Subtask 1 for: ${description.substring(0, 30)}...`, completed: false },
+        { text: `Subtask 2 for: ${description.substring(0, 30)}...`, completed: false }
+      ];
+
+      await logAIInteraction('decompose', description, JSON.stringify({ subtasks: mockSubtasks }));
+      return mockSubtasks;
+    }
+
     const response = await axios.post(
       'https://openrouter.ai/api/v1/chat/completions',
       {
-        model: 'openai/gpt-4-turbo',
+        model: model,
         messages: [
           {
             role: 'system',
@@ -38,16 +55,18 @@ async function callOpenRouterAPI(description) {
       {
         headers: {
           'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'HTTP-Referer': 'https://github.com/decision-crafters/kanbn',
+          'X-Title': 'Kanbn Task Decomposition'
         }
       }
     );
 
     const content = response.data.choices[0].message.content;
     const parsedContent = JSON.parse(content);
-    
+
     await logAIInteraction('decompose', description, content);
-    
+
     return parsedContent.subtasks || [];
   } catch (error) {
     console.error('Error calling OpenRouter API:', error.message);
@@ -65,7 +84,7 @@ function fallbackDecomposition(description) {
   if (lines.length > 1) {
     return lines.map(line => ({ text: line.trim(), completed: false }));
   }
-  
+
   const sentences = description.split(/\.(?!\d)/).filter(s => s.trim().length > 0);
   return sentences.map(s => ({ text: s.trim(), completed: false }));
 }
@@ -81,7 +100,7 @@ async function logAIInteraction(type, input, output) {
     const taskId = 'ai-interaction-' + Date.now();
     const username = getGitUsername() || 'unknown';
     const date = new Date();
-    
+
     const taskData = {
       name: `AI ${type} interaction at ${date.toISOString()}`,
       description: `This is an automatically generated record of an AI interaction.`,
@@ -98,9 +117,9 @@ async function logAIInteraction(type, input, output) {
         }
       ]
     };
-    
+
     await kanbn.createTask(taskData, null, true);
-    
+
     return taskId;
   } catch (error) {
     console.error('Error logging AI interaction:', error.message);
@@ -153,14 +172,14 @@ async function interactiveDecompose(taskId, taskIds) {
 async function createChildTasks(parentTaskId, subtasks) {
   const parentTask = await kanbn.getTask(parentTaskId);
   const parentColumn = await kanbn.findTaskColumn(parentTaskId);
-  
+
   const index = await kanbn.getIndex();
   const columnNames = Object.keys(index.columns);
-  
+
   const columnName = parentColumn || columnNames[0];
-  
+
   const childTasks = [];
-  
+
   for (const subtask of subtasks) {
     try {
       const taskData = {
@@ -176,18 +195,18 @@ async function createChildTasks(parentTaskId, subtasks) {
           }
         ]
       };
-      
+
       if (parentTask.metadata.assigned) {
         taskData.metadata.assigned = parentTask.metadata.assigned;
       }
-      
+
       const childTaskId = await kanbn.createTask(taskData, columnName);
       childTasks.push(childTaskId);
-      
+
       if (!parentTask.relations) {
         parentTask.relations = [];
       }
-      
+
       parentTask.relations.push({
         task: childTaskId,
         type: 'parent-of'
@@ -196,9 +215,9 @@ async function createChildTasks(parentTaskId, subtasks) {
       console.error(`Error creating child task: ${error.message}`);
     }
   }
-  
+
   await kanbn.updateTask(parentTaskId, parentTask);
-  
+
   return childTasks;
 }
 
@@ -209,17 +228,17 @@ module.exports = async args => {
   }
 
   let taskId = args.task ? utility.strArg(args.task) : null;
-  
+
   let customDescription = args.description ? utility.strArg(args.description) : '';
-  
+
   const taskIds = [...await kanbn.findTrackedTasks()];
-  
+
   if (args.interactive) {
     try {
       const answers = await interactiveDecompose(taskId, taskIds);
       taskId = answers.taskId || taskId;
       customDescription = answers.customDescription;
-      
+
       if (!answers.useAI) {
         utility.error('Manual decomposition not implemented yet. Please use AI decomposition.');
         return;
@@ -229,12 +248,12 @@ module.exports = async args => {
       return;
     }
   }
-  
+
   if (!taskId) {
     utility.error('No task specified. Use --task or -t to specify a task ID.');
     return;
   }
-  
+
   try {
     if (!await kanbn.taskExists(taskId)) {
       utility.error(`Task "${taskId}" doesn't exist`);
@@ -244,7 +263,7 @@ module.exports = async args => {
     utility.error(error);
     return;
   }
-  
+
   let task;
   try {
     task = await kanbn.getTask(taskId);
@@ -252,25 +271,25 @@ module.exports = async args => {
     utility.error(error);
     return;
   }
-  
+
   const description = customDescription || task.description;
-  
+
   console.log(`Decomposing task "${task.name}"...`);
   const subtasks = await callOpenRouterAPI(description);
-  
+
   if (subtasks.length === 0) {
     utility.error('Failed to decompose task. No subtasks generated.');
     return;
   }
-  
+
   console.log(`Generated ${subtasks.length} subtasks:`);
   subtasks.forEach((subtask, index) => {
     console.log(`${index + 1}. ${subtask.text}`);
   });
-  
+
   console.log('\nCreating child tasks...');
   const childTasks = await createChildTasks(taskId, subtasks);
-  
+
   console.log(`\nCreated ${childTasks.length} child tasks for "${task.name}"`);
   childTasks.forEach(childTaskId => {
     console.log(`- ${childTaskId}`);
