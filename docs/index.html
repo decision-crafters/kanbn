@@ -16,11 +16,16 @@
       name: 'Kanbn',
       repo: 'https://github.com/decision-crafters/kanbn',
       loadSidebar: true,
+      loadNavbar: false,
+      mergeNavbar: true,
+      maxLevel: 4,
       subMaxLevel: 2,
       auto2top: true,
-      basePath: '/kanbn/',
-      routerMode: 'history',
+      routerMode: 'hash',
       homepage: 'index.md',
+      notFoundPage: {
+        '/': '_404.md'
+      },
       search: {
         maxAge: 86400000,
         paths: 'auto',
@@ -38,17 +43,15 @@
         nextText: 'Next',
         crossChapter: true
       },
-      notFoundPage: true,
       formatUpdated: '{MM}/{DD} {HH}:{mm}',
-      plugins: [
-        function(hook, vm) {
-          hook.beforeEach(function(content) {
-            const url = 'https://github.com/decision-crafters/kanbn/blob/main/docs/' + vm.route.file;
-            const editHtml = '[:memo: Edit Document](' + url + ')\n';
-            return editHtml + '\n' + content;
-          });
-        }
-      ]
+      fallbackLanguages: ['en'],
+      nameLink: {
+        '/': '#/'
+      },
+      alias: {
+        '/.*/_sidebar.md': '/_sidebar.md',
+        '/.*/_404.md': '/_404.md'
+      }
     };
   </script>
   <script src="https://cdn.jsdelivr.net/npm/docsify@4"></script>
