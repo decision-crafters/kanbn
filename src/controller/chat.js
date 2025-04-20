@@ -90,8 +90,9 @@ How can I help you manage your project today?`
       return mockResponse.content;
     }
 
-    // Load conversation history
-    const history = global.chatHistory || [];
+    // Load conversation history with size limit
+    const MAX_HISTORY = 20;
+    const history = (global.chatHistory || []).slice(-MAX_HISTORY);
 
     // Prepare messages array with system prompt and history
     const messages = [
@@ -123,11 +124,12 @@ How can I help you manage your project today?`
         messages: messages
       },
       {
-        headers: {
-          'Authorization': `Bearer ${apiKey}`,
-          'HTTP-Referer': 'https://github.com/decision-crafters/kanbn',
-          'X-Title': 'Kanbn Project Assistant'
-        }
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+        'HTTP-Referer': 'https://github.com/decision-crafters/kanbn',
+        'X-Title': 'Kanbn Project Assistant'
+      }
       }
     );
 
