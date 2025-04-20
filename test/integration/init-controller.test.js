@@ -3,7 +3,8 @@ const mockArgv = require('mock-argv');
 const captureConsole = require('capture-console');
 const {
   config: mockConfig,
-  kanbn: mockKanbn
+  kanbn: mockKanbn,
+  Kanbn: MockKanbn
 } = require('../mock-kanbn');
 const context = require('../context');
 
@@ -12,7 +13,8 @@ let kanbn;
 QUnit.module('init controller tests', {
   before() {
     require('../qunit-contains');
-    mockRequire('../../src/main', mockKanbn);
+    // Mock the main.js file with our mock implementation
+    mockRequire('../../src/main', { kanbn: mockKanbn, Kanbn: MockKanbn });
     kanbn = require('../../index');
   },
   beforeEach() {

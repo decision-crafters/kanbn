@@ -170,6 +170,7 @@ async function interactiveDecompose(taskId, taskIds) {
  * @param {Array} subtasks Array of subtask objects
  */
 async function createChildTasks(parentTaskId, subtasks) {
+  const kanbn = new Kanbn();
   const parentTask = await kanbn.getTask(parentTaskId);
   const parentColumn = await kanbn.findTaskColumn(parentTaskId);
 
@@ -224,7 +225,7 @@ async function createChildTasks(parentTaskId, subtasks) {
 module.exports = async args => {
     // Create a Kanbn instance
     const kanbn = new Kanbn();
-  
+
     // Make sure kanbn has been initialised
     try {
       if (!await kanbn.initialised()) {
@@ -235,10 +236,11 @@ module.exports = async args => {
       utility.warning('Kanbn has not been initialised in this folder\nTry running: {b}kanbn init{b}');
       return;
     }
-  if (!await kanbn.initialised()) {
-    utility.error('Kanbn has not been initialised in this folder\nTry running: {b}kanbn init{b}');
-    return;
-  }
+  // This is redundant with the check above
+  // if (!await kanbn.initialised()) {
+  //   utility.error('Kanbn has not been initialised in this folder\nTry running: {b}kanbn init{b}');
+  //   return;
+  // }
 
   let taskId = args.task ? utility.strArg(args.task) : null;
 

@@ -6,6 +6,7 @@ const utility = require('../utility');
  * @param {string} taskId
  */
 function archiveTask(taskId) {
+  const { Kanbn } = require('../main');
   const kanbn = new Kanbn();
   kanbn
   .archiveTask(taskId)
@@ -21,6 +22,7 @@ function archiveTask(taskId) {
  * Show a list of archived task filenames
  */
 function listArchivedTasks() {
+  const { Kanbn } = require('../main');
   const kanbn = new Kanbn();
   kanbn
   .listArchivedTasks()
@@ -34,6 +36,7 @@ function listArchivedTasks() {
 
 module.exports = async args => {
   // Create a Kanbn instance
+  const { Kanbn } = require('../main');
   const kanbn = new Kanbn();
 
   // Make sure kanbn has been initialised

@@ -1,6 +1,6 @@
 const fs = require("fs");
 const path = require("path");
-const glob = require("glob-promise");
+const { glob } = require("glob");
 const parseIndex = require("./parse-index");
 const parseTask = require("./parse-task");
 const utility = require("./utility");
@@ -52,11 +52,21 @@ const defaultInitialiseOptions = {
  */
 async function exists(path) {
   try {
-    await fs.promises.access(path, fs.constants.R_OK | fs.constants.W_OK);
+    const stat = fs.statSync(path);
+    return true;
   } catch (error) {
-    return false;
+    // Handle ENOENT (file/directory doesn't exist)
+    if (error.code === 'ENOENT') {
+      return false;
+    }
+    // For other errors (like permission issues), try a simple existence check
+    try {
+      fs.accessSync(path);
+      return true;
+    } catch {
+      return false;
+    }
   }
-  return true;
 }
 
 /**
@@ -788,19 +798,11 @@ function updateColumnLinkedCustomField(index, taskData, columnName, fieldName, u
 }
 
 class Kanbn {
-  ROOT = process.cwd();
-  CONFIG_YAML = path.join(this.ROOT, "kanbn.yml");
-  CONFIG_JSON = path.join(this.ROOT, "kanbn.json");
-
-  // Memoize config
-  configMemo = null;
-
   constructor(root = null) {
-    if(root) {
-      this.ROOT = root
-      this.CONFIG_YAML = path.join(this.ROOT, "kanbn.yml");
-      this.CONFIG_JSON = path.join(this.ROOT, "kanbn.json");
-    }
+    this.ROOT = root || process.cwd();
+    this.CONFIG_YAML = path.join(this.ROOT, "kanbn.yml");
+    this.CONFIG_JSON = path.join(this.ROOT, "kanbn.json");
+    this.configMemo = null;
   }
 
   /**
@@ -1151,7 +1153,38 @@ class Kanbn {
    * @return {Promise<boolean>} True if the current working directory has been initialised, otherwise false
    */
   async initialised() {
-    return await exists(await this.getIndexPath());
+    try {
+      // Get required paths
+      const mainFolder = await this.getMainFolder();
+      const indexPath = await this.getIndexPath();
+      const tasksPath = await this.getTaskFolderPath();
+
+      // Check if main folder exists
+      if (!await exists(mainFolder)) {
+        return false;
+      }
+
+      // Check if index file exists
+      if (!await exists(indexPath)) {
+        return false;
+      }
+
+      // Try to load and parse the index
+      try {
+        await this.loadIndex();
+      } catch {
+        return false;
+      }
+
+      // Check if tasks folder exists
+      if (!await exists(tasksPath)) {
+        return false;
+      }
+
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   /**
@@ -1378,12 +1411,17 @@ class Kanbn {
     const index = await this.loadIndex();
     const trackedTasks = getTrackedTaskIds(index);
 
-    // Get all tasks in the tasks folder
-    const files = await glob(`${await this.getTaskFolderPath()}/*.md`);
-    const untrackedTasks = new Set(files.map((task) => path.parse(task).name));
+    // Get all tasks in the tasks folder using glob-style pattern
+    const tasksPath = await this.getTaskFolderPath();
+    const files = await glob(`${tasksPath}/*.md`, {
+      withFileTypes: true,
+      fs: fs // Use the real/mocked fs passed to glob
+    });
+    
+    const untrackedTasks = new Set(files.map(file => path.parse(file.name).name));
 
     // Return the set difference
-    return new Set([...untrackedTasks].filter((x) => !trackedTasks.has(x)));
+    return new Set([...untrackedTasks].filter(x => !trackedTasks.has(x)));
   }
 
   /**
@@ -2290,7 +2328,7 @@ class Kanbn {
     }
 
     // Get a list of archived task files
-    const files = await glob(`${archiveFolder}/*.md`);
+    const files = await globPromise(`${archiveFolder}/*.md`);
     return [...new Set(files.map((task) => path.parse(task).name))];
   }
 
@@ -2417,9 +2455,94 @@ class Kanbn {
   }
 };
 
-module.exports.Kanbn = Kanbn;
-module.exports.findTaskColumn = findTaskColumn;
+// Create a singleton instance and bind all methods
+const kanbn = new Kanbn();
 
-// Export the Kanbn class as both a named export and a default export
-// This ensures compatibility with both import styles
-module.exports.default = { Kanbn, findTaskColumn };
+// Export the singleton instance and core functions
+module.exports = {
+  // Instance methods
+  initialised: kanbn.initialised.bind(kanbn),
+  configExists: kanbn.configExists.bind(kanbn),
+  saveConfig: kanbn.saveConfig.bind(kanbn),
+  getConfig: kanbn.getConfig.bind(kanbn),
+  clearConfigCache: kanbn.clearConfigCache.bind(kanbn),
+  getFolderName: kanbn.getFolderName.bind(kanbn),
+  getIndexFileName: kanbn.getIndexFileName.bind(kanbn),
+  getTaskFolderName: kanbn.getTaskFolderName.bind(kanbn),
+  getArchiveFolderName: kanbn.getArchiveFolderName.bind(kanbn),
+  getMainFolder: kanbn.getMainFolder.bind(kanbn),
+  getIndexPath: kanbn.getIndexPath.bind(kanbn),
+  getTaskFolderPath: kanbn.getTaskFolderPath.bind(kanbn),
+  getArchiveFolderPath: kanbn.getArchiveFolderPath.bind(kanbn),
+  getIndex: kanbn.getIndex.bind(kanbn),
+  getTask: kanbn.getTask.bind(kanbn),
+  hydrateTask: kanbn.hydrateTask.bind(kanbn),
+  filterAndSortTasks: kanbn.filterAndSortTasks.bind(kanbn),
+  saveIndex: kanbn.saveIndex.bind(kanbn),
+  loadIndex: kanbn.loadIndex.bind(kanbn),
+  saveTask: kanbn.saveTask.bind(kanbn),
+  loadTask: kanbn.loadTask.bind(kanbn),
+  loadAllTrackedTasks: kanbn.loadAllTrackedTasks.bind(kanbn),
+  loadArchivedTask: kanbn.loadArchivedTask.bind(kanbn),
+  getDateFormat: kanbn.getDateFormat.bind(kanbn),
+  getTaskTemplate: kanbn.getTaskTemplate.bind(kanbn),
+  initialise: kanbn.initialise.bind(kanbn),
+  taskExists: kanbn.taskExists.bind(kanbn),
+  findTaskColumn: kanbn.findTaskColumn.bind(kanbn),
+  createTask: kanbn.createTask.bind(kanbn),
+  addUntrackedTaskToIndex: kanbn.addUntrackedTaskToIndex.bind(kanbn),
+  findTrackedTasks: kanbn.findTrackedTasks.bind(kanbn),
+  findUntrackedTasks: kanbn.findUntrackedTasks.bind(kanbn),
+  updateTask: kanbn.updateTask.bind(kanbn),
+  renameTask: kanbn.renameTask.bind(kanbn),
+  moveTask: kanbn.moveTask.bind(kanbn),
+  deleteTask: kanbn.deleteTask.bind(kanbn),
+  search: kanbn.search.bind(kanbn),
+  status: kanbn.status.bind(kanbn),
+  sort: kanbn.sort.bind(kanbn),
+  sprint: kanbn.sprint.bind(kanbn),
+  burndown: kanbn.burndown.bind(kanbn),
+  comment: kanbn.comment.bind(kanbn),
+  listArchivedTasks: kanbn.listArchivedTasks.bind(kanbn),
+  archiveTask: kanbn.archiveTask.bind(kanbn),
+  restoreTask: kanbn.restoreTask.bind(kanbn),
+  removeAll: kanbn.removeAll.bind(kanbn),
+  validate: kanbn.validate.bind(kanbn),
+  
+  // Class constructor
+  Kanbn,
+  
+  // Static utility functions
+  findTaskColumn,
+  getTrackedTaskIds,
+  taskInIndex,
+  addTaskToIndex,
+  removeTaskFromIndex,
+  renameTaskInIndex,
+  getTaskMetadata,
+  setTaskMetadata,
+  taskCompleted,
+  taskWorkload,
+  taskProgress,
+  sortColumnInIndex,
+  updateColumnLinkedCustomFields,
+  addFileExtension,
+  removeFileExtension,
+  getTaskPath,
+  exists,
+  filterTasks,
+  sortTasks,
+  compareValues,
+  stringFilter,
+  dateFilter,
+  numberFilter,
+  normaliseDate,
+  taskWorkloadInPeriod,
+  getActiveTasksAtDate,
+  getWorkloadAtDate,
+  countActiveTasksAtDate,
+  getTaskEventsAtDate
+};
+
+// Also export as default for compatibility
+module.exports.default = module.exports;

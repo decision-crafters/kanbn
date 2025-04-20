@@ -7,6 +7,8 @@ const utility = require('../utility');
  * @param {string|null} columnName
  */
 function restoreTask(taskId, columnName) {
+  const { Kanbn } = require('../main');
+  const kanbn = new Kanbn();
   kanbn
   .restoreTask(taskId, columnName)
   .then(taskId => {
@@ -18,9 +20,17 @@ function restoreTask(taskId, columnName) {
 }
 
 module.exports = async args => {
+  // Create a Kanbn instance
+  const { Kanbn } = require('../main');
+  const kanbn = new Kanbn();
 
   // Make sure kanbn has been initialised
-  if (!await kanbn.initialised()) {
+  try {
+    if (!await kanbn.initialised()) {
+      utility.error('Kanbn has not been initialised in this folder\nTry running: {b}kanbn init{b}');
+      return;
+    }
+  } catch (error) {
     utility.error('Kanbn has not been initialised in this folder\nTry running: {b}kanbn init{b}');
     return;
   }

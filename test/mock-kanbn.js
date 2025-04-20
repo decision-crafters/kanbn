@@ -133,5 +133,7 @@ const kanbn = {
   status: async () => await new Kanbn().status()
 };
 
+// Export as both named and default exports to support different import styles
 module.exports = { config, kanbn, Kanbn };
 module.exports.Kanbn = Kanbn;
+module.exports.default = { config, kanbn, Kanbn };
