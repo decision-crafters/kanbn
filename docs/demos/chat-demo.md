@@ -35,19 +35,34 @@ This will start an interactive session:
 Type "exit" or "quit" to end the conversation
 
 You: What's the status of my project?
-Project Assistant: Your project "Example Project" has 5 tasks across 3 columns.
+Project Assistant: Your project "Website Development" has 6 tasks across 4 columns.
 
 Based on your project data, here's a summary:
-- Project name: Example Project
-- Project description: A sample project for demonstration
-- Tasks: 5
-- Columns: Backlog, In Progress, Done
+- Project name: Website Development
+- Project description: A project to develop the company website
+- Tasks: 6
+- Columns: Backlog (4), In Progress (1), Review (0), Done (1)
+- Tags: design, frontend, backend, content
 
-You: How many tasks are in the Backlog?
-Project Assistant: There are 3 tasks in the Backlog column.
+You: What tasks are in the Backlog?
+Project Assistant: There are 4 tasks in the Backlog column:
+
+1. "Design website mockups" - Create wireframes and mockups for all pages
+2. "Setup backend API" - Implement RESTful API endpoints for the website
+3. "Create content strategy" - Develop content plan for all website sections
+4. "Implement user authentication" - Add login/signup functionality
+
+Would you like me to provide more details about any of these tasks?
+
+You: Which task should I focus on first?
+Project Assistant: Based on your project structure and dependencies, I recommend focusing on "Design website mockups" first.
+
+This task is foundational for the other work, as the frontend implementation will depend on having finalized designs. The mockups will also help inform the content strategy and ensure the backend API is designed to support all the necessary features.
+
+After completing the mockups, you could move on to the backend API and content strategy in parallel.
 
 You: exit
-Project Assistant: Goodbye! Happy organizing!
+Project Assistant: Goodbye! Happy organizing! Feel free to chat again when you need assistance with your project.
 ```
 
 ### One-off Message Mode
@@ -61,13 +76,16 @@ kanbn chat --message "What's the status of my project?"
 This will return a single response:
 
 ```
-Project Assistant: Your project "Example Project" has 5 tasks across 3 columns.
+Project Assistant: Your project "Website Development" has 6 tasks across 4 columns.
 
 Based on your project data, here's a summary:
-- Project name: Example Project
-- Project description: A sample project for demonstration
-- Tasks: 5
-- Columns: Backlog, In Progress, Done
+- Project name: Website Development
+- Project description: A project to develop the company website
+- Tasks: 6
+- Columns: Backlog (4), In Progress (1), Review (0), Done (1)
+- Tags: design, frontend, backend, content
+
+You have 1 task in progress: "Implement homepage design" which has been in progress for 3 days.
 ```
 
 ## Advanced Usage
@@ -85,15 +103,18 @@ By default, the chat feature uses `google/gemma-3-4b-it:free` which is a cost-ef
 
 ### Example Questions
 
-Here are some example questions you can ask the AI assistant:
+Here are some realistic questions you can ask the AI assistant:
 
 - "What's the status of my project?"
 - "How many tasks are in the Backlog column?"
-- "What are the most important tasks I should focus on?"
-- "Can you summarize my project progress?"
-- "What tasks are assigned to me?"
-- "How can I organize my tasks better?"
-- "What's the next step for my project?"
+- "Which tasks should I prioritize this week?"
+- "What's my project completion percentage?"
+- "Show me all tasks assigned to Sarah"
+- "What tasks are blocked or at risk?"
+- "Summarize the work completed in the last sprint"
+- "What dependencies exist between my current tasks?"
+- "Which tasks have been in the 'In Progress' column the longest?"
+- "What's the estimated completion date based on current velocity?"
 
 ## Logging
 
