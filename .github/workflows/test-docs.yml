@@ -17,7 +17,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '20'
           cache: 'npm'
           cache-dependency-path: docs/package.json
 
@@ -50,7 +50,7 @@ jobs:
           mkdir -p dist
           cp -r * dist/ || true
           rm -rf dist/package.json dist/node_modules dist/dist || true
-          
+
           if [ ! -f dist/index.html ]; then
             echo "Error: Build failed - index.html not found in dist"
             exit 1
