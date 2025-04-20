@@ -56,6 +56,21 @@ kanbn decompose  # Use AI to break down tasks
 kanbn chat       # Chat with AI project assistant
 ```
 
+#### Environment Variables for AI Features
+
+```bash
+# Required for AI features
+OPENROUTER_API_KEY=your_api_key_here
+
+# Optional: Specify a different model (defaults to google/gemma-3-4b-it:free)
+OPENROUTER_MODEL=google/gemma-3-4b-it:free
+
+# Optional: Force real API calls in test environment
+USE_REAL_API=true
+```
+
+You can add these to a `.env` file in your project root.
+
 ## 🤝 Contributing
 
 We welcome contributions! Please read our [Contributing Guide](CONTRIBUTING.md) for details on our code of conduct and the process for submitting pull requests.
