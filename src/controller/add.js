@@ -196,6 +196,9 @@ async function interactiveAddUntrackedTasks(untrackedTasks, columnName, columnNa
  * @param {string} columnName
  */
 function createTask(taskData, columnName) {
+  // Create a Kanbn instance
+  const kanbn = new Kanbn();
+
   kanbn
   .createTask(taskData, columnName)
   .then(taskId => {
@@ -212,6 +215,9 @@ function createTask(taskData, columnName) {
  * @param {string} columnName
  */
 async function addUntrackedTasks(untrackedTasks, columnName) {
+  // Create a Kanbn instance
+  const kanbn = new Kanbn();
+
   for (let untrackedTask of untrackedTasks) {
     try {
       await kanbn.addUntrackedTaskToIndex(untrackedTask, columnName);
@@ -226,10 +232,17 @@ async function addUntrackedTasks(untrackedTasks, columnName) {
 }
 
 module.exports = async args => {
+  // Create a Kanbn instance
+  const kanbn = new Kanbn();
 
   // Make sure kanbn has been initialised
-  if (!await kanbn.initialised()) {
-    utility.error('Kanbn has not been initialised in this folder\nTry running: {b}kanbn init{b}');
+  try {
+    if (!await kanbn.initialised()) {
+      utility.warning('Kanbn has not been initialised in this folder\nTry running: {b}kanbn init{b}');
+      return;
+    }
+  } catch (error) {
+    utility.warning('Kanbn has not been initialised in this folder\nTry running: {b}kanbn init{b}');
     return;
   }
 
