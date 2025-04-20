@@ -1,21 +1,6 @@
-const { Kanbn } = require('../main');
+const { Kanbn, findTaskColumn } = require('../main');
 const utility = require('../utility');
 const inquirer = require('inquirer');
-
-/**
- * Find which column a task is in
- * @param {object} index The index object
- * @param {string} taskId The task id to find
- * @return {string|null} The column name, or null if the task isn't in the index
- */
-function findTaskColumn(index, taskId) {
-  for (let columnName in index.columns) {
-    if (index.columns[columnName].indexOf(taskId) !== -1) {
-      return columnName;
-    }
-  }
-  return null;
-}
 
 inquirer.registerPrompt('selectLine', require('inquirer-select-line'));
 
@@ -120,14 +105,20 @@ module.exports = async args => {
   }
 
   // Get column name if specified
-  const currentColumnName = await kanbn.findTaskColumn(taskId);
+  const currentColumnName = findTaskColumn(index, taskId);
   let columnName = currentColumnName;
-  if (args.column) {
+
+  // Check for column name in positional arguments (args._[2]) or named argument (args.column)
+  if (args._[2]) {
+    columnName = args._[2];
+  } else if (args.column) {
     columnName = utility.strArg(args.column);
-    if (columnNames.indexOf(columnName) === -1) {
-      utility.error(`Column "${columnName}" doesn't exist`);
-      return;
-    }
+  }
+
+  // Validate the column name
+  if (columnName !== currentColumnName && columnNames.indexOf(columnName) === -1) {
+    utility.error(`Column "${columnName}" doesn't exist`);
+    return;
   }
 
   // Re-use sprint option for position

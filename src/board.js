@@ -1,4 +1,4 @@
-const { Kanbn } = require('./main');
+const { Kanbn, findTaskColumn } = require('./main');
 const term = require('terminal-kit').terminal;
 const formatDate = require('dateformat');
 const utility = require('./utility');
@@ -16,6 +16,9 @@ module.exports = (() => {
     const kanbn = new Kanbn();
     const taskTemplate = kanbn.getTaskTemplate(index);
     const dateFormat = kanbn.getDateFormat(index);
+
+    // Make sure the task has the correct column
+    task.column = findTaskColumn(index, task.id);
 
     // Get an object containing custom fields from the task
     let customFields = {};
