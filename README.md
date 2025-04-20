@@ -13,7 +13,19 @@
 
 ## 🚀 Quick Start
 
+### Prerequisites
+
+- Node.js 20 or higher is required
+
 ```bash
+# Install Node.js 20 (if not already installed)
+# For macOS/Linux using nvm:
+nvm install 20
+nvm use 20
+
+# For Windows using the installer:
+# Download from https://nodejs.org/
+
 # Install kanbn globally
 npm install -g @tosin2013/kanbn
 
@@ -57,6 +69,8 @@ kanbn chat       # Chat with AI project assistant
 ```
 
 #### Environment Variables for AI Features
+
+> **Note:** AI features require Node.js 20 or higher
 
 ```bash
 # Required for AI features
