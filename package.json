@@ -4,7 +4,7 @@
   "description": "A CLI Kanban board with AI-powered task management features",
   "main": "index.js",
   "scripts": {
-    "test": "KANBN_ENV=test qunit ./test/**/*.test.js || exit 0",
+    "test": "KANBN_ENV=test qunit ./test/**/*.test.js",
     "docs": "./scripts/serve-docs.sh",
     "docs:install": "npm install -g docsify-cli"
   },
