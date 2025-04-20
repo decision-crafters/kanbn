@@ -2,7 +2,14 @@ const { Kanbn } = require('../main');
 const utility = require('../utility');
 const inquirer = require('inquirer');
 const axios = require('axios');
-const chalk = require('chalk');
+// Use a simple color function since chalk v5+ is ESM-only
+const chalk = {
+  yellow: (text) => `\x1b[33m${text}\x1b[0m`,
+  blue: (text) => `\x1b[34m${text}\x1b[0m`,
+  green: (text) => `\x1b[32m${text}\x1b[0m`,
+  gray: (text) => `\x1b[90m${text}\x1b[0m`
+};
+chalk.blue.bold = (text) => `\x1b[1;34m${text}\x1b[0m`;
 const getGitUsername = require('git-user-name');
 
 const kanbn = new Kanbn();
@@ -26,18 +33,27 @@ async function callOpenRouterAPI(message, projectContext) {
     const model = process.env.OPENROUTER_MODEL || 'google/gemma-3-4b-it:free';
     console.log(`Using model: ${model}`);
 
+    // Handle undefined project context
+    const safeContext = projectContext || {
+      projectName: 'Unnamed Project',
+      projectDescription: 'No description available',
+      taskCount: 0,
+      columns: [],
+      tags: []
+    };
+
     // Check if we're in a test environment
     if (process.env.KANBN_ENV === 'test' && !process.env.USE_REAL_API) {
       console.log('Skipping actual API call for testing...');
       const mockResponse = `I'm a project management assistant for your Kanbn board.
 
-Your project "${projectContext.projectName}" has ${projectContext.taskCount} tasks across ${projectContext.columns.length} columns.
+Your project "${safeContext.projectName}" has ${safeContext.taskCount} tasks${safeContext.columns.length > 0 ? ` across ${safeContext.columns.length} columns` : ''}.
 
 Based on your project data, here's a summary:
-- Project name: ${projectContext.projectName}
-- Project description: ${projectContext.projectDescription}
-- Tasks: ${projectContext.taskCount}
-- Columns: ${projectContext.columns.join(', ')}
+- Project name: ${safeContext.projectName}
+- Project description: ${safeContext.projectDescription}
+- Tasks: ${safeContext.taskCount}
+- Columns: ${safeContext.columns.length > 0 ? safeContext.columns.join(', ') : 'None'}
 
 How can I help you manage your project today?`;
 
@@ -58,11 +74,11 @@ How can I help you manage your project today?`;
             role: 'system',
             content: `You are a project management assistant for a Kanbn board.
             Here is the context of the project:
-            Project name: ${projectContext.projectName}
-            Project description: ${projectContext.projectDescription}
-            Number of tasks: ${projectContext.taskCount}
-            Columns: ${projectContext.columns.join(', ')}
-            Tags used: ${projectContext.tags ? projectContext.tags.join(', ') : 'None'}
+            Project name: ${safeContext.projectName}
+            Project description: ${safeContext.projectDescription}
+            Number of tasks: ${safeContext.taskCount}
+            Columns: ${safeContext.columns.length > 0 ? safeContext.columns.join(', ') : 'None'}
+            Tags used: ${safeContext.tags && safeContext.tags.length > 0 ? safeContext.tags.join(', ') : 'None'}
 
             Provide helpful, concise responses to help the user manage their project.`
           },
@@ -140,29 +156,36 @@ async function getProjectContext() {
     const tasks = await kanbn.loadAllTrackedTasks();
     const status = await kanbn.status(false, false, false, null, null);
 
+    if (!index || !index.columns) {
+      console.error('Error getting project context: Invalid index structure');
+      return null;
+    }
+
     return {
-      projectName: index.name,
-      projectDescription: index.description,
+      projectName: index.name || 'Unnamed Project',
+      projectDescription: index.description || 'No description available',
       columns: Object.keys(index.columns),
-      taskCount: tasks.length,
+      taskCount: tasks ? tasks.length : 0,
       tasksByColumn: await Object.keys(index.columns).reduce(async (pAcc, column) => {
         const acc = await pAcc;
-        const taskColumns = await Promise.all(
-          tasks.map(t => kanbn.findTaskColumn(t.id))
-        );
-        acc[column] = taskColumns.filter(c => c === column).length;
+        if (tasks && tasks.length > 0) {
+          const taskColumns = await Promise.all(
+            tasks.map(t => kanbn.findTaskColumn(t.id))
+          );
+          acc[column] = taskColumns.filter(c => c === column).length;
+        } else {
+          acc[column] = 0;
+        }
         return acc;
       }, Promise.resolve({})),
-      tags: [...new Set(tasks.flatMap(task =>
-        task.metadata.tags || []
-      ))],
-      statistics: status
+      tags: tasks ? [...new Set(tasks.flatMap(task =>
+        task.metadata && task.metadata.tags ? task.metadata.tags : []
+      ))] : [],
+      statistics: status || {}
     };
   } catch (error) {
     console.error('Error getting project context:', error.message);
-    return {
-      error: error.message
-    };
+    return null;
   }
 }
 
