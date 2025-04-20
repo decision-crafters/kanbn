@@ -66,9 +66,14 @@ async function exists(path) {
  * @return {Set} A set of task ids appearing in the index
  */
 function getTrackedTaskIds(index, columnName = null) {
+  // Ensure index.columns exists
+  if (!index || !index.columns) {
+    return new Set();
+  }
+
   return new Set(
     columnName
-      ? index.columns[columnName]
+      ? (index.columns[columnName] || [])
       : Object.keys(index.columns)
           .map((columnName) => index.columns[columnName])
           .flat()
