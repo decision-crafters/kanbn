@@ -2,3 +2,7 @@
 /resources
 .env
 .vscode
+
+# Test coverage
+.nyc_output/
+coverage/
