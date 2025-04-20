@@ -4,7 +4,8 @@ Usage:
 
 Description:
   Start an AI-powered chat with a project management assistant that understands your Kanbn board.
-  The assistant can help explain your project, analyze tasks, and provide guidance on project management.
+  The assistant maintains context across interactions, preserves chat history, and ensures board state consistency.
+  It can help explain your project, analyze tasks, manage relationships, and provide guidance on project management.
 
 Options:
   -m, --message     Specify a one-off message to send to the assistant
@@ -13,10 +14,17 @@ Options:
 Examples:
   kanbn chat
   kanbn c
+  kanbn chat --message "Create a new task called Project Setup"
+  kanbn chat --message "Add three subtasks to that task"
+  kanbn chat --message "Move the first subtask to In Progress"
   kanbn chat --message "Summarize my current project status"
 
 Notes:
   - Requires an OpenRouter API key set as OPENROUTER_API_KEY environment variable
+  - Maintains context across chat sessions for natural conversations
+  - Preserves board state consistency during operations
+  - Handles task relationships and dependencies
+  - Provides error recovery and fallback behaviors
   - Logs AI interactions for tracking and analysis
   - Interactive mode allows for continuous conversation
   - The assistant has access to your project context including tasks, columns, and statistics
