@@ -179,7 +179,7 @@ QUnit.test('should log AI interaction when OpenRouter API key is not available',
     const decompose = require('../../src/controller/decompose');
 
     const originalEnv = process.env.OPENROUTER_API_KEY;
-    delete process.env.OPENROUTER_API_KEY;
+    process.env.OPENROUTER_API_KEY = undefined;
 
     try {
       await decompose({
