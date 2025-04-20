@@ -7,6 +7,10 @@
   * [Task Structure](task-structure.md)
   * [AI Features](ai-features.md)
 
+* Demos
+  * [Chat Demo](demos/chat-demo.md)
+  * [Decompose Demo](demos/decompose-demo.md)
+
 * Commands
   * [add](commands/add)
   * [archive](commands/archive)

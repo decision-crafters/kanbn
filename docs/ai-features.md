@@ -2,6 +2,8 @@
 
 Kanbn now includes AI-powered features to help you manage your tasks more efficiently.
 
+> For detailed examples and usage instructions, check out the [Chat Demo](demos/chat-demo.md) and [Decompose Demo](demos/decompose-demo.md).
+
 ## AI Task Decomposition
 
 The `decompose` command allows you to break down complex tasks into smaller, actionable subtasks using AI.
@@ -27,6 +29,21 @@ kanbn decompose --task my-task
 
 - An OpenRouter API key set as `OPENROUTER_API_KEY` environment variable
 - Internet connection (falls back to basic decomposition when offline)
+
+### Environment Variables
+
+```bash
+# Required for AI features
+OPENROUTER_API_KEY=your_api_key_here
+
+# Optional: Specify a different model (defaults to google/gemma-3-4b-it:free)
+OPENROUTER_MODEL=google/gemma-3-4b-it:free
+
+# Optional: Force real API calls in test environment
+USE_REAL_API=true
+```
+
+You can add these to a `.env` file in your project root.
 
 ## Project Management Chat
 
