@@ -1,8 +1,68 @@
 # AI Features in Kanbn
 
-Kanbn now includes AI-powered features to help you manage your tasks more efficiently.
+Kanbn includes AI-powered features to help you manage your tasks more efficiently.
 
 > For detailed examples and usage instructions, check out the [Chat Demo](demos/chat-demo.md) and [Decompose Demo](demos/decompose-demo.md).
+
+## Project Management Chat
+
+The `chat` command provides an AI-powered project management assistant that understands your Kanbn board and can help with project management.
+
+```
+kanbn chat
+```
+
+### How It Works
+
+1. The AI assistant analyzes your project context (tasks, columns, statistics)
+2. You can ask questions about your project, get advice, or discuss task management
+3. The assistant provides insights based on your project data
+4. All chat interactions are logged for tracking and analysis
+
+### Chat Context Memory
+
+The chat feature maintains context across interactions:
+- Remembers recently discussed tasks and their relationships
+- Understands task references without explicit names
+- Preserves conversation history for natural dialogue
+- Maintains board state consistency during operations
+- Tracks task modifications and updates
+
+### Board State Validation
+
+During chat operations, the system ensures:
+- Task count accuracy across all operations
+- Column integrity and task assignments
+- Task metadata consistency
+- Index structure validity
+- Proper parent-child relationships
+- Error recovery and state preservation
+
+### Error Handling
+
+The chat feature includes robust error handling:
+- Network error recovery with graceful fallbacks
+- API rate limit management
+- Invalid operation prevention
+- State consistency preservation
+- Transaction-like operations for multi-step changes
+
+### Options
+
+- `-m, --message`: Send a one-off message to the assistant without entering interactive mode
+- `-h, --help`: Show help
+
+### Interactive Mode
+
+By default, the chat command enters interactive mode, allowing for continuous conversation:
+
+```
+📊 Kanbn Project Assistant 📊
+Type "exit" or "quit" to end the conversation
+
+You: What's the status of my project?
+Project Assistant: Your project "Example Project" has 12 tasks across 4 columns...
+```
 
 ## AI Task Decomposition
 
@@ -44,38 +104,6 @@ USE_REAL_API=true
 ```
 
 You can add these to a `.env` file in your project root.
-
-## Project Management Chat
-
-The `chat` command provides an AI-powered project management assistant that understands your Kanbn board and can help with project management.
-
-```
-kanbn chat
-```
-
-### How It Works
-
-1. The AI assistant analyzes your project context (tasks, columns, statistics)
-2. You can ask questions about your project, get advice, or discuss task management
-3. The assistant provides insights based on your project data
-4. All chat interactions are logged for tracking and analysis
-
-### Options
-
-- `-m, --message`: Send a one-off message to the assistant without entering interactive mode
-- `-h, --help`: Show help
-
-### Interactive Mode
-
-By default, the chat command enters interactive mode, allowing for continuous conversation:
-
-```
-📊 Kanbn Project Assistant 📊
-Type "exit" or "quit" to end the conversation
-
-You: What's the status of my project?
-Project Assistant: Your project "Example Project" has 12 tasks across 4 columns...
-```
 
 ## AI Interaction Tracking
 

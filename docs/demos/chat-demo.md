@@ -73,19 +73,76 @@ If you just want to ask a single question without entering interactive mode, you
 kanbn chat --message "What's the status of my project?"
 ```
 
-This will return a single response:
+## Complex Interactions
 
+The chat feature maintains context across interactions, allowing for natural multi-step workflows:
+
+### Task Creation and Management
+
+```bash
+You: Create a task called "Project Setup" with tag "high-priority"
+Project Assistant: Created task "Project Setup" with high-priority tag in the Backlog column.
+
+You: Add three subtasks: "Install Dependencies", "Configure Environment", and "Setup Tests"
+Project Assistant: Added three subtasks to "Project Setup":
+1. "Install Dependencies"
+2. "Configure Environment"
+3. "Setup Tests"
+All subtasks have been linked to the parent task.
+
+You: Move Install Dependencies to In Progress
+Project Assistant: Moved "Install Dependencies" to In Progress column.
+
+You: Add a comment "NPM packages installed successfully"
+Project Assistant: Added comment "NPM packages installed successfully" to "Install Dependencies" task.
+
+You: Mark it as completed and move it to Done
+Project Assistant: Updated "Install Dependencies":
+- Moved to Done column
+- Marked as completed
+- Updated completion timestamp
+Parent task "Project Setup" progress has been updated.
 ```
-Project Assistant: Your project "Website Development" has 6 tasks across 4 columns.
 
-Based on your project data, here's a summary:
-- Project name: Website Development
-- Project description: A project to develop the company website
-- Tasks: 6
-- Columns: Backlog (4), In Progress (1), Review (0), Done (1)
-- Tags: design, frontend, backend, content
+### Context-Aware Operations
 
-You have 1 task in progress: "Implement homepage design" which has been in progress for 3 days.
+The assistant maintains context between messages:
+
+```bash
+You: Create a task called "Feature Implementation"
+Project Assistant: Created task "Feature Implementation" in the Backlog column.
+
+You: Add a tag "in-progress" to that task
+Project Assistant: Added "in-progress" tag to "Feature Implementation".
+Note: Would you like me to move this task to the In Progress column as well?
+
+You: Yes, and create a subtask called "Unit Tests"
+Project Assistant: I've:
+1. Moved "Feature Implementation" to In Progress
+2. Created "Unit Tests" as a subtask
+3. Linked the subtask to the parent task
+
+You: What's the current status of the feature implementation?
+Project Assistant: Here's the status of "Feature Implementation":
+- Current column: In Progress
+- Tags: in-progress
+- Subtasks: Unit Tests (in Backlog)
+- Progress: 0% (0/1 subtasks completed)
+```
+
+### Error Recovery
+
+The chat feature handles errors gracefully:
+
+```bash
+You: Move task XYZ to Done
+Project Assistant: I couldn't find a task with ID "XYZ". Here are similar tasks I found:
+1. Feature Implementation
+2. Project Setup
+Which task would you like to move to Done?
+
+You: Feature Implementation
+Project Assistant: Moved "Feature Implementation" to Done column.
 ```
 
 ## Advanced Usage
@@ -124,4 +181,11 @@ All chat interactions are automatically logged as special task files with the `a
 kanbn find --tag ai-interaction
 ```
 
-This helps you keep track of your conversations with the AI assistant and the advice it provides.
+The logs include:
+- User messages and assistant responses
+- Task operations performed
+- Board state changes
+- Error handling events
+- Context preservation details
+
+This helps you keep track of your conversations with the AI assistant and the actions it performs.
