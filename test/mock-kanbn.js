@@ -31,52 +31,70 @@ const config = {
   archivedTasks: []
 };
 
-// Mock kanbn library
-const kanbn = {
+// Mock Kanbn class
+class Kanbn {
   async initialised() {
     return config.initialised;
-  },
+  }
   async getMainFolder() {
     return config.mainFolderName;
-  },
+  }
   async initialise(options = {}) {
     config.output = options;
-  },
+  }
   async getIndex() {
     return config.index;
-  },
+  }
   async findTrackedTasks() {
     return config.trackedTasks;
-  },
+  }
   async findUntrackedTasks() {
     return config.untrackedTasks;
-  },
+  }
   async taskExists(taskId) {
     if (!config.taskExists) {
       throw new Error(`No task file found with id "${taskId}"`);
     }
-  },
+    return true;
+  }
+  async getTask(taskId) {
+    return config.task;
+  }
+  async loadTask(taskId) {
+    return config.task;
+  }
+  async findTaskColumn(taskId) {
+    return 'Test Column';
+  }
+  async updateTask(taskId, taskData) {
+    config.output = {
+      taskId,
+      taskData
+    };
+    return taskId;
+  }
   async createTask(taskData, columnName) {
     config.output = {
       taskData,
       columnName
     };
-  },
+    return 'new-task-' + Math.random().toString(36).substring(7);
+  }
   async addUntrackedTaskToIndex(untrackedTask, columnName) {
     config.output = {
       untrackedTask,
       columnName
     };
-  },
+  }
   async listArchivedTasks() {
     return config.archivedTasks;
-  },
+  }
   async archiveTask(taskId) {
     config.output = {
       taskId
     };
     return taskId;
-  },
+  }
   async restoreTask(taskId, columnName) {
     config.output = {
       taskId,
@@ -84,6 +102,35 @@ const kanbn = {
     };
     return taskId;
   }
+  async status() {
+    return {
+      relationMetrics: {
+        parentTasks: 1,
+        childTasks: 2
+      }
+    };
+  }
+}
+
+// For backward compatibility
+const kanbn = {
+  initialised: async () => await new Kanbn().initialised(),
+  getMainFolder: async () => await new Kanbn().getMainFolder(),
+  initialise: async (options = {}) => await new Kanbn().initialise(options),
+  getIndex: async () => await new Kanbn().getIndex(),
+  findTrackedTasks: async () => await new Kanbn().findTrackedTasks(),
+  findUntrackedTasks: async () => await new Kanbn().findUntrackedTasks(),
+  taskExists: async (taskId) => await new Kanbn().taskExists(taskId),
+  getTask: async (taskId) => await new Kanbn().getTask(taskId),
+  loadTask: async (taskId) => await new Kanbn().loadTask(taskId),
+  findTaskColumn: async (taskId) => await new Kanbn().findTaskColumn(taskId),
+  updateTask: async (taskId, taskData) => await new Kanbn().updateTask(taskId, taskData),
+  createTask: async (taskData, columnName) => await new Kanbn().createTask(taskData, columnName),
+  addUntrackedTaskToIndex: async (untrackedTask, columnName) => await new Kanbn().addUntrackedTaskToIndex(untrackedTask, columnName),
+  listArchivedTasks: async () => await new Kanbn().listArchivedTasks(),
+  archiveTask: async (taskId) => await new Kanbn().archiveTask(taskId),
+  restoreTask: async (taskId, columnName) => await new Kanbn().restoreTask(taskId, columnName),
+  status: async () => await new Kanbn().status()
 };
 
-module.exports = { config, kanbn };
+module.exports = { config, kanbn, Kanbn };

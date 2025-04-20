@@ -88,6 +88,8 @@ const mockMain = {
   findTrackedTasks: async function() { return mockKanbnInstance.findTrackedTasks(); },
   taskExists: async function() { return mockKanbnInstance.taskExists(); },
   getTask: async function() { return mockKanbnInstance.getTask(); },
+  loadTask: async function() { return mockKanbnInstance.getTask(); },
+  getIndex: async function() { return mockKanbnInstance.getIndex(); },
   status: async function() { return mockKanbnInstance.status(); },
   findTaskColumn: async function() { return mockKanbnInstance.findTaskColumn(); },
   createTask: async function() { return mockKanbnInstance.createTask(); },
