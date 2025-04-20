@@ -134,3 +134,4 @@ const kanbn = {
 };
 
 module.exports = { config, kanbn, Kanbn };
+module.exports.Kanbn = Kanbn;

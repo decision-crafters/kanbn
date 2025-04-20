@@ -6,6 +6,7 @@ const utility = require('../utility');
  * @param {string} taskId
  */
 function archiveTask(taskId) {
+  const kanbn = new Kanbn();
   kanbn
   .archiveTask(taskId)
   .then(taskId => {
@@ -20,6 +21,7 @@ function archiveTask(taskId) {
  * Show a list of archived task filenames
  */
 function listArchivedTasks() {
+  const kanbn = new Kanbn();
   kanbn
   .listArchivedTasks()
   .then(archivedTasks => {
@@ -31,9 +33,16 @@ function listArchivedTasks() {
 }
 
 module.exports = async args => {
+  // Create a Kanbn instance
+  const kanbn = new Kanbn();
 
   // Make sure kanbn has been initialised
-  if (!await kanbn.initialised()) {
+  try {
+    if (!await kanbn.initialised()) {
+      utility.error('Kanbn has not been initialised in this folder\nTry running: {b}kanbn init{b}');
+      return;
+    }
+  } catch (error) {
     utility.error('Kanbn has not been initialised in this folder\nTry running: {b}kanbn init{b}');
     return;
   }

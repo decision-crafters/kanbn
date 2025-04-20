@@ -6,6 +6,7 @@ const inquirer = require('inquirer');
  * Nuke kanbn
  */
 function removeAll() {
+  const kanbn = new Kanbn();
   kanbn.removeAll()
   .then(() => {
     console.log('kanbn has been removed');
@@ -16,9 +17,16 @@ function removeAll() {
 }
 
 module.exports = async args => {
+  // Create a Kanbn instance
+  const kanbn = new Kanbn();
 
   // Make sure kanbn has been initialised
-  if (!await kanbn.initialised()) {
+  try {
+    if (!await kanbn.initialised()) {
+      utility.error('Kanbn has not been initialised in this folder\nTry running: {b}kanbn init{b}');
+      return;
+    }
+  } catch (error) {
     utility.error('Kanbn has not been initialised in this folder\nTry running: {b}kanbn init{b}');
     return;
   }
