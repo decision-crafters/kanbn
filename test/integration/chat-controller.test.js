@@ -2,7 +2,8 @@ const path = require('path');
 const fs = require('fs');
 const rimraf = require('rimraf');
 const mockRequire = require('mock-require');
-const kanbn = require('../../src/main');
+const { Kanbn } = require('../../src/main');
+const kanbn = new Kanbn();
 
 const testFolder = path.join(__dirname, '..', 'test-chat');
 const testTasksFolder = path.join(testFolder, '.kanbn', 'tasks');
