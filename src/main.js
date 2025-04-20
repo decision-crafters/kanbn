@@ -2419,3 +2419,7 @@ class Kanbn {
 
 module.exports.Kanbn = Kanbn;
 module.exports.findTaskColumn = findTaskColumn;
+
+// Export the Kanbn class as both a named export and a default export
+// This ensures compatibility with both import styles
+module.exports.default = { Kanbn, findTaskColumn };
