@@ -39,6 +39,9 @@ async function interactive(text, author) {
  * @param {string} author
  */
 function addComment(taskId, text, author) {
+  const { Kanbn } = require('../main');
+  const kanbn = new Kanbn();
+
   kanbn
   .comment(taskId, text, author)
   .then(taskId => {
@@ -50,6 +53,8 @@ function addComment(taskId, text, author) {
 }
 
 module.exports = async args => {
+  const { Kanbn } = require('../main');
+  const kanbn = new Kanbn();
 
   // Make sure kanbn has been initialised
   if (!await kanbn.initialised()) {

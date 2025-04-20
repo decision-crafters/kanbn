@@ -8,6 +8,10 @@ const inquirer = require('inquirer');
  * @param {boolean} removeFile
  */
 function removeTask(taskId, removeFile) {
+  // Create a Kanbn instance
+  const { Kanbn } = require('../main');
+  const kanbn = new Kanbn();
+
   kanbn
   .deleteTask(taskId, removeFile)
   .then(taskId => {
@@ -19,6 +23,9 @@ function removeTask(taskId, removeFile) {
 }
 
 module.exports = async args => {
+  // Create a Kanbn instance
+  const { Kanbn } = require('../main');
+  const kanbn = new Kanbn();
 
   // Make sure kanbn has been initialised
   if (!await kanbn.initialised()) {

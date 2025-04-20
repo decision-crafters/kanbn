@@ -43,6 +43,7 @@ async function interactive(columns, columnName, columnNames, sortedColumnNames, 
  * @param {boolean} [relative=false]
  */
 function moveTask(taskId, columnName, position = null, relative = false) {
+  const { Kanbn } = require('../main');
   const kanbn = new Kanbn();
   kanbn
   .moveTask(taskId, columnName, position, relative)
