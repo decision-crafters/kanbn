@@ -2,6 +2,13 @@ const { Kanbn } = require('../main');
 const utility = require('../utility');
 const inquirer = require('inquirer');
 const axios = require('axios');
+const EventEmitter = require('events');
+
+// Create global event bus
+const eventBus = new EventEmitter();
+
+// Export event bus for testing
+module.exports.eventBus = eventBus;
 // Use a simple color function since chalk v5+ is ESM-only
 const chalk = {
   yellow: (text) => `\x1b[33m${text}\x1b[0m`,
@@ -50,7 +57,14 @@ async function callOpenRouterAPI(message, projectContext) {
     // Check if we're in a test environment or CI environment
     if (process.env.KANBN_ENV === 'test' || process.env.CI === 'true') {
       console.log('Skipping actual API call for testing or CI environment...');
-      const mockResponse = `I'm a project management assistant for your Kanbn board.
+      
+      // Load conversation history
+      const history = global.chatHistory || [];
+      
+      // Create mock response
+      const mockResponse = {
+        role: 'assistant',
+        content: `I'm a project management assistant for your Kanbn board.
 
 Your project "${safeContext.projectName}" has ${safeContext.taskCount} tasks${safeContext.columns.length > 0 ? ` across ${safeContext.columns.length} columns` : ''}.
 
@@ -60,13 +74,46 @@ Based on your project data, here's a summary:
 - Tasks: ${safeContext.taskCount}
 - Columns: ${safeContext.columns.length > 0 ? safeContext.columns.join(', ') : 'None'}
 
-How can I help you manage your project today?`;
+How can I help you manage your project today?`
+      };
+
+      // Update conversation history
+      global.chatHistory = [
+        ...history,
+        { role: 'user', content: message },
+        mockResponse
+      ];
 
       console.log('Logging AI interaction...');
-      await logAIInteraction('chat', message, mockResponse);
+      await logAIInteraction('chat', message, mockResponse.content);
 
-      return mockResponse;
+      return mockResponse.content;
     }
+
+    // Load conversation history with size limit
+    const MAX_HISTORY = 20;
+    const history = (global.chatHistory || []).slice(-MAX_HISTORY);
+
+    // Prepare messages array with system prompt and history
+    const messages = [
+      {
+        role: 'system',
+        content: `You are a project management assistant for a Kanbn board.
+        Here is the context of the project:
+        Project name: ${safeContext.projectName}
+        Project description: ${safeContext.projectDescription}
+        Number of tasks: ${safeContext.taskCount}
+        Columns: ${safeContext.columns.length > 0 ? safeContext.columns.join(', ') : 'None'}
+        Tags used: ${safeContext.tags && safeContext.tags.length > 0 ? safeContext.tags.join(', ') : 'None'}
+
+        Provide helpful, concise responses to help the user manage their project.`
+      },
+      ...history,
+      {
+        role: 'user',
+        content: message
+      }
+    ];
 
     // Make the actual API call
     console.log('Making API call to OpenRouter...');
@@ -74,39 +121,31 @@ How can I help you manage your project today?`;
       'https://openrouter.ai/api/v1/chat/completions',
       {
         model: model,
-        messages: [
-          {
-            role: 'system',
-            content: `You are a project management assistant for a Kanbn board.
-            Here is the context of the project:
-            Project name: ${safeContext.projectName}
-            Project description: ${safeContext.projectDescription}
-            Number of tasks: ${safeContext.taskCount}
-            Columns: ${safeContext.columns.length > 0 ? safeContext.columns.join(', ') : 'None'}
-            Tags used: ${safeContext.tags && safeContext.tags.length > 0 ? safeContext.tags.join(', ') : 'None'}
-
-            Provide helpful, concise responses to help the user manage their project.`
-          },
-          {
-            role: 'user',
-            content: message
-          }
-        ]
+        messages: messages
       },
       {
-        headers: {
-          'Authorization': `Bearer ${apiKey}`,
-          'HTTP-Referer': 'https://github.com/decision-crafters/kanbn',
-          'X-Title': 'Kanbn Project Assistant'
-        }
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+        'HTTP-Referer': 'https://github.com/decision-crafters/kanbn',
+        'X-Title': 'Kanbn Project Assistant'
+      }
       }
     );
 
-    const aiResponse = response.data.choices[0].message.content;
-    console.log('Logging AI interaction...');
-    await logAIInteraction('chat', message, aiResponse);
+    const aiResponse = response.data.choices[0].message;
 
-    return aiResponse;
+    // Update conversation history
+    global.chatHistory = [
+      ...history,
+      { role: 'user', content: message },
+      { role: 'assistant', content: aiResponse.content }
+    ];
+
+    console.log('Logging AI interaction...');
+    await logAIInteraction('chat', message, aiResponse.content);
+
+    return aiResponse.content;
   } catch (error) {
     console.error('Error in OpenRouter API:', error);
     return `I'm having trouble with the project assistant. ${error.message}`;
@@ -161,9 +200,18 @@ async function logAIInteraction(type, input, output) {
         console.log('Empty columns object, creating default Backlog column');
       }
 
-      await kanbn.createTask(taskData, 'Backlog', true);
+      const createdTaskId = await kanbn.createTask(taskData, 'Backlog', true);
+      eventBus.emit('taskCreated', {
+        taskId: createdTaskId,
+        column: 'Backlog',
+        taskData,
+        source: 'chat'
+      });
+      eventBus.emit('contextUpdated', { taskId: createdTaskId, type: 'chat' });
+      return createdTaskId;
     } catch (createError) {
       console.log('Skipping AI interaction logging:', createError.message);
+      eventBus.emit('taskCreationFailed', { error: createError.message });
     }
 
     return taskId;
@@ -200,7 +248,7 @@ async function getProjectContext() {
     }
 
     const columns = Object.keys(index.columns);
-    return {
+    const projectContext = {
       projectName: index.name || 'Unnamed Project',
       projectDescription: index.description || 'No description available',
       columns: Object.keys(index.columns),
@@ -220,6 +268,9 @@ async function getProjectContext() {
       ))] : [],
       statistics: status || {}
     };
+
+    eventBus.emit('contextQueried', { context: projectContext });
+    return projectContext;
   } catch (error) {
     console.error('Error getting project context:', error.message);
     return null;
@@ -295,14 +346,20 @@ module.exports = async args => {
         const message = utility.strArg(args.message);
         const response = await callOpenRouterAPI(message, projectContext);
         console.log(chalk.yellow('Project Assistant: ') + response);
+        return response;
       } else {
         await interactiveChat(projectContext);
+        return '';
       }
     } catch (error) {
       console.error('Error in chat command:', error);
-      utility.error('Error processing chat command: ' + error.message);
+      const errorMessage = 'Error processing chat command: ' + error.message;
+      utility.error(errorMessage);
+      return errorMessage;
     }
   } catch (error) {
-    utility.error('Error in chat command: ' + error.message);
+    const errorMessage = 'Error in chat command: ' + error.message;
+    utility.error(errorMessage);
+    return errorMessage;
   }
 };
