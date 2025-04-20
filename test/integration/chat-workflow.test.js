@@ -67,6 +67,17 @@ class MockKanbn {
             )
         };
     }
+
+    async findTaskColumn(index, taskId) {
+        if (index && index.columns) {
+            for (const [column, tasks] of Object.entries(index.columns)) {
+                if (tasks && tasks.includes && tasks.includes(taskId)) {
+                    return column;
+                }
+            }
+        }
+        return null;
+    }
 }
 
 QUnit.module('Chat Workflow', {
@@ -75,14 +86,31 @@ QUnit.module('Chat Workflow', {
         this.mockKanbn = new MockKanbn();
 
         mockRequire('../../src/main', {
-            Kanbn: () => this.mockKanbn,
+            Kanbn: function() { return this.mockKanbn; }.bind(this),
             findTaskColumn: (index, taskId) => {
-                for (const [column, tasks] of Object.entries(index.columns)) {
-                    if (tasks.includes(taskId)) {
-                        return column;
+                if (index && index.columns) {
+                    for (const [column, tasks] of Object.entries(index.columns)) {
+                        if (tasks && tasks.includes && tasks.includes(taskId)) {
+                            return column;
+                        }
                     }
                 }
                 return null;
+            },
+            // Export the Kanbn class as both a named export and a property
+            // This ensures compatibility with both import styles
+            default: {
+                Kanbn: function() { return this.mockKanbn; }.bind(this),
+                findTaskColumn: (index, taskId) => {
+                    if (index && index.columns) {
+                        for (const [column, tasks] of Object.entries(index.columns)) {
+                            if (tasks && tasks.includes && tasks.includes(taskId)) {
+                                return column;
+                            }
+                        }
+                    }
+                    return null;
+                }
             }
         });
 
@@ -128,9 +156,9 @@ QUnit.test('should handle complex chat workflows', async function(assert) {
 
     // Verify subtasks
     tasks = await this.mockKanbn.loadAllTrackedTasks();
-    const subtasks = tasks.filter(t => 
-        t.name?.includes('Dependencies') || 
-        t.name?.includes('Environment') || 
+    const subtasks = tasks.filter(t =>
+        t.name?.includes('Dependencies') ||
+        t.name?.includes('Environment') ||
         t.name?.includes('Tests')
     );
     assert.equal(subtasks.length, 3, 'Should have three subtasks');
@@ -194,7 +222,7 @@ QUnit.test('should maintain user context across interactions', async function(as
     featureTask = tasks.find(t => t.name?.includes('Feature Implementation'));
     const { findTaskColumn } = require('../../src/main');
     const column = findTaskColumn(this.mockKanbn.index, featureTask.id);
-    
+
     assert.equal(column, 'In Progress', 'Task should be moved to In Progress');
     assert.ok(
         featureTask.comments?.some(c => c.text.includes('Starting implementation')),
@@ -210,7 +238,7 @@ QUnit.test('should maintain user context across interactions', async function(as
     const subtask = tasks.find(t => t.name?.includes('Unit Tests'));
     assert.ok(subtask, 'Subtask should exist');
     assert.ok(
-        subtask.metadata.tags?.includes('subtask') || 
+        subtask.metadata.tags?.includes('subtask') ||
         subtask.metadata.related?.includes(featureTask.id),
         'Subtask should be linked to parent task'
     );

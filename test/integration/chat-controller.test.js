@@ -118,7 +118,10 @@ QUnit.module('Chat controller tests', {
     mockRequire('axios', mockAxios);
     mockRequire('../../src/main', {
       Kanbn: MockKanbnValidColumns,
-      findTaskColumn: () => 'Backlog'
+      findTaskColumn: () => 'Backlog',
+      // Export the Kanbn class as both a named export and a property
+      // This ensures compatibility with both import styles
+      default: { Kanbn: MockKanbnValidColumns, findTaskColumn: () => 'Backlog' }
     });
   },
 
@@ -164,7 +167,7 @@ QUnit.test('should handle null columns gracefully', async function(assert) {
 
     // Load the chat module with our mocks
     const chat = require('../../src/controller/chat');
-    
+
     // Call the chat function
     await chat({
       message: 'Test message'
@@ -182,7 +185,7 @@ QUnit.test('should handle empty columns object gracefully', async function(asser
 
     // Load the chat module with our mocks
     const chat = require('../../src/controller/chat');
-    
+
     // Call the chat function
     await chat({
       message: 'Test message'

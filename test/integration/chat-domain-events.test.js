@@ -101,7 +101,7 @@ QUnit.module('Chat Domain Events', {
     // Create domain event bus
     const eventBus = new DomainEventBus();
     this.eventBus = eventBus;
-    
+
     // Set up mocks
     const MockKanbnWithEvents = class extends DomainMockKanbn {
       constructor() {
@@ -115,6 +115,16 @@ QUnit.module('Chat Domain Events', {
       getProjectContext: async () => {
         const kanbn = new MockKanbnWithEvents(eventBus);
         return kanbn.getProjectContext();
+      },
+      // Export the Kanbn class as both a named export and a property
+      // This ensures compatibility with both import styles
+      default: {
+        Kanbn: MockKanbnWithEvents,
+        findTaskColumn: () => 'Backlog',
+        getProjectContext: async () => {
+          const kanbn = new MockKanbnWithEvents(eventBus);
+          return kanbn.getProjectContext();
+        }
       }
     });
 
@@ -145,14 +155,14 @@ QUnit.module('Chat Domain Events', {
 
 QUnit.test('chat should emit task creation event when logging interaction', async function(assert) {
     const chat = require('../../src/controller/chat');
-    
+
     await chat({
         message: 'Create a new task'
     });
 
     const events = this.eventBus.getEvents();
     const taskCreatedEvent = events.find(e => e.event === 'taskCreated');
-    
+
     assert.ok(taskCreatedEvent, 'Task creation event was emitted');
     assert.equal(taskCreatedEvent.args[0].column, 'Backlog', 'Task created in correct column');
     assert.ok(taskCreatedEvent.args[0].taskData.metadata.tags.includes('ai-interaction'), 'Task has correct tag');
@@ -160,21 +170,21 @@ QUnit.test('chat should emit task creation event when logging interaction', asyn
 
 QUnit.test('chat should maintain context across multiple interactions', async function(assert) {
     const chat = require('../../src/controller/chat');
-    
+
     // First interaction
     await chat({
         message: 'What tasks do we have?'
     });
-    
+
     const firstEvents = this.eventBus.getEvents();
     assert.ok(firstEvents.some(e => e.event === 'contextQueried'), 'Context query event emitted');
-    
+
     // Second interaction
     this.eventBus.clear();
     await chat({
         message: 'Create a new task'
     });
-    
+
     const secondEvents = this.eventBus.getEvents();
     assert.ok(secondEvents.some(e => e.event === 'taskCreated'), 'Task creation event emitted');
     assert.ok(secondEvents.some(e => e.event === 'contextUpdated'), 'Context update event emitted');
@@ -182,18 +192,18 @@ QUnit.test('chat should maintain context across multiple interactions', async fu
 
 QUnit.test('chat should handle task state changes', async function(assert) {
     const chat = require('../../src/controller/chat');
-    
+
     // Simulate task state change
     this.eventBus.emit('taskMoved', {
         taskId: 'test-task',
         fromColumn: 'Backlog',
         toColumn: 'In Progress'
     });
-    
+
     await chat({
         message: 'What is the project status?'
     });
-    
+
     const events = this.eventBus.getEvents();
     assert.ok(events.some(e => e.event === 'contextQueried'), 'Context query event emitted');
     assert.ok(events.some(e => e.event === 'statusReported'), 'Status report event emitted');

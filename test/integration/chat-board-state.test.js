@@ -70,6 +70,17 @@ class MockKanbn {
             )
         };
     }
+
+    async findTaskColumn(index, taskId) {
+        if (index && index.columns) {
+            for (const [column, tasks] of Object.entries(index.columns)) {
+                if (tasks && tasks.includes && tasks.includes(taskId)) {
+                    return column;
+                }
+            }
+        }
+        return null;
+    }
 }
 
 // Board state validation helpers
@@ -83,7 +94,7 @@ const validateBoardState = {
         // Verify each task appears in exactly one column
         const taskIds = new Set(kanbn.tasks.keys());
         const columnTasks = new Set();
-        
+
         Object.values(kanbn.columns).forEach(tasks => {
             tasks.forEach(taskId => {
                 assert.ok(!columnTasks.has(taskId), `Task ${taskId} should not appear in multiple columns`);
@@ -120,14 +131,31 @@ QUnit.module('Chat Board State', {
         this.mockKanbn = new MockKanbn();
 
         mockRequire('../../src/main', {
-            Kanbn: () => this.mockKanbn,
+            Kanbn: function() { return this.mockKanbn; }.bind(this),
             findTaskColumn: (index, taskId) => {
-                for (const [column, tasks] of Object.entries(index.columns)) {
-                    if (tasks.includes(taskId)) {
-                        return column;
+                if (index && index.columns) {
+                    for (const [column, tasks] of Object.entries(index.columns)) {
+                        if (tasks && tasks.includes && tasks.includes(taskId)) {
+                            return column;
+                        }
                     }
                 }
                 return null;
+            },
+            // Export the Kanbn class as both a named export and a property
+            // This ensures compatibility with both import styles
+            default: {
+                Kanbn: function() { return this.mockKanbn; }.bind(this),
+                findTaskColumn: (index, taskId) => {
+                    if (index && index.columns) {
+                        for (const [column, tasks] of Object.entries(index.columns)) {
+                            if (tasks && tasks.includes && tasks.includes(taskId)) {
+                                return column;
+                            }
+                        }
+                    }
+                    return null;
+                }
             }
         });
 

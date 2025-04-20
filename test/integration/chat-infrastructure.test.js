@@ -39,7 +39,7 @@ class MockAxios {
     post(url, data, config) {
         this.requestCount++;
         this.requests.push({ url, data, config });
-        
+
         if (this.errorResponses.length > 0) {
             const error = this.errorResponses.shift();
             return Promise.reject(error);
@@ -166,6 +166,19 @@ QUnit.module('Chat Infrastructure', {
                     }
                 }
                 return null;
+            },
+            // Export the Kanbn class as both a named export and a property
+            // This ensures compatibility with both import styles
+            default: {
+                Kanbn: function() { return mockKanbn; },
+                findTaskColumn: (index, taskId) => {
+                    for (const [column, tasks] of Object.entries(index.columns)) {
+                        if (tasks.includes(taskId)) {
+                            return column;
+                        }
+                    }
+                    return null;
+                }
             }
         });
         this.mockKanbn = mockKanbn;
@@ -192,15 +205,15 @@ QUnit.module('Chat Infrastructure', {
         this.mockAxios.reset();
         this.mockFS.files.clear();
         this.mockFS.errors.clear();
-        
+
         // Reset chat history
         global.chatHistory = [];
-        
+
         // Set up test directory and project
         this.mockFS.mkdirSync(testFolder, { recursive: true });
         this.mockFS.mkdirSync(path.join(testFolder, '.kanbn'));
         this.mockFS.mkdirSync(path.join(testFolder, '.kanbn', 'tasks'));
-        
+
         // Initialize project index
         this.mockFS.writeFileSync(path.join(testFolder, '.kanbn', 'index.md'), `
 # Test Project
@@ -222,69 +235,69 @@ Test Infrastructure
 
 QUnit.test('should handle network errors gracefully', async function(assert) {
     const chat = require('../../src/controller/chat');
-    
+
     // Reset environment
     process.env.KANBN_ENV = 'production';
-    
+
     this.mockAxios.addError(new Error('Network Error'));
     const result = await chat({ message: 'Test message' });
     assert.equal(typeof result, 'string', 'Returns string response');
     assert.ok(result.includes("having trouble"), 'Returns error message');
     assert.ok(result.includes('Network Error'), 'Includes specific error');
-    
+
     // Restore test environment
     process.env.KANBN_ENV = 'test';
 });
 
 QUnit.test('should handle invalid API key', async function(assert) {
     const chat = require('../../src/controller/chat');
-    
+
     delete process.env.OPENROUTER_API_KEY;
-    
+
     const result = await chat({ message: 'Test message' });
     assert.equal(typeof result, 'string', 'Returns string response');
     assert.ok(result.includes('OpenRouter API key not found'), 'Returns API key error');
-    
+
     process.env.OPENROUTER_API_KEY = 'test-api-key';
 });
 
 QUnit.test('should handle rate limit responses', async function(assert) {
     const chat = require('../../src/controller/chat');
-    
+
     // Set production mode to trigger error handling
     process.env.KANBN_ENV = 'production';
-    
+
     this.mockAxios.addError(new Error('Rate limit exceeded'));
-    
+
     const result = await chat({ message: 'Test message' });
     assert.equal(typeof result, 'string', 'Returns string response');
     assert.ok(result.includes("having trouble"), 'Returns error message');
     assert.ok(result.includes("Rate limit"), 'Includes rate limit info');
-    
+
     // Restore test environment
     process.env.KANBN_ENV = 'test';
 });
 
 QUnit.test('should persist chat history', async function(assert) {
     const chat = require('../../src/controller/chat');
-    
+
     const result = await chat({ message: 'Test message' });
     assert.equal(typeof result, 'string', 'Returns string response');
     assert.ok(result.includes('project management assistant'), 'Returns mock response');
-    
+
     // Verify task creation
     const tasks = Array.from(this.mockKanbn.tasks.values());
     const aiTask = tasks.find(t => t.metadata?.tags?.includes('ai-interaction'));
-    
+
     assert.ok(aiTask, 'Chat interaction was logged');
     assert.ok(aiTask.comments?.[0]?.text.includes('Test message'), 'Log contains user message');
 });
 
 QUnit.test('should handle persistence errors', async function(assert) {
     const chat = require('../../src/controller/chat');
-    
+
     this.mockFS.setFileError(path.join(testFolder, '.kanbn', 'tasks', 'ai-interaction'), new Error('Write failed'));
-    
+
     const result = await chat({ message: 'Test message' });
     assert.equal(typeof result, 'string', 'Returns string response');
     assert.ok(result.includes('project management assistant'), 'Returns response despite error');
@@ -292,7 +305,7 @@ QUnit.test('should handle persistence errors', async function(assert) {
 
 QUnit.test('should maintain chat context across sessions', async function(assert) {
     const chat = require('../../src/controller/chat');
-    
+
     // Set production mode to force real API calls
     process.env.KANBN_ENV = 'production';
 
@@ -328,7 +341,7 @@ QUnit.test('should maintain chat context across sessions', async function(assert
         ['Tell me about the project', 'Update the status'],
         'Messages in correct order'
     );
-    
+
     // Restore test environment
     process.env.KANBN_ENV = 'test';
 });
