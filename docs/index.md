@@ -2,7 +2,7 @@
 
 > Your intelligent command-line task management companion
 
-Kanbn combines the simplicity of markdown-based task management with the power of AI to help you:
+Kanbn combines the simplicity of markdown-based task management with the power of AI to help you organize and track your work effectively.
 
 ## 🎯 Why Kanbn?
 
@@ -18,34 +18,59 @@ Kanbn combines the simplicity of markdown-based task management with the power o
 # Install kanbn globally
 npm install -g @tosin2013/kanbn
 
-# Initialize in your project
-cd my-project
+# Initialize a new board
 kanbn init
+
+# Add a task
+kanbn add
+
+# View your board
+kanbn board
 ```
 
 [Quick Start Guide →](quick-start.md)
 
-## ✨ AI Features
-
-Kanbn's AI features help you work smarter:
+## 📦 Core Commands
 
 ```bash
-# Break down a complex task
-kanbn decompose --task my-complex-task
+kanbn help      # Show help menu
+kanbn init      # Initialize kanbn board
+kanbn board     # Show the kanbn board
+kanbn task      # Show a kanbn task
+kanbn add       # Add a kanbn task
+kanbn edit      # Edit a kanbn task
+kanbn move      # Move a task to another column
+kanbn status    # Get project statistics
+```
 
-# Chat with your project assistant
+## ✨ AI Features
+
+```bash
+# Break down complex tasks
+kanbn decompose
+
+# Get AI project assistance
 kanbn chat
 ```
 
 [Learn More About AI Features →](ai-features.md)
 
-## 📚 Documentation
+## 📚 Documentation Sections
 
 - [Quick Start Guide](quick-start.md)
 - [Index Structure](index-structure.md)
 - [Task Structure](task-structure.md)
 - [Advanced Configuration](advanced-configuration.md)
 - [AI Features](ai-features.md)
+
+## 🔍 Command Reference
+
+Get detailed help for any command:
+```bash
+kanbn help <command>
+# or
+kanbn <command> --help
+```
 
 ## 🤝 Contributing
 

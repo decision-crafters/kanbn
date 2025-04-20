@@ -17,31 +17,43 @@
 # Install kanbn globally
 npm install -g @tosin2013/kanbn
 
-# Initialize a new kanbn board in your project
-cd my-project
+# Initialize a new board
 kanbn init
 
-# Add your first task
-kanbn add -n "Setup project structure"
+# Add a task
+kanbn add
 
 # View your board
 kanbn board
+
+# Get help for any command
+kanbn help <command>
 ```
 
 ## 📚 Documentation
 
 For full documentation, visit [https://decision-crafters.github.io/kanbn/](https://decision-crafters.github.io/kanbn/)
 
-### AI Features
-
-Kanbn includes powerful AI features to help you manage tasks more effectively:
+### Available Commands
 
 ```bash
-# Break down a complex task into subtasks
-kanbn decompose --task my-complex-task
+kanbn help      # Show help menu
+kanbn init      # Initialize kanbn board
+kanbn board     # Show the kanbn board
+kanbn task      # Show a kanbn task
+kanbn add       # Add a kanbn task
+kanbn edit      # Edit a kanbn task
+kanbn move      # Move a task to another column
+kanbn status    # Get project statistics
+kanbn sprint    # Start a new sprint
+kanbn burndown  # View a burndown chart
+```
 
-# Get AI assistance with project management
-kanbn chat
+### AI Features
+
+```bash
+kanbn decompose  # Use AI to break down tasks
+kanbn chat       # Chat with AI project assistant
 ```
 
 ## 🤝 Contributing
