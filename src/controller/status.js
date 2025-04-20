@@ -4,10 +4,17 @@ const chrono = require('chrono-node');
 const yaml = require('yamljs');
 
 module.exports = async args => {
+  // Create a Kanbn instance
+  const kanbn = new Kanbn();
 
   // Make sure kanbn has been initialised
-  if (!await kanbn.initialised()) {
-    utility.error('Kanbn has not been initialised in this folder\nTry running: {b}kanbn init{b}');
+  try {
+    if (!await kanbn.initialised()) {
+      utility.warning('Kanbn has not been initialised in this folder\nTry running: {b}kanbn init{b}');
+      return;
+    }
+  } catch (error) {
+    utility.warning('Kanbn has not been initialised in this folder\nTry running: {b}kanbn init{b}');
     return;
   }
 
