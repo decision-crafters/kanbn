@@ -249,7 +249,21 @@ module.exports = async args => {
     }
 
     try {
-      const projectContext = await getProjectContext();
+      // Try to get project context, but don't fail if it's not available
+      let projectContext;
+      try {
+        projectContext = await getProjectContext();
+      } catch (error) {
+        console.error('Error getting project context:', error.message);
+        // Use a default context
+        projectContext = {
+          projectName: 'Unnamed Project',
+          projectDescription: 'No description available',
+          taskCount: 0,
+          columns: [],
+          tags: []
+        };
+      }
 
       if (args.message) {
         const message = utility.strArg(args.message);
