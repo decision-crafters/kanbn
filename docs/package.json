@@ -1,0 +1,14 @@
+{
+  "name": "kanbn-docs",
+  "version": "1.0.0",
+  "description": "Documentation for Kanbn",
+  "scripts": {
+    "serve": "docsify serve .",
+    "build": "docsify-build ."
+  },
+  "dependencies": {
+    "docsify-cli": "^4.4.4",
+    "docsify-copy-code": "^2.1.1",
+    "docsify-pagination": "^2.6.1"
+  }
+}
