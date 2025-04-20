@@ -13,21 +13,12 @@
 
 ## 🚀 Quick Start
 
-### Prerequisites
-
-- Node.js 22 or higher is required
-
 ```bash
-# Install Node.js 22 (if not already installed)
-# For macOS/Linux using nvm:
-nvm install 22
-nvm use 22
-
-# For Windows using the installer:
-# Download from https://nodejs.org/
-
 # Install kanbn globally
 npm install -g @tosin2013/kanbn
+
+# Note: If you encounter issues on certain Linux distributions (e.g., Red Hat Linux 9.5),
+# try using a newer Node.js version (12, 16, 20, or 22)
 
 # Initialize a new board
 kanbn init
@@ -69,8 +60,6 @@ kanbn chat       # Chat with AI project assistant
 ```
 
 #### Environment Variables for AI Features
-
-> **Note:** AI features require Node.js 22 or higher
 
 ```bash
 # Required for AI features
