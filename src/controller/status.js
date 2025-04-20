@@ -1,4 +1,4 @@
-const kanbn = require('../main');
+const { Kanbn } = require('../main');
 const utility = require('../utility');
 const chrono = require('chrono-node');
 const yaml = require('yamljs');

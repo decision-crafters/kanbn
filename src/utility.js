@@ -20,6 +20,17 @@ module.exports = (() => {
     },
 
     /**
+     * Show a warning message in the console
+     * @param {Error|string} warning
+     */
+    warning(warning) {
+      const message = warning instanceof Error
+        ? (process.env.DEBUG === 'true' ? warning : this.replaceTags(warning.message))
+        : this.replaceTags(warning);
+      console.warn('\x1b[33mWarning:\x1b[0m', message);
+    },
+
+    /**
      * Convert a string to simplified paramcase, e.g:
      *  PascalCase -> pascalcase
      *  Test Word -> test-word

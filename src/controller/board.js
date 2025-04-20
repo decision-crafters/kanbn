@@ -1,12 +1,19 @@
-const kanbn = require('../main');
+const { Kanbn } = require('../main');
 const utility = require('../utility');
 const board = require('../board');
 
 module.exports = async args => {
+  // Create a Kanbn instance
+  const kanbn = new Kanbn();
 
   // Make sure kanbn has been initialised
-  if (!await kanbn.initialised()) {
-    utility.error('Kanbn has not been initialised in this folder\nTry running: {b}kanbn init{b}');
+  try {
+    if (!await kanbn.initialised()) {
+      utility.warning('Kanbn has not been initialised in this folder\nTry running: {b}kanbn init{b}');
+      return;
+    }
+  } catch (error) {
+    utility.warning('Kanbn has not been initialised in this folder\nTry running: {b}kanbn init{b}');
     return;
   }
 
