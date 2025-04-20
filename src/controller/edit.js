@@ -337,6 +337,7 @@ async function interactive(taskData, taskIds, columnName, columnNames) {
  * @param {?string} columnName
  */
 function updateTask(taskId, taskData, columnName) {
+  const kanbn = new Kanbn();
   kanbn
   .updateTask(taskId, taskData, columnName)
   .then(taskId => {
@@ -350,8 +351,14 @@ function updateTask(taskId, taskData, columnName) {
 module.exports = async args => {
 
   // Make sure kanbn has been initialised
-  if (!await kanbn.initialised()) {
-    utility.error('Kanbn has not been initialised in this folder\nTry running: {b}kanbn init{b}');
+  const kanbn = new Kanbn();
+  try {
+    if (!await kanbn.initialised()) {
+      utility.warning('Kanbn has not been initialised in this folder\nTry running: {b}kanbn init{b}');
+      return;
+    }
+  } catch (error) {
+    utility.warning('Kanbn has not been initialised in this folder\nTry running: {b}kanbn init{b}');
     return;
   }
 
@@ -394,7 +401,8 @@ module.exports = async args => {
   }
 
   // Get column name if specified
-  let currentColumnName = await kanbn.findTaskColumn(taskId);
+  const { findTaskColumn } = require('../main');
+  let currentColumnName = findTaskColumn(index, taskId);
   let columnName = currentColumnName;
   if (args.column) {
     columnName = utility.strArg(args.column);
