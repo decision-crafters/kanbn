@@ -43,6 +43,7 @@ async function interactive(columns, columnName, columnNames, sortedColumnNames, 
  * @param {boolean} [relative=false]
  */
 function moveTask(taskId, columnName, position = null, relative = false) {
+  const kanbn = new Kanbn();
   kanbn
   .moveTask(taskId, columnName, position, relative)
   .then(taskId => {
@@ -54,10 +55,17 @@ function moveTask(taskId, columnName, position = null, relative = false) {
 }
 
 module.exports = async args => {
+  // Create a Kanbn instance
+  const kanbn = new Kanbn();
 
   // Make sure kanbn has been initialised
-  if (!await kanbn.initialised()) {
-    utility.error('Kanbn has not been initialised in this folder\nTry running: {b}kanbn init{b}');
+  try {
+    if (!await kanbn.initialised()) {
+      utility.warning('Kanbn has not been initialised in this folder\nTry running: {b}kanbn init{b}');
+      return;
+    }
+  } catch (error) {
+    utility.warning('Kanbn has not been initialised in this folder\nTry running: {b}kanbn init{b}');
     return;
   }
 
