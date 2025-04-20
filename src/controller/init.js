@@ -90,19 +90,6 @@ async function initialise(options, initialised) {
 }
 
 module.exports = async args => {
-    // Create a Kanbn instance
-    const kanbn = new Kanbn();
-  
-    // Make sure kanbn has been initialised
-    try {
-      if (!await kanbn.initialised()) {
-        utility.warning('Kanbn has not been initialised in this folder\nTry running: {b}kanbn init{b}');
-        return;
-      }
-    } catch (error) {
-      utility.warning('Kanbn has not been initialised in this folder\nTry running: {b}kanbn init{b}');
-      return;
-    }
   let options = {};
 
   // If this folder is already initialised, set the default name and description using the current values
