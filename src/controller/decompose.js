@@ -5,6 +5,8 @@ const inquirer = require('inquirer');
 const fuzzy = require('fuzzy');
 const axios = require('axios');
 const getGitUsername = require('git-user-name');
+const fs = require('fs');
+const path = require('path');
 
 inquirer.registerPrompt('autocomplete', require('inquirer-autocomplete-prompt'));
 
@@ -255,21 +257,12 @@ module.exports = async args => {
     return;
   }
 
-  try {
-    if (!await kanbn.taskExists(taskId)) {
-      utility.error(`Task "${taskId}" doesn't exist`);
-      return;
-    }
-  } catch (error) {
-    utility.error(error);
-    return;
-  }
-
   let task;
   try {
-    task = await kanbn.getTask(taskId);
+    // Load the task directly instead of using taskExists
+    task = await kanbn.loadTask(taskId);
   } catch (error) {
-    utility.error(error);
+    utility.error(`Error loading task: ${error.message}`);
     return;
   }
 
