@@ -15,13 +15,13 @@
 
 ### Prerequisites
 
-- Node.js 20 or higher is required
+- Node.js 22 or higher is required
 
 ```bash
-# Install Node.js 20 (if not already installed)
+# Install Node.js 22 (if not already installed)
 # For macOS/Linux using nvm:
-nvm install 20
-nvm use 20
+nvm install 22
+nvm use 22
 
 # For Windows using the installer:
 # Download from https://nodejs.org/
@@ -70,7 +70,7 @@ kanbn chat       # Chat with AI project assistant
 
 #### Environment Variables for AI Features
 
-> **Note:** AI features require Node.js 20 or higher
+> **Note:** AI features require Node.js 22 or higher
 
 ```bash
 # Required for AI features
