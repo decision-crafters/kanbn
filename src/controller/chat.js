@@ -12,7 +12,7 @@ const chalk = {
 chalk.blue.bold = (text) => `\x1b[1;34m${text}\x1b[0m`;
 const getGitUsername = require('git-user-name');
 
-const kanbn = new Kanbn();
+// Create Kanbn instance when needed in each function
 
 /**
  * Call OpenRouter API for project chat
@@ -116,6 +116,7 @@ How can I help you manage your project today?`;
  */
 async function logAIInteraction(type, input, output) {
   try {
+    const kanbn = new Kanbn();
     const taskId = 'ai-interaction-' + Date.now();
     const username = getGitUsername() || 'unknown';
     const date = new Date();
@@ -152,6 +153,7 @@ async function logAIInteraction(type, input, output) {
  */
 async function getProjectContext() {
   try {
+    const kanbn = new Kanbn();
     const index = await kanbn.getIndex();
     const tasks = await kanbn.loadAllTrackedTasks();
     const status = await kanbn.status(false, false, false, null, null);
@@ -233,13 +235,16 @@ async function interactiveChat(projectContext) {
 
 module.exports = async args => {
   try {
+    // Create a Kanbn instance
+    const kanbn = new Kanbn();
+
     try {
       if (!(await kanbn.initialised())) {
-        utility.error('Kanbn has not been initialised in this folder\nTry running: {b}kanbn init{b}');
+        utility.warning('Kanbn has not been initialised in this folder\nTry running: {b}kanbn init{b}');
         return;
       }
     } catch (error) {
-      utility.error('Kanbn has not been initialised in this folder\nTry running: {b}kanbn init{b}');
+      utility.warning('Kanbn has not been initialised in this folder\nTry running: {b}kanbn init{b}');
       return;
     }
 
