@@ -7,19 +7,20 @@
   <meta name="description" content="Documentation for Kanbn - A CLI Kanban board with AI features">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/docsify@4/lib/themes/vue.css">
-  <base href="/kanbn/">
 </head>
 <body>
   <div id="app"></div>
   <script>
     window.$docsify = {
+      el: '#app',
       name: 'Kanbn',
       repo: 'https://github.com/decision-crafters/kanbn',
       loadSidebar: true,
       subMaxLevel: 2,
       auto2top: true,
-      relativePath: true,
-      routerMode: 'hash',
+      basePath: '/kanbn/',
+      routerMode: 'history',
+      homepage: 'index.md',
       search: {
         maxAge: 86400000,
         paths: 'auto',
@@ -38,10 +39,17 @@
         crossChapter: true
       },
       notFoundPage: true,
-      alias: {
-        '/.*/_sidebar.md': '/_sidebar.md'
-      }
-    }
+      formatUpdated: '{MM}/{DD} {HH}:{mm}',
+      plugins: [
+        function(hook, vm) {
+          hook.beforeEach(function(content) {
+            const url = 'https://github.com/decision-crafters/kanbn/blob/main/docs/' + vm.route.file;
+            const editHtml = '[:memo: Edit Document](' + url + ')\n';
+            return editHtml + '\n' + content;
+          });
+        }
+      ]
+    };
   </script>
   <script src="https://cdn.jsdelivr.net/npm/docsify@4"></script>
   <script src="https://cdn.jsdelivr.net/npm/docsify/lib/plugins/search.min.js"></script>
