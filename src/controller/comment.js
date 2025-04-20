@@ -1,4 +1,5 @@
-const kanbn = require('../main');
+const { Kanbn } = require('../main');
+const kanbn = new Kanbn();
 const utility = require('../utility');
 const inquirer = require('inquirer');
 const getGitUsername = require('git-user-name');
