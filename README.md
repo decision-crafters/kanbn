@@ -2,11 +2,11 @@
 
 A CLI kanban board application with AI-powered task management features.
 
-Documentation can be found [here](./docs/index.md).
+Documentation can be found at [https://decision-crafters.github.io/kanbn/](https://decision-crafters.github.io/kanbn/).
 
 ## Installation
 
-```
+```bash
 npm install -g @tosin2013/kanbn
 ```
 
@@ -40,58 +40,30 @@ Where <command> is one of:
   remove-all .... Remove the kanbn board and all tasks
   decompose ..... Use AI to break down tasks into subtasks
   chat .......... Chat with AI project assistant
-
-For more help with commands, try:
-
-kanbn help <command>
-kanbn h <command>
-kanbn <command> --help
-kanbn <command> -h
 ```
 
-## New AI Features
+## Development
 
-Kanbn now includes AI-powered features to help you manage your tasks more efficiently:
+### Documentation
 
-### AI Task Decomposition
+To run the documentation site locally:
 
-Break down complex tasks into smaller, actionable subtasks using AI:
+1. Install dependencies:
+   ```bash
+   npm run docs:install
+   ```
 
-```
-kanbn decompose --task my-task
-kanbn d -i  # Interactive mode
-```
+2. Start the documentation server:
+   ```bash
+   npm run docs
+   ```
 
-### Project Management Chat
+3. Open [http://localhost:3000](http://localhost:3000) in your browser
 
-Chat with an AI assistant that understands your project context:
+### Contributing
 
-```
-kanbn chat
-kanbn c
-kanbn chat --message "Summarize my project status"
-```
+Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct and the process for submitting pull requests.
 
-### Parent-Child Task Relationships
+### License
 
-Tasks can now have parent-child relationships, allowing for better organization of complex projects:
-
-- Parent tasks can track progress of child tasks
-- Child tasks inherit properties from parent tasks
-- View relationships in task details
-
-### AI Interaction Tracking
-
-All AI interactions are logged and can be tracked:
-
-```
-kanbn find --tag ai-interaction
-kanbn status  # Includes AI metrics
-```
-
-## Requirements for AI Features
-
-- OpenRouter API key set as `OPENROUTER_API_KEY` environment variable
-- Internet connection (falls back to basic decomposition when offline)
-
-For more details on AI features, see the [AI Features documentation](./docs/ai-features.md).
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
