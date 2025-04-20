@@ -1,69 +1,53 @@
 # Kanbn
 
-A CLI kanban board application with AI-powered task management features.
+🎯 Transform your Git repository into an AI-powered Kanban board. Track tasks, manage sprints, and leverage AI to optimize your workflow - all from the command line.
 
-Documentation can be found at [https://decision-crafters.github.io/kanbn/](https://decision-crafters.github.io/kanbn/).
+## ✨ Key Features
 
-## Installation
+- 🤖 AI-powered task decomposition
+- 💬 Interactive project management assistant
+- 📊 Visual progress tracking and burndown charts
+- 🔄 Git-friendly markdown-based task management
+- 🏃‍♂️ Sprint planning and execution
+- 📱 Command-line interface for speed and efficiency
+
+## 🚀 Quick Start
 
 ```bash
+# Install kanbn globally
 npm install -g @tosin2013/kanbn
+
+# Initialize a new kanbn board in your project
+cd my-project
+kanbn init
+
+# Add your first task
+kanbn add -n "Setup project structure"
+
+# View your board
+kanbn board
 ```
 
-## Usage
+## 📚 Documentation
 
-```
-Usage:
-  kanbn ......... Show help menu
-  kanbn <command> [options]
+For full documentation, visit [https://decision-crafters.github.io/kanbn/](https://decision-crafters.github.io/kanbn/)
 
-Where <command> is one of:
-  help .......... Show help menu
-  version ....... Show package version
-  init .......... Initialise kanbn board
-  board ......... Show the kanbn board
-  task .......... Show a kanbn task
-  add ........... Add a kanbn task
-  edit .......... Edit a kanbn task
-  rename ........ Rename a kanbn task
-  move .......... Move a kanbn task to another column
-  comment ....... Add a comment to a task
-  remove ........ Remove a kanbn task
-  find .......... Search for kanbn tasks
-  status ........ Get project and task statistics
-  sort .......... Sort a column in the index
-  sprint ........ Start a new sprint
-  burndown ...... View a burndown chart
-  validate ...... Validate index and task files
-  archive ....... Archive a task
-  restore ....... Restore a task from the archive
-  remove-all .... Remove the kanbn board and all tasks
-  decompose ..... Use AI to break down tasks into subtasks
-  chat .......... Chat with AI project assistant
+### AI Features
+
+Kanbn includes powerful AI features to help you manage tasks more effectively:
+
+```bash
+# Break down a complex task into subtasks
+kanbn decompose --task my-complex-task
+
+# Get AI assistance with project management
+kanbn chat
 ```
 
-## Development
+## 🤝 Contributing
 
-### Documentation
+We welcome contributions! Please read our [Contributing Guide](CONTRIBUTING.md) for details on our code of conduct and the process for submitting pull requests.
 
-To run the documentation site locally:
-
-1. Install dependencies:
-   ```bash
-   npm run docs:install
-   ```
-
-2. Start the documentation server:
-   ```bash
-   npm run docs
-   ```
-
-3. Open [http://localhost:3000](http://localhost:3000) in your browser
-
-### Contributing
-
-Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct and the process for submitting pull requests.
-
-### License
+## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

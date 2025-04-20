@@ -1,39 +1,52 @@
-# Kanbn Documentation
+# Welcome to Kanbn
 
-A CLI kanban board application with AI-powered task management features.
+> Your intelligent command-line task management companion
 
-## Installation
+Kanbn combines the simplicity of markdown-based task management with the power of AI to help you:
+
+## 🎯 Why Kanbn?
+
+- **AI-Powered Workflow**: Break down complex tasks intelligently and get project management insights through natural conversation
+- **Git-Friendly**: Tasks are stored as markdown files, making them easy to version control and review
+- **Command-Line Speed**: Manage everything through an intuitive CLI interface
+- **Visual Progress**: Track project progress with burndown charts and sprint metrics
+- **Flexible & Extensible**: Customize your workflow with advanced configuration options
+
+## 🚀 Getting Started
 
 ```bash
+# Install kanbn globally
 npm install -g @tosin2013/kanbn
+
+# Initialize in your project
+cd my-project
+kanbn init
 ```
 
-## Key Features
+[Quick Start Guide →](quick-start.md)
 
-- CLI-based kanban board
-- Markdown-based tasks and boards
-- Git-friendly format
-- AI-powered task decomposition
-- Project management chat assistant
-- Sprint management
-- Burndown charts
-- Parent-child task relationships
+## ✨ AI Features
 
-## Getting Started
+Kanbn's AI features help you work smarter:
 
-Check out our [Quick Start](quick-start.md) guide to begin using Kanbn.
+```bash
+# Break down a complex task
+kanbn decompose --task my-complex-task
 
-## AI Features
+# Chat with your project assistant
+kanbn chat
+```
 
-Kanbn now includes AI-powered features to help you manage your tasks more efficiently:
+[Learn More About AI Features →](ai-features.md)
 
-- Task decomposition with AI
-- Project management chat assistant
-- Progress tracking and analytics
-- Automated task organization
+## 📚 Documentation
 
-Learn more about our [AI Features](ai-features.md).
+- [Quick Start Guide](quick-start.md)
+- [Index Structure](index-structure.md)
+- [Task Structure](task-structure.md)
+- [Advanced Configuration](advanced-configuration.md)
+- [AI Features](ai-features.md)
 
-## Contributing
+## 🤝 Contributing
 
-We welcome contributions! Please see our [Contributing Guide](https://github.com/decision-crafters/kanbn/blob/main/CONTRIBUTING.md) for details.
+Want to help make Kanbn better? [View our Contributing Guide](https://github.com/decision-crafters/kanbn/blob/main/CONTRIBUTING.md)
