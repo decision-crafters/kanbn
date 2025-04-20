@@ -2,6 +2,21 @@ const { Kanbn } = require('../main');
 const utility = require('../utility');
 const inquirer = require('inquirer');
 
+/**
+ * Find which column a task is in
+ * @param {object} index The index object
+ * @param {string} taskId The task id to find
+ * @return {string|null} The column name, or null if the task isn't in the index
+ */
+function findTaskColumn(index, taskId) {
+  for (let columnName in index.columns) {
+    if (index.columns[columnName].indexOf(taskId) !== -1) {
+      return columnName;
+    }
+  }
+  return null;
+}
+
 inquirer.registerPrompt('selectLine', require('inquirer-select-line'));
 
 /**
@@ -47,7 +62,13 @@ function moveTask(taskId, columnName, position = null, relative = false) {
   kanbn
   .moveTask(taskId, columnName, position, relative)
   .then(taskId => {
-    console.log(`Moved task "${taskId}" to column "${columnName}"`);
+    // Get the index to verify the task was moved to the correct column
+    kanbn.getIndex().then(index => {
+      const actualColumn = findTaskColumn(index, taskId);
+      console.log(`Moved task "${taskId}" to column "${actualColumn}"`);
+    }).catch(error => {
+      console.log(`Moved task "${taskId}" to column "${columnName}"`);
+    });
   })
   .catch(error => {
     utility.error(error);

@@ -786,7 +786,7 @@ class Kanbn {
   ROOT = process.cwd();
   CONFIG_YAML = path.join(this.ROOT, "kanbn.yml");
   CONFIG_JSON = path.join(this.ROOT, "kanbn.json");
-  
+
   // Memoize config
   configMemo = null;
 
@@ -1535,7 +1535,9 @@ class Kanbn {
     // If we're moving the task to a new position, calculate the absolute position
     const currentColumnName = findTaskColumn(index, taskId);
     const currentPosition = index.columns[currentColumnName].indexOf(taskId);
-    if (position) {
+
+    // If we're moving to the same column, calculate the position
+    if (columnName === currentColumnName && position) {
       if (relative) {
         position = currentPosition + position;
       }
@@ -1727,19 +1729,19 @@ class Kanbn {
       if (Object.keys(assignedTasks).length > 0) {
         result.assigned = assignedTasks;
       }
-      
+
       // Calculate AI interaction metrics
-      const aiInteractions = tasks.filter(task => 
-        task.metadata.tags && 
+      const aiInteractions = tasks.filter(task =>
+        task.metadata.tags &&
         task.metadata.tags.includes('ai-interaction')
       );
-      
+
       if (aiInteractions.length > 0) {
         result.aiMetrics = {
           total: aiInteractions.length,
           byType: {}
         };
-        
+
         for (let interaction of aiInteractions) {
           if (interaction.metadata.tags) {
             for (let tag of interaction.metadata.tags) {
@@ -1753,18 +1755,18 @@ class Kanbn {
           }
         }
       }
-      
+
       // Calculate parent-child relationship metrics
-      const parentTasks = tasks.filter(task => 
-        task.relations && 
+      const parentTasks = tasks.filter(task =>
+        task.relations &&
         task.relations.some(relation => relation.type === 'parent-of')
       );
-      
-      const childTasks = tasks.filter(task => 
-        task.relations && 
+
+      const childTasks = tasks.filter(task =>
+        task.relations &&
         task.relations.some(relation => relation.type === 'child-of')
       );
-      
+
       if (parentTasks.length > 0 || childTasks.length > 0) {
         result.relationMetrics = {
           parentTasks: parentTasks.length,
