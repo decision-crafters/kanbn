@@ -3,6 +3,21 @@ const term = require('terminal-kit').terminal;
 const formatDate = require('dateformat');
 const utility = require('./utility');
 
+/**
+ * Find which column a task is in
+ * @param {object} index The index object
+ * @param {string} taskId The task id to find
+ * @return {string|null} The column name, or null if the task isn't in the index
+ */
+function findTaskColumn(index, taskId) {
+  for (let columnName in index.columns) {
+    if (index.columns[columnName].indexOf(taskId) !== -1) {
+      return columnName;
+    }
+  }
+  return null;
+}
+
 module.exports = (() => {
   const TASK_SEPARATOR = '\n\n';
 
@@ -16,6 +31,9 @@ module.exports = (() => {
     const kanbn = new Kanbn();
     const taskTemplate = kanbn.getTaskTemplate(index);
     const dateFormat = kanbn.getDateFormat(index);
+
+    // Make sure the task has the correct column
+    task.column = findTaskColumn(index, task.id);
 
     // Get an object containing custom fields from the task
     let customFields = {};
