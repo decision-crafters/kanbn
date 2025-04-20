@@ -4,7 +4,9 @@
   "description": "A CLI Kanban application",
   "main": "index.js",
   "scripts": {
-    "test": "KANBN_ENV=test qunit ./test/**/*.test.js"
+    "test": "KANBN_ENV=test qunit ./test/**/*.test.js",
+    "docs": "./scripts/serve-docs.sh",
+    "docs:install": "npm install -g docsify-cli"
   },
   "preferGlobal": true,
   "bin": {
