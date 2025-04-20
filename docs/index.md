@@ -62,10 +62,15 @@ kanbn chat
 - [Task Structure](task-structure.md)
 - [Advanced Configuration](advanced-configuration.md)
 - [AI Features](ai-features.md)
+- [Command Reference](commands.md)
+- [Chat Demo](demos/chat-demo.md)
+- [Decompose Demo](demos/decompose-demo.md)
 
 ## 🔍 Command Reference
 
-Get detailed help for any command:
+View the [complete command reference](commands.md) for detailed information on all available commands.
+
+You can also get help for any command directly from the CLI:
 ```bash
 kanbn help <command>
 # or
