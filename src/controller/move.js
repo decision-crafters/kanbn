@@ -107,12 +107,18 @@ module.exports = async args => {
   // Get column name if specified
   const currentColumnName = findTaskColumn(index, taskId);
   let columnName = currentColumnName;
-  if (args.column) {
+
+  // Check for column name in positional arguments (args._[2]) or named argument (args.column)
+  if (args._[2]) {
+    columnName = args._[2];
+  } else if (args.column) {
     columnName = utility.strArg(args.column);
-    if (columnNames.indexOf(columnName) === -1) {
-      utility.error(`Column "${columnName}" doesn't exist`);
-      return;
-    }
+  }
+
+  // Validate the column name
+  if (columnName !== currentColumnName && columnNames.indexOf(columnName) === -1) {
+    utility.error(`Column "${columnName}" doesn't exist`);
+    return;
   }
 
   // Re-use sprint option for position
