@@ -1,8 +1,5 @@
 const QUnit = require('qunit');
-const path = require('path');
 const mockRequire = require('mock-require');
-
-const testFolder = path.join(__dirname, '..', 'test-chat-workflow');
 
 // Mock Kanbn for testing
 class MockKanbn {
@@ -33,7 +30,7 @@ class MockKanbn {
     }
 
     async createTask(taskData, column) {
-        const taskId = `task-${Date.now()}`;
+        const taskId = `task-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
         this.tasks.set(taskId, { ...taskData, id: taskId });
         if (!this.columns[column]) {
             this.columns[column] = [];
@@ -143,8 +140,10 @@ QUnit.test('should handle complex chat workflows', async function(assert) {
     assert.ok(result3.includes('moved'), 'Task should be moved');
 
     // Verify task movement
+    tasks = await this.mockKanbn.loadAllTrackedTasks();
     const inProgressTask = tasks.find(t => t.name?.includes('Dependencies'));
-    const column = await this.mockKanbn.findTaskColumn(this.mockKanbn.index, inProgressTask.id);
+    const { findTaskColumn } = require('../../src/main');
+    const column = findTaskColumn(this.mockKanbn.index, inProgressTask.id);
     assert.equal(column, 'In Progress', 'Task should be in Progress');
 
     // Step 4: Add comments and update status
@@ -193,7 +192,8 @@ QUnit.test('should maintain user context across interactions', async function(as
     // Verify both actions were performed
     tasks = await this.mockKanbn.loadAllTrackedTasks();
     featureTask = tasks.find(t => t.name?.includes('Feature Implementation'));
-    const column = await this.mockKanbn.findTaskColumn(this.mockKanbn.index, featureTask.id);
+    const { findTaskColumn } = require('../../src/main');
+    const column = findTaskColumn(this.mockKanbn.index, featureTask.id);
     
     assert.equal(column, 'In Progress', 'Task should be moved to In Progress');
     assert.ok(
