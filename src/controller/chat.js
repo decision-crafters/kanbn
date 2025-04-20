@@ -42,9 +42,9 @@ async function callOpenRouterAPI(message, projectContext) {
       tags: []
     };
 
-    // Check if we're in a test environment
-    if (process.env.KANBN_ENV === 'test' && !process.env.USE_REAL_API) {
-      console.log('Skipping actual API call for testing...');
+    // Check if we're in a test environment or CI environment
+    if (process.env.KANBN_ENV === 'test' || process.env.CI === 'true') {
+      console.log('Skipping actual API call for testing or CI environment...');
       const mockResponse = `I'm a project management assistant for your Kanbn board.
 
 Your project "${safeContext.projectName}" has ${safeContext.taskCount} tasks${safeContext.columns.length > 0 ? ` across ${safeContext.columns.length} columns` : ''}.

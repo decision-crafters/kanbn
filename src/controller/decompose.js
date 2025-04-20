@@ -14,18 +14,9 @@ inquirer.registerPrompt('autocomplete', require('inquirer-autocomplete-prompt'))
  */
 async function callOpenRouterAPI(description) {
   try {
-    const apiKey = process.env.OPENROUTER_API_KEY;
-    if (!apiKey) {
-      throw new Error('OpenRouter API key not found. Please set the OPENROUTER_API_KEY environment variable.');
-    }
-
-    // Use the model specified in the environment or default to a cost-effective option
-    const model = process.env.OPENROUTER_MODEL || 'google/gemma-3-4b-it:free';
-    console.log(`Using model: ${model}`);
-
-    // Check if we're in a test environment
-    if (process.env.KANBN_ENV === 'test' && !process.env.USE_REAL_API) {
-      console.log('Skipping actual API call for testing...');
+    // Check if we're in a test environment or CI environment
+    if (process.env.KANBN_ENV === 'test' || process.env.CI === 'true') {
+      console.log('Skipping actual API call for testing or CI environment...');
       // Return a simple mock decomposition
       const mockSubtasks = [
         { text: `Subtask 1 for: ${description.substring(0, 30)}...`, completed: false },
@@ -35,6 +26,15 @@ async function callOpenRouterAPI(description) {
       await logAIInteraction('decompose', description, JSON.stringify({ subtasks: mockSubtasks }));
       return mockSubtasks;
     }
+
+    const apiKey = process.env.OPENROUTER_API_KEY;
+    if (!apiKey) {
+      throw new Error('OpenRouter API key not found. Please set the OPENROUTER_API_KEY environment variable.');
+    }
+
+    // Use the model specified in the environment or default to a cost-effective option
+    const model = process.env.OPENROUTER_MODEL || 'google/gemma-3-4b-it:free';
+    console.log(`Using model: ${model}`);
 
     const response = await axios.post(
       'https://openrouter.ai/api/v1/chat/completions',
