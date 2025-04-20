@@ -7,6 +7,7 @@
   <meta name="description" content="Documentation for Kanbn - A CLI Kanban board with AI features">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/docsify@4/lib/themes/vue.css">
+  <base href="/kanbn/">
 </head>
 <body>
   <div id="app"></div>
@@ -17,9 +18,8 @@
       loadSidebar: true,
       subMaxLevel: 2,
       auto2top: true,
-      basePath: '/kanbn/',
-      nameLink: '/kanbn/',
       relativePath: true,
+      routerMode: 'hash',
       search: {
         maxAge: 86400000,
         paths: 'auto',
@@ -36,6 +36,10 @@
         previousText: 'Previous',
         nextText: 'Next',
         crossChapter: true
+      },
+      notFoundPage: true,
+      alias: {
+        '/.*/_sidebar.md': '/_sidebar.md'
       }
     }
   </script>
