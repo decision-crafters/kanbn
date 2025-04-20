@@ -1,7 +1,7 @@
 {
   "name": "@tosin2013/kanbn",
-  "version": "0.10.2",
-  "description": "A CLI Kanban application",
+  "version": "0.10.3",
+  "description": "A CLI Kanban board with AI-powered task management features",
   "main": "index.js",
   "scripts": {
     "test": "KANBN_ENV=test qunit ./test/**/*.test.js",
@@ -13,10 +13,13 @@
     "kanbn": "bin/kanbn"
   },
   "author": "Tosin Akinosho <tosin@decisioncrafters.com> (https://github.com/tosin2013)",
-  "homepage": "",
+  "homepage": "https://decision-crafters.github.io/kanbn/",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/decision-crafters/kanbn.git"
+  },
+  "bugs": {
+    "url": "https://github.com/decision-crafters/kanbn/issues"
   },
   "engines": {
     "node": ">=16.0.0"
@@ -28,7 +31,10 @@
     "project manager",
     "agile",
     "scrum",
-    "sprint"
+    "sprint",
+    "ai",
+    "artificial intelligence",
+    "task decomposition"
   ],
   "license": "MIT",
   "dependencies": {
