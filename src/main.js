@@ -1502,11 +1502,13 @@ class Kanbn {
    * @return {Promise<string>} The id of the task that was moved
    */
   async moveTask(taskId, columnName, position = null, relative = false) {
+    console.log(`DEBUG: Moving task ${taskId} to column ${columnName}`);
     // Check if this folder has been initialised
     if (!(await this.initialised())) {
       throw new Error("Not initialised in this folder");
     }
     taskId = removeFileExtension(taskId);
+    console.log(`DEBUG: Task ID after removing extension: ${taskId}`);
 
     // Make sure the task file exists
     if (!(await exists(getTaskPath(await this.getTaskFolderPath(), taskId)))) {
@@ -1534,20 +1536,39 @@ class Kanbn {
 
     // If we're moving the task to a new position, calculate the absolute position
     const currentColumnName = findTaskColumn(index, taskId);
+    console.log(`DEBUG: Current column name: ${currentColumnName}`);
     const currentPosition = index.columns[currentColumnName].indexOf(taskId);
+    console.log(`DEBUG: Current position: ${currentPosition}`);
 
     // If we're moving to the same column, calculate the position
     if (columnName === currentColumnName && position) {
+      console.log(`DEBUG: Moving within the same column`);
       if (relative) {
         position = currentPosition + position;
       }
       position = Math.max(Math.min(position, index.columns[currentColumnName].length), 0);
     }
+    console.log(`DEBUG: Target column name: ${columnName}`);
+    console.log(`DEBUG: Target position: ${position}`);
+
+    // Debug: Print all columns and their tasks
+    console.log('DEBUG: Current index columns:');
+    for (const col in index.columns) {
+      console.log(`DEBUG: Column ${col}: ${JSON.stringify(index.columns[col])}`);
+    }
 
     // Remove the task from its current column and add it to the new column
     index = removeTaskFromIndex(index, taskId);
     index = addTaskToIndex(index, taskId, columnName, position);
+
+    // Debug: Print updated columns
+    console.log('DEBUG: Updated index columns:');
+    for (const col in index.columns) {
+      console.log(`DEBUG: Column ${col}: ${JSON.stringify(index.columns[col])}`);
+    }
+
     await this.saveIndex(index);
+    console.log(`DEBUG: Index saved, task should now be in column ${columnName}`);
     return taskId;
   }
 
