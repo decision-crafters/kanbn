@@ -2412,4 +2412,5 @@ class Kanbn {
   }
 };
 
-module.exports.Kanbn = Kanbn
+module.exports.Kanbn = Kanbn;
+module.exports.findTaskColumn = findTaskColumn;
