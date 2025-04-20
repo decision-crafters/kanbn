@@ -78,9 +78,20 @@ class MockKanbn {
   }
 }
 
+// Create a mock kanbn instance
+const mockKanbnInstance = new MockKanbn();
+
 // Create a mock for the main module
 const mockMain = {
-  Kanbn: MockKanbn
+  Kanbn: MockKanbn,
+  initialised: async function() { return true; },
+  findTrackedTasks: async function() { return mockKanbnInstance.findTrackedTasks(); },
+  taskExists: async function() { return mockKanbnInstance.taskExists(); },
+  getTask: async function() { return mockKanbnInstance.getTask(); },
+  status: async function() { return mockKanbnInstance.status(); },
+  findTaskColumn: async function() { return mockKanbnInstance.findTaskColumn(); },
+  createTask: async function() { return mockKanbnInstance.createTask(); },
+  updateTask: async function() { return mockKanbnInstance.updateTask(); }
 };
 
 // Create a mock for the axios module
