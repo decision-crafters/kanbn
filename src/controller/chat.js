@@ -2,6 +2,13 @@ const { Kanbn } = require('../main');
 const utility = require('../utility');
 const inquirer = require('inquirer');
 const axios = require('axios');
+const EventEmitter = require('events');
+
+// Create global event bus
+const eventBus = new EventEmitter();
+
+// Export event bus for testing
+module.exports.eventBus = eventBus;
 // Use a simple color function since chalk v5+ is ESM-only
 const chalk = {
   yellow: (text) => `\x1b[33m${text}\x1b[0m`,
@@ -161,9 +168,18 @@ async function logAIInteraction(type, input, output) {
         console.log('Empty columns object, creating default Backlog column');
       }
 
-      await kanbn.createTask(taskData, 'Backlog', true);
+      const createdTaskId = await kanbn.createTask(taskData, 'Backlog', true);
+      eventBus.emit('taskCreated', {
+        taskId: createdTaskId,
+        column: 'Backlog',
+        taskData,
+        source: 'chat'
+      });
+      eventBus.emit('contextUpdated', { taskId: createdTaskId, type: 'chat' });
+      return createdTaskId;
     } catch (createError) {
       console.log('Skipping AI interaction logging:', createError.message);
+      eventBus.emit('taskCreationFailed', { error: createError.message });
     }
 
     return taskId;
@@ -200,7 +216,7 @@ async function getProjectContext() {
     }
 
     const columns = Object.keys(index.columns);
-    return {
+    const projectContext = {
       projectName: index.name || 'Unnamed Project',
       projectDescription: index.description || 'No description available',
       columns: Object.keys(index.columns),
@@ -220,6 +236,9 @@ async function getProjectContext() {
       ))] : [],
       statistics: status || {}
     };
+
+    eventBus.emit('contextQueried', { context: projectContext });
+    return projectContext;
   } catch (error) {
     console.error('Error getting project context:', error.message);
     return null;
