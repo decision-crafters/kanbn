@@ -38,13 +38,13 @@ async function callOpenRouterAPI(message, projectContext) {
       projectName: 'Unnamed Project',
       projectDescription: 'No description available',
       taskCount: 0,
-      columns: [],
+      columns: ['Backlog'],
       tags: []
     };
 
-    // Ensure columns is an array
-    if (!safeContext.columns) {
-      safeContext.columns = [];
+    // Ensure columns is an array with at least a Backlog column
+    if (!safeContext.columns || safeContext.columns.length === 0) {
+      safeContext.columns = ['Backlog'];
     }
 
     // Check if we're in a test environment or CI environment
@@ -146,13 +146,22 @@ async function logAIInteraction(type, input, output) {
     try {
       // Get the index to check if it has columns
       const index = await kanbn.getIndex();
-      if (!index || !index.columns || Object.keys(index.columns).length === 0) {
-        // If there are no columns, we can't create a task
-        console.log('Skipping AI interaction logging: No columns defined in the project');
+      
+      // Initialize index.columns if null or undefined
+      if (!index) {
+        console.log('Skipping AI interaction logging: Invalid index structure');
         return taskId;
       }
+      
+      if (!index.columns) {
+        index.columns = { 'Backlog': [] };
+        console.log('No columns defined, creating default Backlog column');
+      } else if (Object.keys(index.columns).length === 0) {
+        index.columns['Backlog'] = [];
+        console.log('Empty columns object, creating default Backlog column');
+      }
 
-      await kanbn.createTask(taskData, null, true);
+      await kanbn.createTask(taskData, 'Backlog', true);
     } catch (createError) {
       console.log('Skipping AI interaction logging:', createError.message);
     }
@@ -181,11 +190,16 @@ async function getProjectContext() {
       return null;
     }
 
-    // Ensure index.columns exists
+    // Ensure index.columns exists with at least a Backlog column
     if (!index.columns) {
-      index.columns = {};
+      index.columns = { 'Backlog': [] };
+      console.log('No columns defined, creating default Backlog column');
+    } else if (Object.keys(index.columns).length === 0) {
+      index.columns['Backlog'] = [];
+      console.log('Empty columns object, creating default Backlog column');
     }
 
+    const columns = Object.keys(index.columns);
     return {
       projectName: index.name || 'Unnamed Project',
       projectDescription: index.description || 'No description available',
