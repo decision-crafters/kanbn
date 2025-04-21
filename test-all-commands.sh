@@ -119,13 +119,13 @@ run_command "$KANBN_BIN board" 0 "Show the kanbn board"
 
 run_command "$KANBN_BIN task task-1" 0 "Show a specific task"
 
-run_command "$KANBN_BIN edit --task task-1 --description 'Updated description for task 1'" 0 "Edit a task's description"
+run_command "$KANBN_BIN edit task-1 --description 'Updated description for task 1'" 0 "Edit a task's description"
 
-run_command "$KANBN_BIN rename --task task-1 --name 'Renamed Task 1'" 0 "Rename a task"
+run_command "$KANBN_BIN rename task-1 --name 'Renamed Task 1'" 0 "Rename a task"
 
-run_command "$KANBN_BIN move --task task-2 --column 'In Progress'" 0 "Move a task to another column"
+run_command "$KANBN_BIN move task-2 --column 'In Progress'" 0 "Move a task to another column"
 
-run_command "$KANBN_BIN comment --task task-3 --text 'This is a comment on task 3'" 0 "Add a comment to a task"
+run_command "$KANBN_BIN comment task-3 --text 'This is a comment on task 3'" 0 "Add a comment to a task"
 
 run_command "$KANBN_BIN find --tag test" 0 "Find tasks by tag"
 
@@ -146,11 +146,11 @@ run_command "$KANBN_BIN task task-3" 0 "Show the task after changes"
 
 run_command "$KANBN_BIN status" 0 "Get updated project statistics"
 
-run_command "$KANBN_BIN archive --task renamed-task-1" 0 "Archive a task"
+run_command "$KANBN_BIN archive renamed-task-1" 0 "Archive a task"
 
 run_command "$KANBN_BIN board --show-archived" 0 "Show board with archived tasks"
 
-run_command "$KANBN_BIN restore --task renamed-task-1" 0 "Restore a task from archive"
+run_command "$KANBN_BIN restore renamed-task-1" 0 "Restore a task from archive"
 
 REMOVE_TEST_DIR=$(mktemp -d)
 cd $REMOVE_TEST_DIR
