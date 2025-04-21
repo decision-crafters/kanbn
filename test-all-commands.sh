@@ -137,6 +137,7 @@ run_command "$KANBN_BIN validate" 0 "Validate index and task files"
 
 if [ -n "$OPENROUTER_API_KEY" ]; then
   run_command "$KANBN_BIN decompose --task task-3" 0 "Decompose a task using AI"
+  run_command "$KANBN_BIN chat --prompt 'What tasks are in progress?'" 0 "Use chat to query tasks"
   run_command "$KANBN_BIN find --tag ai-interaction" 0 "Find AI-generated tasks"
 fi
 
