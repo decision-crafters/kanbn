@@ -11,7 +11,8 @@ let kanbn;
 QUnit.module('archive controller tests', {
   before() {
     require('../qunit-contains');
-    mockRequire('../../src/main', mockKanbn);
+    const mockKanbnModule = require('../mock-kanbn');
+    mockRequire('../../src/main', mockKanbnModule);
     kanbn = require('../../index');
   },
   beforeEach() {
