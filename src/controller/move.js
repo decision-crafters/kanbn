@@ -1,4 +1,4 @@
-const { Kanbn, findTaskColumn } = require('../main');
+const kanbnModule = require('../main');
 const utility = require('../utility');
 const inquirer = require('inquirer');
 
@@ -41,15 +41,15 @@ async function interactive(columns, columnName, columnNames, sortedColumnNames, 
  * @param {string} columnName
  * @param {?number} [position=null]
  * @param {boolean} [relative=false]
+ * @param {object} kanbnInstance The Kanbn instance to use
  */
-function moveTask(taskId, columnName, position = null, relative = false) {
-  const kanbn = Kanbn();
-  kanbn
+function moveTask(taskId, columnName, position = null, relative = false, kanbnInstance) {
+  kanbnInstance
   .moveTask(taskId, columnName, position, relative)
   .then(taskId => {
     // Get the index to verify the task was moved to the correct column
-    kanbn.getIndex().then(index => {
-      const actualColumn = findTaskColumn(index, taskId);
+    kanbnInstance.getIndex().then(index => {
+      const actualColumn = Object.entries(index.columns).find(([_, tasks]) => tasks.includes(taskId))?.[0] || null;
       console.log(`Moved task "${taskId}" to column "${actualColumn}"`);
     }).catch(error => {
       console.log(`Moved task "${taskId}" to column "${columnName}"`);
@@ -62,7 +62,7 @@ function moveTask(taskId, columnName, position = null, relative = false) {
 
 module.exports = async args => {
   // Create a Kanbn instance
-  const kanbn = Kanbn();
+  const kanbn = kanbnModule();
 
   // Make sure kanbn has been initialised
   try {
@@ -150,7 +150,7 @@ module.exports = async args => {
         : (args.relative ? (currentPosition + newPosition) : newPosition)
     )
     .then(answers => {
-      moveTask(taskId, answers.column, answers.position);
+      moveTask(taskId, answers.column, answers.position, false, kanbn);
     })
     .catch(error => {
       utility.error(error);
@@ -158,6 +158,6 @@ module.exports = async args => {
 
   // Otherwise move task non-interactively
   } else {
-    moveTask(taskId, columnName, newPosition, args.relative);
+    moveTask(taskId, columnName, newPosition, args.relative, kanbn);
   }
 };
