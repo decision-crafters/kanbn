@@ -2293,3 +2293,4 @@ class Kanbn {
 };
 
 module.exports = Kanbn;
+module.exports.Kanbn = Kanbn;

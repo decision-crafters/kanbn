@@ -40,10 +40,25 @@ run_command() {
   return $status
 }
 
-KANBN_BIN="$(cd "$(dirname "$0")" && pwd)/bin/kanbn"
+REPO_DIR="$(cd "$(dirname "$0")" && pwd)"
+KANBN_BIN="$REPO_DIR/bin/kanbn"
+
 if [ ! -f "$KANBN_BIN" ]; then
   echo "Kanbn binary not found at $KANBN_BIN, using node directly"
-  KANBN_BIN="node $(cd "$(dirname "$0")" && pwd)/index.js"
+  KANBN_BIN="node $REPO_DIR/index.js"
+fi
+
+cp -r "$REPO_DIR/src" "$TEST_DIR/"
+cp -r "$REPO_DIR/bin" "$TEST_DIR/"
+cp "$REPO_DIR/index.js" "$TEST_DIR/"
+cp "$REPO_DIR/package.json" "$TEST_DIR/"
+ln -s "$REPO_DIR/node_modules" "$TEST_DIR/node_modules"
+
+cd "$TEST_DIR"
+KANBN_BIN="$TEST_DIR/bin/kanbn"
+if [ ! -f "$KANBN_BIN" ]; then
+  echo "Kanbn binary not found at $KANBN_BIN, using node directly"
+  KANBN_BIN="node $TEST_DIR/index.js"
 fi
 
 run_command "$KANBN_BIN init --name 'Test Project' --description 'Testing all commands'" 0 "Initialize a new kanbn board"
