@@ -2298,3 +2298,15 @@ function KanbnConstructor() {
 
 module.exports = KanbnConstructor;
 module.exports.Kanbn = Kanbn;
+
+module.exports.findTaskColumn = findTaskColumn;
+module.exports.getTaskPath = getTaskPath;
+module.exports.addFileExtension = addFileExtension;
+module.exports.removeFileExtension = removeFileExtension;
+module.exports.taskInIndex = taskInIndex;
+module.exports.addTaskToIndex = addTaskToIndex;
+module.exports.removeTaskFromIndex = removeTaskFromIndex;
+module.exports.renameTaskInIndex = renameTaskInIndex;
+module.exports.getTaskMetadata = getTaskMetadata;
+module.exports.setTaskMetadata = setTaskMetadata;
+module.exports.taskCompleted = taskCompleted;
