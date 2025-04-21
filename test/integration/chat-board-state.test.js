@@ -53,6 +53,15 @@ class MockKanbn {
         }
         return false;
     }
+    
+    async findTaskColumn(index, taskId) {
+        for (const [column, tasks] of Object.entries(index.columns)) {
+            if (tasks.includes(taskId)) {
+                return column;
+            }
+        }
+        return null;
+    }
 
     async updateTask(taskId, taskData) {
         if (this.tasks.has(taskId)) {
