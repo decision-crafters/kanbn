@@ -1116,6 +1116,11 @@ class Kanbn {
     if (!(await this.initialised())) {
       throw new Error("Not initialised in this folder");
     }
+    
+    // Check if taskId is a string
+    if (typeof taskId !== 'string') {
+      throw new Error(`Invalid task id: expected string but got ${typeof taskId}`);
+    }
 
     // Check if the task file exists
     if (!(await fileUtils.exists(getTaskPath(await this.getTaskFolderPath(), taskId)))) {
