@@ -51,18 +51,20 @@ REPO_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 if [ "$USE_BUILT_PACKAGE" = true ]; then
   echo "Using built package for testing"
+  
+  cd "$REPO_DIR"
   PACKAGE_TGZ=$(find "$REPO_DIR" -name "kanbn-*.tgz" | sort -r | head -n 1)
   
   if [ -z "$PACKAGE_TGZ" ]; then
     echo "No built package found. Building package..."
-    cd "$REPO_DIR"
     npm pack
     PACKAGE_TGZ=$(find "$REPO_DIR" -name "kanbn-*.tgz" | sort -r | head -n 1)
-    cd "$TEST_DIR"
   fi
   
   echo "Installing package: $PACKAGE_TGZ"
   npm install -g "$PACKAGE_TGZ"
+  
+  cd "$TEST_DIR"
   KANBN_BIN="kanbn"
 else
   echo "Using source files for testing"
