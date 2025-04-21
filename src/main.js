@@ -1776,7 +1776,7 @@ class Kanbn {
   /**
    * Validate the index and task files
    * @param {boolean} [save=false] Re-save all files
-   * @return {Promise<boolean>} True if everything validated, otherwise an array of parsing errors
+   * @return {Promise<Array>} Empty array if everything validated, otherwise an array of parsing errors
    */
   async validate(save = false) {
     // Check if this folder has been initialised
