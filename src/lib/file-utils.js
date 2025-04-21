@@ -31,6 +31,9 @@ function getTaskPath(taskFolder, taskId) {
  * @return {string} The task id with file extension
  */
 function addFileExtension(taskId) {
+  if (typeof taskId !== 'string') {
+    return taskId;
+  }
   return taskId.endsWith('.md') ? taskId : `${taskId}.md`;
 }
 
@@ -40,6 +43,9 @@ function addFileExtension(taskId) {
  * @return {string} The task id without file extension
  */
 function removeFileExtension(taskId) {
+  if (typeof taskId !== 'string') {
+    return taskId;
+  }
   return taskId.endsWith('.md') ? taskId.substring(0, taskId.length - 3) : taskId;
 }
 
