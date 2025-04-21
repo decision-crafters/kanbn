@@ -157,7 +157,9 @@ QUnit.module('Chat Domain Events', {
           return new MockKanbnWithEvents(eventBus);
         };
         
-        mockKanbnFunction.Kanbn = MockKanbnWithEvents;
+        mockKanbnFunction.Kanbn = function() {
+            return new MockKanbnWithEvents(eventBus);
+        };
         
         mockKanbnFunction.findTaskColumn = () => 'Backlog';
         mockKanbnFunction.getProjectContext = async () => {

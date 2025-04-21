@@ -196,7 +196,9 @@ QUnit.module('Chat Board State', {
             return mockKanbn;
         };
         
-        mockKanbnFunction.Kanbn = MockKanbn;
+        mockKanbnFunction.Kanbn = function() {
+            return new MockKanbn();
+        };
         
         mockKanbnFunction.findTaskColumn = (index, taskId) => {
             for (const [column, tasks] of Object.entries(index.columns)) {
@@ -254,7 +256,9 @@ QUnit.module('Chat Board State', {
             return mockKanbn;
         };
         
-        mockKanbnFunction.Kanbn = MockKanbn;
+        mockKanbnFunction.Kanbn = function() {
+            return new MockKanbn();
+        };
         
         mockKanbnFunction.findTaskColumn = (index, taskId) => {
             for (const [column, tasks] of Object.entries(index.columns)) {
