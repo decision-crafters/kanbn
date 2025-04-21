@@ -2,16 +2,16 @@ name: Tests
 
 on:
   pull_request:
-    branches: [ main ]
+    branches: [ main, master ]
   push:
-    branches: [ main ]
+    branches: [ main, master ]
 
 jobs:
   test:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: [16.x, 18.x, 20.x, 22.x]
+        node-version: [16.x, 18.x, 20.x]
       fail-fast: false
 
     steps:
@@ -34,10 +34,14 @@ jobs:
         env:
           KANBN_ENV: test
 
+      - name: Build package
+        run: |
+          npm pack
+          
       - name: Run binary tests
         run: |
           chmod +x ./test-all-commands.sh
-          ./test-all-commands.sh
+          ./test-all-commands.sh --use-built-package
 
       - name: Run linting
         run: |

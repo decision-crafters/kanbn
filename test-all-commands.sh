@@ -7,6 +7,13 @@ echo "Testing in directory: $TEST_DIR"
 
 export OPENROUTER_API_KEY="${OPENROUTER_API_KEY}"
 
+USE_BUILT_PACKAGE=false
+for arg in "$@"; do
+  if [ "$arg" == "--use-built-package" ]; then
+    USE_BUILT_PACKAGE=true
+  fi
+done
+
 FAILED=0
 TOTAL=0
 PASSED=0
@@ -41,24 +48,43 @@ run_command() {
 }
 
 REPO_DIR="$(cd "$(dirname "$0")" && pwd)"
-KANBN_BIN="$REPO_DIR/bin/kanbn"
 
-if [ ! -f "$KANBN_BIN" ]; then
-  echo "Kanbn binary not found at $KANBN_BIN, using node directly"
-  KANBN_BIN="node $REPO_DIR/index.js"
-fi
+if [ "$USE_BUILT_PACKAGE" = true ]; then
+  echo "Using built package for testing"
+  PACKAGE_TGZ=$(find "$REPO_DIR" -name "kanbn-*.tgz" | sort -r | head -n 1)
+  
+  if [ -z "$PACKAGE_TGZ" ]; then
+    echo "No built package found. Building package..."
+    cd "$REPO_DIR"
+    npm pack
+    PACKAGE_TGZ=$(find "$REPO_DIR" -name "kanbn-*.tgz" | sort -r | head -n 1)
+    cd "$TEST_DIR"
+  fi
+  
+  echo "Installing package: $PACKAGE_TGZ"
+  npm install -g "$PACKAGE_TGZ"
+  KANBN_BIN="kanbn"
+else
+  echo "Using source files for testing"
+  KANBN_BIN="$REPO_DIR/bin/kanbn"
 
-cp -r "$REPO_DIR/src" "$TEST_DIR/"
-cp -r "$REPO_DIR/bin" "$TEST_DIR/"
-cp "$REPO_DIR/index.js" "$TEST_DIR/"
-cp "$REPO_DIR/package.json" "$TEST_DIR/"
-ln -s "$REPO_DIR/node_modules" "$TEST_DIR/node_modules"
+  if [ ! -f "$KANBN_BIN" ]; then
+    echo "Kanbn binary not found at $KANBN_BIN, using node directly"
+    KANBN_BIN="node $REPO_DIR/index.js"
+  fi
 
-cd "$TEST_DIR"
-KANBN_BIN="$TEST_DIR/bin/kanbn"
-if [ ! -f "$KANBN_BIN" ]; then
-  echo "Kanbn binary not found at $KANBN_BIN, using node directly"
-  KANBN_BIN="node $TEST_DIR/index.js"
+  cp -r "$REPO_DIR/src" "$TEST_DIR/"
+  cp -r "$REPO_DIR/bin" "$TEST_DIR/"
+  cp "$REPO_DIR/index.js" "$TEST_DIR/"
+  cp "$REPO_DIR/package.json" "$TEST_DIR/"
+  ln -s "$REPO_DIR/node_modules" "$TEST_DIR/node_modules"
+
+  cd "$TEST_DIR"
+  KANBN_BIN="$TEST_DIR/bin/kanbn"
+  if [ ! -f "$KANBN_BIN" ]; then
+    echo "Kanbn binary not found at $KANBN_BIN, using node directly"
+    KANBN_BIN="node $TEST_DIR/index.js"
+  fi
 fi
 
 run_command "$KANBN_BIN init --name 'Test Project' --description 'Testing all commands'" 0 "Initialize a new kanbn board"
