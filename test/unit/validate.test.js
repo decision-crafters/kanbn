@@ -1,7 +1,7 @@
 const mockFileSystem = require('mock-fs');
 const fs = require('fs');
 const path = require('path');
-const kanbn = require('../../src/main');
+const Kanbn = require('../../src/main');
 
 QUnit.module('validate tests', {
   before() {
@@ -11,32 +11,34 @@ QUnit.module('validate tests', {
     require('../fixtures')({
       countTasks: 3
     });
+    
+    this.kanbn = Kanbn();
   },
   afterEach() {
     mockFileSystem.restore();
   }
 });
 
-QUnit.test('Validate uninitialised folder should throw "not initialised" error', async assert => {
+QUnit.test('Validate uninitialised folder should throw "not initialised" error', async function(assert) {
   mockFileSystem();
   assert.throwsAsync(
     async () => {
-      await kanbn.validate();
+      await this.kanbn.validate();
     },
     /Not initialised in this folder/
   );
 });
 
-QUnit.test('Validate valid index and tasks should return true', async assert => {
+QUnit.test('Validate valid index and tasks should return true', async function(assert) {
 
   // Validate with re-save, then validate again
-  assert.equal(await kanbn.validate(true), true);
-  assert.equal(await kanbn.validate(), true);
+  assert.equal(await this.kanbn.validate(true), true);
+  assert.equal(await this.kanbn.validate(), true);
 });
 
 QUnit.test(
   'Validate with problems in index should return single-element array containing index error',
-  async assert => {
+  async function(assert) {
 
     // Re-write an invalid index file
     await fs.promises.writeFile(
@@ -45,7 +47,7 @@ QUnit.test(
     );
 
     // Validate
-    assert.deepEqual(await kanbn.validate(), [
+    assert.deepEqual(await this.kanbn.validate(), [
       {
         task: null,
         errors: 'Unable to parse index: data is missing a name heading'
@@ -54,7 +56,7 @@ QUnit.test(
   }
 );
 
-QUnit.test('Validate with problems in task files should return array of task errors', async assert => {
+QUnit.test('Validate with problems in task files should return array of task errors', async function(assert) {
 
   // Re-write invalid task files
   await fs.promises.writeFile(
@@ -71,7 +73,7 @@ QUnit.test('Validate with problems in task files should return array of task err
   );
 
   // Validate
-  assert.deepEqual((await kanbn.validate()).sort((a, b) => a.task.localeCompare(b.task)), [
+  assert.deepEqual((await this.kanbn.validate()).sort((a, b) => a.task.localeCompare(b.task)), [
     {
       task: 'task-1',
       errors: 'Unable to parse task: data is null or empty'
