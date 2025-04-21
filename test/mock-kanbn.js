@@ -133,8 +133,12 @@ const kanbn = {
   status: async () => await new Kanbn().status()
 };
 
-// Export both the Kanbn class and the kanbn object for backward compatibility
-module.exports = Kanbn;
-module.exports.Kanbn = Kanbn;
+const KanbnConstructor = function() {
+  return new Kanbn();
+};
+
+// Export both the Kanbn constructor and the kanbn object for backward compatibility
+module.exports = KanbnConstructor;
+module.exports.Kanbn = KanbnConstructor;
 module.exports.config = config;
 module.exports.kanbn = kanbn;
