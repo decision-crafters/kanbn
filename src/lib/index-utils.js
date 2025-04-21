@@ -628,6 +628,46 @@ async function addUntrackedTaskToIndex(
   return taskId;
 }
 
+/**
+ * Find all tracked tasks in the index
+ * @param {object} index The index object
+ * @param {Function} initialised Function to check if kanbn is initialised
+ * @param {string} columnName Optional column name to filter by
+ * @return {Promise<Set>} A set of tracked task IDs
+ */
+async function findTrackedTasks(index, initialised, columnName = null) {
+  // Check if this folder has been initialised
+  if (!(await initialised())) {
+    throw new Error("Not initialised in this folder");
+  }
+
+  return getTrackedTaskIds(index, columnName);
+}
+
+/**
+ * Find all untracked tasks (markdown files in tasks folder not in the index)
+ * @param {object} index The index object
+ * @param {Function} initialised Function to check if kanbn is initialised
+ * @param {Function} getTaskFolderPath Function to get task folder path
+ * @return {Promise<Set>} A set of untracked task IDs
+ */
+async function findUntrackedTasks(index, initialised, getTaskFolderPath) {
+  const glob = require('glob-promise');
+  const path = require('path');
+  
+  // Check if this folder has been initialised
+  if (!(await initialised())) {
+    throw new Error("Not initialised in this folder");
+  }
+
+  const trackedTasks = getTrackedTaskIds(index);
+
+  const files = await glob(`${await getTaskFolderPath()}/*.md`);
+  const untrackedTasks = new Set(files.map((task) => path.parse(task).name));
+
+  return new Set([...untrackedTasks].filter((x) => !trackedTasks.has(x)));
+}
+
 module.exports = {
   getTrackedTaskIds,
   sortColumnInIndex,
@@ -647,5 +687,7 @@ module.exports = {
   updateColumnLinkedCustomField,
   saveIndex,
   loadIndex,
-  addUntrackedTaskToIndex
+  addUntrackedTaskToIndex,
+  findTrackedTasks,
+  findUntrackedTasks
 };

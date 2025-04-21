@@ -830,14 +830,12 @@ class Kanbn {
    * @return {Promise<Set>} A set of task ids
    */
   async findTrackedTasks(columnName = null) {
-    // Check if this folder has been initialised
-    if (!(await this.initialised())) {
-      throw new Error("Not initialised in this folder");
-    }
-
-    // Get all tasks currently in index
     const index = await this.loadIndex();
-    return getTrackedTaskIds(index, columnName);
+    return indexUtils.findTrackedTasks(
+      index,
+      this.initialised.bind(this),
+      columnName
+    );
   }
 
   /**
@@ -845,21 +843,12 @@ class Kanbn {
    * @return {Promise<Set>} A set of untracked task ids
    */
   async findUntrackedTasks() {
-    // Check if this folder has been initialised
-    if (!(await this.initialised())) {
-      throw new Error("Not initialised in this folder");
-    }
-
-    // Get all tasks currently in index
     const index = await this.loadIndex();
-    const trackedTasks = getTrackedTaskIds(index);
-
-    // Get all tasks in the tasks folder
-    const files = await glob(`${await this.getTaskFolderPath()}/*.md`);
-    const untrackedTasks = new Set(files.map((task) => path.parse(task).name));
-
-    // Return the set difference
-    return new Set([...untrackedTasks].filter((x) => !trackedTasks.has(x)));
+    return indexUtils.findUntrackedTasks(
+      index,
+      this.initialised.bind(this),
+      this.getTaskFolderPath.bind(this)
+    );
   }
 
   /**
