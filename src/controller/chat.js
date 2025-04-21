@@ -228,10 +228,18 @@ async function logAIInteraction(type, input, output) {
 async function getProjectContext() {
   try {
     const kanbn = Kanbn();
-    const { findTaskColumn } = require('../main');
     const index = await kanbn.getIndex();
     const tasks = await kanbn.loadAllTrackedTasks();
     const status = await kanbn.status(false, false, false, null, null);
+    
+    const findTaskColumn = (index, taskId) => {
+      for (const [column, tasks] of Object.entries(index.columns)) {
+        if (tasks.includes(taskId)) {
+          return column;
+        }
+      }
+      return null;
+    };
 
     if (!index) {
       console.error('Error getting project context: Invalid index structure');
