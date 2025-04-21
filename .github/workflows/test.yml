@@ -30,21 +30,26 @@ jobs:
         run: npm ci
 
       - name: Run tests
-        run: npm test
+        run: |
+          set -e
+          npm test
         env:
           KANBN_ENV: test
 
       - name: Build package
         run: |
+          set -e
           npm pack
           
       - name: Run binary tests
         run: |
+          set -e
           chmod +x ./test-all-commands.sh
           ./test-all-commands.sh --use-built-package
 
       - name: Run linting
         run: |
+          set -e
           if [ -f package.json ]; then
             if npm ls eslint > /dev/null 2>&1; then
               npm run lint
@@ -53,6 +58,7 @@ jobs:
 
       - name: Check documentation
         run: |
+          set -e
           if [ -d docs ]; then
             if [ ! -f docs/index.html ]; then
               echo "Error: docs/index.html is missing"
