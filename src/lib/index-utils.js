@@ -742,6 +742,73 @@ async function updateTask(
   return taskId;
 }
 
+/**
+ * Rename a task
+ * @param {object} index The index object
+ * @param {string} taskId The task ID to rename
+ * @param {string} newTaskName The new task name
+ * @param {Function} initialised Function to check if kanbn is initialised
+ * @param {Function} getTaskFolderPath Function to get task folder path
+ * @param {Function} loadTask Function to load a task
+ * @param {Function} saveTask Function to save a task
+ * @param {Function} saveIndex Function to save the index
+ * @return {Promise<string>} The new task ID
+ */
+async function renameTask(
+  index,
+  taskId,
+  newTaskName,
+  initialised,
+  getTaskFolderPath,
+  loadTask,
+  saveTask,
+  saveIndex
+) {
+  const fs = require('fs');
+  const utility = require('../utility');
+  const fileUtils = require('./file-utils');
+  const taskUtils = require('./task-utils');
+  
+  // Check if this folder has been initialised
+  if (!(await initialised())) {
+    throw new Error("Not initialised in this folder");
+  }
+  taskId = fileUtils.removeFileExtension(taskId);
+
+  if (!(await fileUtils.exists(fileUtils.getTaskPath(await getTaskFolderPath(), taskId)))) {
+    throw new Error(`No task file found with id "${taskId}"`);
+  }
+
+  if (!taskUtils.taskInIndex(index, taskId)) {
+    throw new Error(`Task "${taskId}" is not in the index`);
+  }
+
+  const newTaskId = utility.getTaskId(newTaskName);
+  const newTaskPath = fileUtils.getTaskPath(await getTaskFolderPath(), newTaskId);
+  if (await fileUtils.exists(newTaskPath)) {
+    throw new Error(`A task with id "${newTaskId}" already exists`);
+  }
+
+  if (taskUtils.taskInIndex(index, newTaskId)) {
+    throw new Error(`A task with id "${newTaskId}" is already in the index`);
+  }
+
+  let taskData = await loadTask(taskId);
+  taskData.name = newTaskName;
+  taskData = taskUtils.setTaskMetadata(taskData, "updated", new Date());
+  await saveTask(fileUtils.getTaskPath(await getTaskFolderPath(), taskId), taskData);
+
+  await fs.promises.rename(
+    fileUtils.getTaskPath(await getTaskFolderPath(), taskId), 
+    newTaskPath
+  );
+
+  // Update the task id in the index
+  index = taskUtils.renameTaskInIndex(index, taskId, newTaskId);
+  await saveIndex(index);
+  return newTaskId;
+}
+
 module.exports = {
   getTrackedTaskIds,
   sortColumnInIndex,
@@ -764,5 +831,6 @@ module.exports = {
   addUntrackedTaskToIndex,
   findTrackedTasks,
   findUntrackedTasks,
-  updateTask
+  updateTask,
+  renameTask
 };

@@ -882,48 +882,17 @@ class Kanbn {
    * @return {Promise<string>} The new id of the task that was renamed
    */
   async renameTask(taskId, newTaskName) {
-    // Check if this folder has been initialised
-    if (!(await this.initialised())) {
-      throw new Error("Not initialised in this folder");
-    }
-    taskId = removeFileExtension(taskId);
-
-    // Make sure the task file exists
-    if (!(await fileUtils.exists(getTaskPath(await this.getTaskFolderPath(), taskId)))) {
-      throw new Error(`No task file found with id "${taskId}"`);
-    }
-
-    // Get index and make sure the task is indexed
-    let index = await this.loadIndex();
-    if (!taskInIndex(index, taskId)) {
-      throw new Error(`Task "${taskId}" is not in the index`);
-    }
-
-    // Make sure there isn't already a task with the new task id
-    const newTaskId = utility.getTaskId(newTaskName);
-    const newTaskPath = getTaskPath(await this.getTaskFolderPath(), newTaskId);
-    if (await fileUtils.exists(newTaskPath)) {
-      throw new Error(`A task with id "${newTaskId}" already exists`);
-    }
-
-    // Check that a task with the new id isn't already indexed
-    if (taskInIndex(index, newTaskId)) {
-      throw new Error(`A task with id "${newTaskId}" is already in the index`);
-    }
-
-    // Update the task name and updated date
-    let taskData = await this.loadTask(taskId);
-    taskData.name = newTaskName;
-    taskData = setTaskMetadata(taskData, "updated", new Date());
-    await this.saveTask(getTaskPath(await this.getTaskFolderPath(), taskId), taskData);
-
-    // Rename the task file
-    await fs.promises.rename(getTaskPath(await this.getTaskFolderPath(), taskId), newTaskPath);
-
-    // Update the task id in the index
-    index = renameTaskInIndex(index, taskId, newTaskId);
-    await this.saveIndex(index);
-    return newTaskId;
+    const index = await this.loadIndex();
+    return indexUtils.renameTask(
+      index,
+      taskId,
+      newTaskName,
+      this.initialised.bind(this),
+      this.getTaskFolderPath.bind(this),
+      this.loadTask.bind(this),
+      this.saveTask.bind(this),
+      this.saveIndex.bind(this)
+    );
   }
 
   /**
