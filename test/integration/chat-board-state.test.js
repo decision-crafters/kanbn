@@ -127,13 +127,15 @@ QUnit.module('Chat Board State', {
     before: function() {
         this.originalEnv = { ...process.env };
         this.mockKanbn = new MockKanbn();
-
+        
+        const mockKanbn = this.mockKanbn;
+        
         const mockKanbnModule = require('../mock-kanbn');
         mockRequire('../../src/main', {
             ...mockKanbnModule,
             Kanbn: function() {
-                return this.mockKanbn;
-            }.bind(this),
+                return mockKanbn;
+            },
             findTaskColumn: (index, taskId) => {
                 for (const [column, tasks] of Object.entries(index.columns)) {
                     if (tasks.includes(taskId)) {
