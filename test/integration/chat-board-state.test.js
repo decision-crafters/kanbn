@@ -166,6 +166,28 @@ QUnit.module('Chat Board State', {
     beforeEach: function() {
         this.mockKanbn = new MockKanbn();
         global.chatHistory = [];
+        
+        // Update the mock for each test
+        const mockKanbn = this.mockKanbn;
+        
+        const mockKanbnModule = require('../mock-kanbn');
+        mockRequire('../../src/main', {
+            ...mockKanbnModule,
+            Kanbn: function() {
+                return mockKanbn;
+            },
+            findTaskColumn: (index, taskId) => {
+                for (const [column, tasks] of Object.entries(index.columns)) {
+                    if (tasks.includes(taskId)) {
+                        return column;
+                    }
+                }
+                return null;
+            }
+        });
+        
+        // Clear module cache to ensure we get a fresh instance
+        delete require.cache[require.resolve('../../src/controller/chat')];
     }
 });
 
