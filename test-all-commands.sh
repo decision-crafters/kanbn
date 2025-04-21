@@ -48,11 +48,19 @@ if [ "$USE_BUILT_PACKAGE" = true ]; then
   
   cd "$REPO_DIR"
   
-  PACKAGE_TGZ=$(find "$REPO_DIR" -name "kanbn-*.tgz" | sort -r | head -n 1)
+  PACKAGE_TGZ=$(find "$REPO_DIR" -name "*kanbn*.tgz" | sort -r | head -n 1)
   if [ -z "$PACKAGE_TGZ" ]; then
     echo "No built package found. Building package..."
     npm pack
-    PACKAGE_TGZ=$(find "$REPO_DIR" -name "kanbn-*.tgz" | sort -r | head -n 1)
+    PACKAGE_TGZ=$(find "$REPO_DIR" -name "*kanbn*.tgz" | sort -r | head -n 1)
+    
+    echo "Available package files:"
+    find "$REPO_DIR" -name "*.tgz" -type f
+  fi
+  
+  if [ -z "$PACKAGE_TGZ" ]; then
+    echo "ERROR: Could not find package file after npm pack"
+    exit 1
   fi
   
   echo "Installing package: $PACKAGE_TGZ"
