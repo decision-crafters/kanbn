@@ -45,19 +45,9 @@ const defaultInitialiseOptions = {
   columns: ["Backlog", "Todo", "In Progress", "Done"],
 };
 
-/**
- * Check if a file or folder exists
- * @param {string} path
- * @return {Promise<boolean>} True if the file or folder exists
- */
-async function exists(path) {
-  try {
-    await fs.promises.access(path, fs.constants.R_OK | fs.constants.W_OK);
-  } catch (error) {
-    return false;
-  }
-  return true;
-}
+const fileUtils = require("./lib/file-utils");
+const taskUtils = require("./lib/task-utils");
+const filterUtils = require("./lib/filter-utils");
 
 /**
  * Get a list of all tracked task ids
@@ -87,153 +77,48 @@ function getTrackedTaskIds(index, columnName = null) {
    * @return {string} The task path
    */
 function getTaskPath(tasksPath, taskId) {
-  return path.join(tasksPath, addFileExtension(taskId));
+  return fileUtils.getTaskPath(tasksPath, taskId);
 }
 
-/**
- * Add the file extension to an id if it doesn't already have one
- * @param {string} taskId The task id
- * @return {string} The task id with .md extension
- */
 function addFileExtension(taskId) {
-  if (!/\.md$/.test(taskId)) {
-    return `${taskId}.md`;
-  }
-  return taskId;
+  return fileUtils.addFileExtension(taskId);
 }
 
-/**
- * Remove the file extension from an id if it has one
- * @param {string} taskId The task id
- * @return {string} The task id without .md extension
- */
 function removeFileExtension(taskId) {
-  if (/\.md$/.test(taskId)) {
-    return taskId.slice(0, taskId.length - ".md".length);
-  }
-  return taskId;
+  return fileUtils.removeFileExtension(taskId);
 }
 
 
-/**
- * Check if a task exists in the index
- * @param {object} index The index object
- * @param {string} taskId The task id to search for
- * @return {boolean} True if the task exists in the index
- */
 function taskInIndex(index, taskId) {
-  for (let columnName in index.columns) {
-    if (index.columns[columnName].indexOf(taskId) !== -1) {
-      return true;
-    }
-  }
-  return false;
+  return taskUtils.taskInIndex(index, taskId);
 }
 
-/**
- * Find a task in the index and returns the column that it's in
- * @param {object} index The index data
- * @param {string} taskId The task id to search for
- * @return {?string} The column name for the specified task, or null if it wasn't found
- */
 function findTaskColumn(index, taskId) {
-  for (let columnName in index.columns) {
-    if (index.columns[columnName].indexOf(taskId) !== -1) {
-      return columnName;
-    }
-  }
-  return null;
+  return taskUtils.findTaskColumn(index, taskId);
 }
 
-/**
- * Add a task id to the specified column in the index
- * @param {object} index The index object
- * @param {string} taskId The task id to add
- * @param {string} columnName The column to add the task to
- * @param {?number} [position=null] The position in the column to move the task to, or last position if null
- * @return {object} The modified index object
- */
 function addTaskToIndex(index, taskId, columnName, position = null) {
-  if (position === null) {
-    index.columns[columnName].push(taskId);
-  } else {
-    index.columns[columnName].splice(position, 0, taskId);
-  }
-  return index;
+  return taskUtils.addTaskToIndex(index, taskId, columnName, position);
 }
 
-/**
- * Remove all instances of a task id from the index
- * @param {object} index The index object
- * @param {string} taskId The task id to remove
- * @return {object} The modified index object
- */
 function removeTaskFromIndex(index, taskId) {
-  for (let columnName in index.columns) {
-    index.columns[columnName] = index.columns[columnName].filter((t) => t !== taskId);
-  }
-  return index;
+  return taskUtils.removeTaskFromIndex(index, taskId);
 }
 
-/**
- * Rename all instances of a task id in the index
- * @param {object} index The index object
- * @param {string} taskId The task id to rename
- * @param {string} newTaskId The new task id
- * @return {object} The modified index object
- */
 function renameTaskInIndex(index, taskId, newTaskId) {
-  for (let columnName in index.columns) {
-    index.columns[columnName] = index.columns[columnName].map((t) => (t === taskId ? newTaskId : t));
-  }
-  return index;
+  return taskUtils.renameTaskInIndex(index, taskId, newTaskId);
 }
 
-/**
- * Get a metadata property from a task, or undefined if the metadata property doesn't exist or
- * if the task has no metadata
- * @param {object} taskData The task object
- * @param {string} property The metadata property to check
- * @return {any} The metadata property value
- */
 function getTaskMetadata(taskData, property) {
-  if ("metadata" in taskData && property in taskData.metadata) {
-    return taskData.metadata[property];
-  }
-  return undefined;
+  return taskUtils.getTaskMetadata(taskData, property);
 }
 
-/**
- * Set a metadata value in a task. If the value is undefined, remove the metadata property instead
- * @param {object} taskData The task object
- * @param {string} property The metadata property to update
- * @param {string} value The value to set
- * @return {object} The modified task object
- */
 function setTaskMetadata(taskData, property, value) {
-  if (!("metadata" in taskData)) {
-    taskData.metadata = {};
-  }
-  if (property in taskData.metadata && value === undefined) {
-    delete taskData.metadata[property];
-  } else {
-    taskData.metadata[property] = value;
-  }
-  return taskData;
+  return taskUtils.setTaskMetadata(taskData, property, value);
 }
 
-/**
- * Check if a task is completed
- * @param {object} index
- * @param {object} task
- * @return {boolean} True if the task is in a completed column or has a completed date
- */
 function taskCompleted(index, task) {
-  return (
-    "completed" in task.metadata ||
-    ("completedColumns" in index.options &&
-      index.options.completedColumns.indexOf(findTaskColumn(index, task.id)) !== -1)
-  );
+  return taskUtils.taskCompleted(index, task);
 }
 
 /**
@@ -541,10 +426,7 @@ function filterTasks(index, tasks, filters) {
  * @return {boolean} True if the input matches the string filter
  */
 function stringFilter(filter, input) {
-  if (Array.isArray(filter)) {
-    filter = filter.join("|");
-  }
-  return new RegExp(filter, "i").test(input);
+  return filterUtils.stringFilter(filter, input);
 }
 
 /**
@@ -555,13 +437,7 @@ function stringFilter(filter, input) {
  * @return {boolean} True if the input matches the date filter
  */
 function dateFilter(dates, input) {
-  dates = utility.arrayArg(dates);
-  if (dates.length === 1) {
-    return utility.compareDates(input, dates[0]);
-  }
-  const earliest = Math.min(...dates);
-  const latest = Math.max(...dates);
-  return input >= earliest && input <= latest;
+  return filterUtils.dateFilter(dates, input);
 }
 
 /**
@@ -572,8 +448,7 @@ function dateFilter(dates, input) {
  * @return {boolean} True if the input matches the number filter
  */
 function numberFilter(filter, input) {
-  filter = utility.arrayArg(filter);
-  return input >= Math.min(...filter) && input <= Math.max(...filter);
+  return filterUtils.numberFilter(filter, input);
 }
 
 /**

@@ -11,7 +11,8 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: [20.x]
+        node-version: [16.x, 18.x, 20.x, 22.x]
+      fail-fast: true
 
     steps:
       - uses: actions/checkout@v4
@@ -33,6 +34,11 @@ jobs:
         env:
           KANBN_ENV: test
 
+      - name: Run binary tests
+        run: |
+          chmod +x ./test-all-commands.sh
+          ./test-all-commands.sh
+
       - name: Run linting
         run: |
           if [ -f package.json ]; then
@@ -40,7 +46,6 @@ jobs:
               npm run lint
             fi
           fi
-        continue-on-error: true
 
       - name: Check documentation
         run: |
