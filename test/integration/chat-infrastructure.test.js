@@ -214,6 +214,23 @@ Test Infrastructure
 
         // Ensure API key is set
         process.env.OPENROUTER_API_KEY = 'test-api-key';
+        
+        const mockKanbn = new MockKanbn();
+        this.mockKanbn = mockKanbn;
+        
+        const mockKanbnModule = require('../mock-kanbn');
+        mockRequire('../../src/main', {
+            ...mockKanbnModule,
+            Kanbn: function() { return mockKanbn; },
+            findTaskColumn: (index, taskId) => {
+                for (const [column, tasks] of Object.entries(index.columns)) {
+                    if (tasks.includes(taskId)) {
+                        return column;
+                    }
+                }
+                return null;
+            }
+        });
 
         // Clear module cache to ensure fresh instance
         delete require.cache[require.resolve('../../src/controller/chat')];
