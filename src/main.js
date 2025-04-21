@@ -2292,5 +2292,9 @@ class Kanbn {
   }
 };
 
-module.exports = Kanbn;
+function KanbnConstructor() {
+  return new Kanbn();
+}
+
+module.exports = KanbnConstructor;
 module.exports.Kanbn = Kanbn;
