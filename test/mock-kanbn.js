@@ -139,6 +139,6 @@ const KanbnConstructor = function() {
 
 // Export both the Kanbn constructor and the kanbn object for backward compatibility
 module.exports = KanbnConstructor;
-module.exports.Kanbn = KanbnConstructor;
+module.exports.Kanbn = Kanbn; // Export the Kanbn class directly
 module.exports.config = config;
 module.exports.kanbn = kanbn;

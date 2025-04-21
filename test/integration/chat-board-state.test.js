@@ -1,10 +1,12 @@
 const QUnit = require('qunit');
 const path = require('path');
+const fs = require('fs');
 const mockRequire = require('mock-require');
+const realFs = require('../real-fs-fixtures');
 
-const testFolder = path.join(__dirname, '..', 'test-chat-board-state');
+const testName = 'chat-board-state';
 
-// Mock Kanbn for testing
+// Mock Kanbn for testing with real file system
 class MockKanbn {
     constructor() {
         this.tasks = new Map();
@@ -34,11 +36,20 @@ class MockKanbn {
 
     async createTask(taskData, column) {
         const taskId = `task-${Date.now()}`;
-        this.tasks.set(taskId, { ...taskData, id: taskId });
+        const task = { ...taskData, id: taskId };
+        this.tasks.set(taskId, task);
+        
+        // Create task file in real file system
+        const taskDir = path.join(process.cwd(), '.kanbn', 'tasks');
+        if (!fs.existsSync(taskDir)) {
+            fs.mkdirSync(taskDir, { recursive: true });
+        }
+        
         if (!this.columns[column]) {
             this.columns[column] = [];
         }
         this.columns[column].push(taskId);
+        
         return taskId;
     }
 
@@ -49,6 +60,14 @@ class MockKanbn {
                 this.columns[toColumn] = [];
             }
             this.columns[toColumn].push(taskId);
+            
+            // Update index file in real file system
+            const indexPath = path.join(process.cwd(), '.kanbn', 'index.md');
+            if (fs.existsSync(indexPath)) {
+                const indexContent = fs.readFileSync(indexPath, 'utf8');
+                fs.writeFileSync(indexPath, indexContent);
+            }
+            
             return true;
         }
         return false;
@@ -65,7 +84,15 @@ class MockKanbn {
 
     async updateTask(taskId, taskData) {
         if (this.tasks.has(taskId)) {
-            this.tasks.set(taskId, { ...this.tasks.get(taskId), ...taskData });
+            const updatedTask = { ...this.tasks.get(taskId), ...taskData };
+            this.tasks.set(taskId, updatedTask);
+            
+            // Update task file in real file system
+            const taskPath = path.join(process.cwd(), '.kanbn', 'tasks', `${taskId}.md`);
+            if (fs.existsSync(path.dirname(taskPath))) {
+                fs.writeFileSync(taskPath, JSON.stringify(updatedTask, null, 2));
+            }
+            
             return true;
         }
         return false;
@@ -126,6 +153,7 @@ const validateBoardState = {
 QUnit.module('Chat Board State', {
     before: function() {
         this.originalEnv = { ...process.env };
+        this.testDir = realFs.createTestDirectory(testName);
         this.mockKanbn = new MockKanbn();
         
         const mockKanbn = this.mockKanbn;
@@ -150,15 +178,31 @@ QUnit.module('Chat Board State', {
         process.env = {
             ...process.env,
             KANBN_ENV: 'test',
-            OPENROUTER_API_KEY: 'test-api-key',
+            OPENROUTER_API_KEY: process.env.OPENROUTER_API_KEY || 'test-api-key',
             NODE_ENV: 'test'
         };
+
+        // Set up test directory structure
+        fs.mkdirSync(path.join(this.testDir, '.kanbn'), { recursive: true });
+        fs.mkdirSync(path.join(this.testDir, '.kanbn', 'tasks'), { recursive: true });
+        
+        // Create a basic index file
+        const indexContent = `# Test Project\n\nTest project for board state validation\n\n## Columns\n\n- Backlog\n- In Progress\n- Done\n`;
+        fs.writeFileSync(path.join(this.testDir, '.kanbn', 'index.md'), indexContent);
+        
+        this.originalCwd = process.cwd();
+        process.chdir(this.testDir);
 
         // Clear module cache
         delete require.cache[require.resolve('../../src/controller/chat')];
     },
 
     after: function() {
+        process.chdir(this.originalCwd);
+        
+        realFs.cleanupFixtures(this.testDir);
+        
+        // Restore environment
         process.env = this.originalEnv;
         mockRequire.stopAll();
     },
