@@ -51,7 +51,7 @@ function addFileExtension(taskId) {
  */
 function removeFileExtension(taskId) {
   if (typeof taskId !== 'string') {
-    return taskId;
+    return '';
   }
   return taskId.endsWith('.md') ? taskId.substring(0, taskId.length - 3) : taskId;
 }

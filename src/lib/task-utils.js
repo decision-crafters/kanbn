@@ -7,6 +7,9 @@ const path = require('path');
  * @return {boolean} True if the task is in the index
  */
 function taskInIndex(index, taskId) {
+  if (typeof taskId !== 'string') {
+    return false;
+  }
   return Object.values(index.columns).flat().includes(taskId);
 }
 
@@ -17,6 +20,9 @@ function taskInIndex(index, taskId) {
  * @return {string|null} The name of the column, or null if the task isn't in the index
  */
 function findTaskColumn(index, taskId) {
+  if (typeof taskId !== 'string') {
+    return null;
+  }
   return Object.entries(index.columns).find(([_, tasks]) => tasks.includes(taskId))?.[0] || null;
 }
 
