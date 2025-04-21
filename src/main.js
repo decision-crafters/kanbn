@@ -2310,20 +2310,25 @@ Object.getOwnPropertyNames(Kanbn.prototype).forEach(method => {
   }
 });
 
-module.exports = KanbnConstructor;
+// Create a function that returns our singleton instance
+const kanbnFunction = function() {
+  return kanbnInstance;
+};
 
-module.exports.Kanbn = Kanbn;
+// Add the Kanbn class and utility functions as properties
+kanbnFunction.Kanbn = Kanbn;
+kanbnFunction.findTaskColumn = findTaskColumn;
+kanbnFunction.getTaskPath = getTaskPath;
+kanbnFunction.addFileExtension = addFileExtension;
+kanbnFunction.removeFileExtension = removeFileExtension;
+kanbnFunction.taskInIndex = taskInIndex;
+kanbnFunction.addTaskToIndex = addTaskToIndex;
+kanbnFunction.removeTaskFromIndex = removeTaskFromIndex;
+kanbnFunction.renameTaskInIndex = renameTaskInIndex;
+kanbnFunction.getTaskMetadata = getTaskMetadata;
+kanbnFunction.setTaskMetadata = setTaskMetadata;
+kanbnFunction.taskCompleted = taskCompleted;
 
-module.exports.findTaskColumn = findTaskColumn;
-module.exports.getTaskPath = getTaskPath;
-module.exports.addFileExtension = addFileExtension;
-module.exports.removeFileExtension = removeFileExtension;
-module.exports.taskInIndex = taskInIndex;
-module.exports.addTaskToIndex = addTaskToIndex;
-module.exports.removeTaskFromIndex = removeTaskFromIndex;
-module.exports.renameTaskInIndex = renameTaskInIndex;
-module.exports.getTaskMetadata = getTaskMetadata;
-module.exports.setTaskMetadata = setTaskMetadata;
-module.exports.taskCompleted = taskCompleted;
+Object.assign(kanbnFunction, kanbnMethods);
 
-Object.assign(module.exports, kanbnMethods);
+module.exports = kanbnFunction;
