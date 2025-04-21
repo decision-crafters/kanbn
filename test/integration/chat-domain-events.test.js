@@ -140,6 +140,31 @@ QUnit.module('Chat Domain Events', {
             fs.mkdirSync(testFolder, { recursive: true });
         }
         process.chdir(testFolder);
+        
+        const eventBus = this.eventBus;
+        
+        // Set up mocks
+        const MockKanbnWithEvents = class extends DomainMockKanbn {
+          constructor() {
+            super(eventBus);
+          }
+        };
+
+        const mockKanbnModule = require('../mock-kanbn');
+        mockRequire('../../src/main', {
+          ...mockKanbnModule,
+          Kanbn: function() {
+            return new MockKanbnWithEvents(eventBus);
+          },
+          findTaskColumn: () => 'Backlog',
+          getProjectContext: async () => {
+            const kanbn = new MockKanbnWithEvents(eventBus);
+            return kanbn.getProjectContext();
+          }
+        });
+        
+        // Reset cache for chat controller
+        delete require.cache[require.resolve('../../src/controller/chat')];
     },
 
     afterEach: function() {
