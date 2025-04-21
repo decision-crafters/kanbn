@@ -937,14 +937,19 @@ class Kanbn {
     } catch (error) {
       throw new Error(`Couldn't access index file: ${error.message}`);
     }
-    const index = parseIndex.md2json(indexData);
+    
+    try {
+      const index = parseIndex.md2json(indexData);
 
-    // If configuration settings exist in a separate config file, merge them with index options
-    const config = await this.getConfig();
-    if (config !== null) {
-      index.options = { ...index.options, ...config };
+      // If configuration settings exist in a separate config file, merge them with index options
+      const config = await this.getConfig();
+      if (config !== null) {
+        index.options = { ...index.options, ...config };
+      }
+      return index;
+    } catch (error) {
+      throw new Error(`Unable to parse index: ${error.message}`);
     }
-    return index;
   }
 
   /**
@@ -1421,12 +1426,14 @@ class Kanbn {
     const currentColumnName = findTaskColumn(index, taskId);
     const currentPosition = index.columns[currentColumnName].indexOf(taskId);
 
-    // If we're moving to the same column, calculate the position
-    if (columnName === currentColumnName && position) {
+    // Calculate the position
+    if (position !== null) {
       if (relative) {
-        position = currentPosition + position;
+        const startPosition = (columnName === currentColumnName) ? currentPosition : 0;
+        position = startPosition + position;
       }
-      position = Math.max(Math.min(position, index.columns[currentColumnName].length), 0);
+      // Ensure position is within bounds of the target column
+      position = Math.max(Math.min(position, index.columns[columnName].length), 0);
     }
 
     // Remove the task from its current column and add it to the new column
@@ -1788,14 +1795,15 @@ class Kanbn {
         await this.saveIndex(index);
       }
     } catch (error) {
+      // Add the index error to the errors array
       errors.push({
         task: null,
-        errors: error.message,
+        errors: error.message.includes('Unable to parse index') 
+          ? error.message 
+          : `Unable to parse index: ${error.message}`
       });
-    }
-
-    // Exit early if any errors were found in the index
-    if (errors.length) {
+      
+      // Exit early if any errors were found in the index
       return errors;
     }
 
@@ -1817,11 +1825,8 @@ class Kanbn {
       }
     }
 
-    // Return a list of errors or true if there were no errors
-    if (errors.length) {
-      return errors;
-    }
-    return true;
+    // Return a list of errors or empty array if there were no errors
+    return errors;
   }
 
   /**
@@ -2297,43 +2302,26 @@ class Kanbn {
   }
 };
 
-// Create a singleton instance
-const kanbnInstance = new Kanbn();
-
-// Create a function that returns the singleton instance
-function KanbnConstructor() {
-  return kanbnInstance;
+/**
+ * Factory function that creates and returns a new Kanbn instance
+ * @returns {Kanbn} A new Kanbn instance
+ */
+function createKanbn() {
+  return new Kanbn();
 }
 
-// Create an object with all the methods that delegate to the singleton instance
-const kanbnMethods = {};
-Object.getOwnPropertyNames(Kanbn.prototype).forEach(method => {
-  if (method !== 'constructor') {
-    kanbnMethods[method] = function(...args) {
-      return kanbnInstance[method](...args);
-    };
-  }
-});
+module.exports = createKanbn;
 
-// Create a function that returns our singleton instance
-const kanbnFunction = function() {
-  return kanbnInstance;
-};
-
-// Add the Kanbn class and utility functions as properties
-kanbnFunction.Kanbn = Kanbn;
-kanbnFunction.findTaskColumn = findTaskColumn;
-kanbnFunction.getTaskPath = getTaskPath;
-kanbnFunction.addFileExtension = addFileExtension;
-kanbnFunction.removeFileExtension = removeFileExtension;
-kanbnFunction.taskInIndex = taskInIndex;
-kanbnFunction.addTaskToIndex = addTaskToIndex;
-kanbnFunction.removeTaskFromIndex = removeTaskFromIndex;
-kanbnFunction.renameTaskInIndex = renameTaskInIndex;
-kanbnFunction.getTaskMetadata = getTaskMetadata;
-kanbnFunction.setTaskMetadata = setTaskMetadata;
-kanbnFunction.taskCompleted = taskCompleted;
-
-Object.assign(kanbnFunction, kanbnMethods);
-
-module.exports = kanbnFunction;
+// Add utility functions and the Kanbn class as properties
+module.exports.Kanbn = Kanbn;
+module.exports.findTaskColumn = findTaskColumn;
+module.exports.getTaskPath = getTaskPath;
+module.exports.addFileExtension = addFileExtension;
+module.exports.removeFileExtension = removeFileExtension;
+module.exports.taskInIndex = taskInIndex;
+module.exports.addTaskToIndex = addTaskToIndex;
+module.exports.removeTaskFromIndex = removeTaskFromIndex;
+module.exports.renameTaskInIndex = renameTaskInIndex;
+module.exports.getTaskMetadata = getTaskMetadata;
+module.exports.setTaskMetadata = setTaskMetadata;
+module.exports.taskCompleted = taskCompleted;
