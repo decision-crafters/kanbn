@@ -8,6 +8,10 @@ const yaml = require("yamljs");
 const humanizeDuration = require("humanize-duration");
 const rimraf = require("rimraf");
 
+const fileUtils = require("./lib/file-utils");
+const taskUtils = require("./lib/task-utils");
+const filterUtils = require("./lib/filter-utils");
+
 const DEFAULT_FOLDER_NAME = ".kanbn";
 const DEFAULT_INDEX_FILE_NAME = "index.md";
 const DEFAULT_TASKS_FOLDER_NAME = "tasks";
@@ -44,10 +48,6 @@ const defaultInitialiseOptions = {
   },
   columns: ["Backlog", "Todo", "In Progress", "Done"],
 };
-
-const fileUtils = require("./lib/file-utils");
-const taskUtils = require("./lib/task-utils");
-const filterUtils = require("./lib/filter-utils");
 
 /**
  * Get a list of all tracked task ids
@@ -683,14 +683,14 @@ class Kanbn {
    * @returns {Promise<boolean>} True if a config file exists
    */
   async configExists() {
-    return await exists(this.CONFIG_YAML) || await exists(this.CONFIG_JSON);
+    return await fileUtils.exists(this.CONFIG_YAML) || await fileUtils.exists(this.CONFIG_JSON);
   }
 
   /**
    * Save configuration data to a separate config file
    */
   async saveConfig(config) {
-    if (await exists(this.CONFIG_YAML)) {
+    if (await fileUtils.exists(this.CONFIG_YAML)) {
       await fs.promises.writeFile(this.CONFIG_YAML, yaml.stringify(config, 4, 2));
     } else {
       await fs.promises.writeFile(this.CONFIG_JSON, JSON.stringify(config, null, 4));
@@ -704,13 +704,13 @@ class Kanbn {
   async getConfig() {
     if (this.configMemo === null) {
       let config = null;
-      if (await exists(this.CONFIG_YAML)) {
+      if (await fileUtils.exists(this.CONFIG_YAML)) {
         try {
           config = yaml.load(this.CONFIG_YAML);
         } catch (error) {
           throw new Error(`Couldn't load config file: ${error.message}`);
         }
-      } else if (await exists(this.CONFIG_JSON)) {
+      } else if (await fileUtils.exists(this.CONFIG_JSON)) {
         try {
           config = JSON.parse(await fs.promises.readFile(this.CONFIG_JSON, { encoding: "utf-8" }));
         } catch (error) {
@@ -1026,7 +1026,7 @@ class Kanbn {
    * @return {Promise<boolean>} True if the current working directory has been initialised, otherwise false
    */
   async initialised() {
-    return await exists(await this.getIndexPath());
+    return await fileUtils.exists(await this.getIndexPath());
   }
 
   /**
@@ -1038,19 +1038,19 @@ class Kanbn {
     const mainFolder = await this.getMainFolder();
 
     // Create main folder if it doesn't already exist
-    if (!(await exists(mainFolder))) {
+    if (!(await fileUtils.exists(mainFolder))) {
       await fs.promises.mkdir(mainFolder, { recursive: true });
     }
 
     // Create tasks folder if it doesn't already exist
     const taskFolder = await this.getTaskFolderPath();
-    if (!(await exists(taskFolder))) {
+    if (!(await fileUtils.exists(taskFolder))) {
       await fs.promises.mkdir(taskFolder, { recursive: true });
     }
 
     // Create index if one doesn't already exist
     let index;
-    if (!(await exists(await this.getIndexPath()))) {
+    if (!(await fileUtils.exists(await this.getIndexPath()))) {
 
       // If config already exists in a separate file, merge it into the options
       const config = await this.getConfig();
@@ -1095,7 +1095,7 @@ class Kanbn {
     }
 
     // Check if the task file exists
-    if (!(await exists(getTaskPath(await this.getTaskFolderPath(), taskId)))) {
+    if (!(await fileUtils.exists(getTaskPath(await this.getTaskFolderPath(), taskId)))) {
       throw new Error(`No task file found with id "${taskId}"`);
     }
 
@@ -1118,7 +1118,7 @@ class Kanbn {
     }
 
     // Check if the task file exists
-    if (!(await exists(getTaskPath(await this.getTaskFolderPath(), taskId)))) {
+    if (!(await fileUtils.exists(getTaskPath(await this.getTaskFolderPath(), taskId)))) {
       throw new Error(`No task file found with id "${taskId}"`);
     }
 
@@ -1152,7 +1152,7 @@ class Kanbn {
     // Make sure a task doesn't already exist with the same name
     const taskId = utility.getTaskId(taskData.name);
     const taskPath = getTaskPath(await this.getTaskFolderPath(), taskId);
-    if (await exists(taskPath)) {
+    if (await fileUtils.exists(taskPath)) {
       throw new Error(`A task with id "${taskId}" already exists`);
     }
 
@@ -1194,7 +1194,7 @@ class Kanbn {
     taskId = removeFileExtension(taskId);
 
     // Make sure the task file exists
-    if (!(await exists(getTaskPath(await this.getTaskFolderPath(), taskId)))) {
+    if (!(await fileUtils.exists(getTaskPath(await this.getTaskFolderPath(), taskId)))) {
       throw new Error(`No task file found with id "${taskId}"`);
     }
 
@@ -1276,7 +1276,7 @@ class Kanbn {
     taskId = removeFileExtension(taskId);
 
     // Make sure the task file exists
-    if (!(await exists(getTaskPath(await this.getTaskFolderPath(), taskId)))) {
+    if (!(await fileUtils.exists(getTaskPath(await this.getTaskFolderPath(), taskId)))) {
       throw new Error(`No task file found with id "${taskId}"`);
     }
 
@@ -1336,7 +1336,7 @@ class Kanbn {
     taskId = removeFileExtension(taskId);
 
     // Make sure the task file exists
-    if (!(await exists(getTaskPath(await this.getTaskFolderPath(), taskId)))) {
+    if (!(await fileUtils.exists(getTaskPath(await this.getTaskFolderPath(), taskId)))) {
       throw new Error(`No task file found with id "${taskId}"`);
     }
 
@@ -1349,7 +1349,7 @@ class Kanbn {
     // Make sure there isn't already a task with the new task id
     const newTaskId = utility.getTaskId(newTaskName);
     const newTaskPath = getTaskPath(await this.getTaskFolderPath(), newTaskId);
-    if (await exists(newTaskPath)) {
+    if (await fileUtils.exists(newTaskPath)) {
       throw new Error(`A task with id "${newTaskId}" already exists`);
     }
 
@@ -1389,7 +1389,7 @@ class Kanbn {
     taskId = removeFileExtension(taskId);
 
     // Make sure the task file exists
-    if (!(await exists(getTaskPath(await this.getTaskFolderPath(), taskId)))) {
+    if (!(await fileUtils.exists(getTaskPath(await this.getTaskFolderPath(), taskId)))) {
       throw new Error(`No task file found with id "${taskId}"`);
     }
 
@@ -1454,7 +1454,7 @@ class Kanbn {
     index = removeTaskFromIndex(index, taskId);
 
     // Optionally remove the task file as well
-    if (removeFile && (await exists(getTaskPath(await this.getTaskFolderPath(), taskId)))) {
+    if (removeFile && (await fileUtils.exists(getTaskPath(await this.getTaskFolderPath(), taskId)))) {
       await fs.promises.unlink(getTaskPath(await this.getTaskFolderPath(), taskId));
     }
     await this.saveIndex(index);
@@ -2119,7 +2119,7 @@ class Kanbn {
     taskId = removeFileExtension(taskId);
 
     // Make sure the task file exists
-    if (!(await exists(getTaskPath(await this.getTaskFolderPath(), taskId)))) {
+    if (!(await fileUtils.exists(getTaskPath(await this.getTaskFolderPath(), taskId)))) {
       throw new Error(`No task file found with id "${taskId}"`);
     }
 
@@ -2160,7 +2160,7 @@ class Kanbn {
 
     // Make sure the archive folder exists
     const archiveFolder = await this.getArchiveFolderPath();
-    if (!(await exists(archiveFolder))) {
+    if (!(await fileUtils.exists(archiveFolder))) {
       throw new Error("Archive folder doesn't exist");
     }
 
@@ -2182,7 +2182,7 @@ class Kanbn {
     taskId = removeFileExtension(taskId);
 
     // Make sure the task file exists
-    if (!(await exists(getTaskPath(await this.getTaskFolderPath(), taskId)))) {
+    if (!(await fileUtils.exists(getTaskPath(await this.getTaskFolderPath(), taskId)))) {
       throw new Error(`No task file found with id "${taskId}"`);
     }
 
@@ -2195,12 +2195,12 @@ class Kanbn {
     // Make sure there isn't already an archived task with the same id
     const archiveFolder = await this.getArchiveFolderPath();
     const archivedTaskPath = getTaskPath(archiveFolder, taskId);
-    if (await exists(archivedTaskPath)) {
+    if (await fileUtils.exists(archivedTaskPath)) {
       throw new Error(`An archived task with id "${taskId}" already exists`);
     }
 
     // Create archive folder if it doesn't already exist
-    if (!(await exists(archiveFolder))) {
+    if (!(await fileUtils.exists(archiveFolder))) {
       await fs.promises.mkdir(archiveFolder, { recursive: true });
     }
 
@@ -2235,12 +2235,12 @@ class Kanbn {
     const taskPath = getTaskPath(await this.getTaskFolderPath(), taskId);
 
     // Make sure the archive folder exists
-    if (!(await exists(archiveFolder))) {
+    if (!(await fileUtils.exists(archiveFolder))) {
       throw new Error("Archive folder doesn't exist");
     }
 
     // Make sure the task file exists in the archive
-    if (!(await exists(archivedTaskPath))) {
+    if (!(await fileUtils.exists(archivedTaskPath))) {
       throw new Error(`No archived task found with id "${taskId}"`);
     }
 
@@ -2251,7 +2251,7 @@ class Kanbn {
     }
 
     // Check if there is already a task with the same id
-    if (await exists(taskPath)) {
+    if (await fileUtils.exists(taskPath)) {
       throw new Error(`There is already an untracked task with id "${taskId}"`);
     }
 
@@ -2292,11 +2292,26 @@ class Kanbn {
   }
 };
 
+// Create a singleton instance
+const kanbnInstance = new Kanbn();
+
+// Create a function that returns the singleton instance
 function KanbnConstructor() {
-  return new Kanbn();
+  return kanbnInstance;
 }
 
+// Create an object with all the methods that delegate to the singleton instance
+const kanbnMethods = {};
+Object.getOwnPropertyNames(Kanbn.prototype).forEach(method => {
+  if (method !== 'constructor') {
+    kanbnMethods[method] = function(...args) {
+      return kanbnInstance[method](...args);
+    };
+  }
+});
+
 module.exports = KanbnConstructor;
+
 module.exports.Kanbn = Kanbn;
 
 module.exports.findTaskColumn = findTaskColumn;
@@ -2310,3 +2325,5 @@ module.exports.renameTaskInIndex = renameTaskInIndex;
 module.exports.getTaskMetadata = getTaskMetadata;
 module.exports.setTaskMetadata = setTaskMetadata;
 module.exports.taskCompleted = taskCompleted;
+
+Object.assign(module.exports, kanbnMethods);
