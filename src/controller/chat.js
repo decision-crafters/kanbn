@@ -1,4 +1,4 @@
-const Kanbn = require('../main');
+const kanbnModule = require('../main');
 const utility = require('../utility');
 const inquirer = require('inquirer');
 const axios = require('axios');
@@ -160,7 +160,12 @@ How can I help you manage your project today?`
  */
 async function logAIInteraction(type, input, output) {
   try {
-    const kanbn = Kanbn();
+    if (typeof kanbnModule !== 'function') {
+      console.error('Error: kanbnModule is not a function');
+      return null;
+    }
+    
+    const kanbn = kanbnModule();
     const taskId = 'ai-interaction-' + Date.now();
     const username = getGitUsername() || 'unknown';
     const date = new Date();
@@ -227,7 +232,7 @@ async function logAIInteraction(type, input, output) {
  */
 async function getProjectContext() {
   try {
-    const kanbn = Kanbn();
+    const kanbn = kanbnModule();
     const index = await kanbn.getIndex();
     const tasks = await kanbn.loadAllTrackedTasks();
     const status = await kanbn.status(false, false, false, null, null);
@@ -330,7 +335,7 @@ async function interactiveChat(projectContext) {
 module.exports = async args => {
   try {
     // Create a Kanbn instance
-    const kanbn = Kanbn();
+    const kanbn = kanbnModule();
 
     try {
       if (!(await kanbn.initialised())) {

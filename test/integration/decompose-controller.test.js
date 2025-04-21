@@ -81,20 +81,24 @@ class MockKanbn {
 // Create a mock kanbn instance
 const mockKanbnInstance = new MockKanbn();
 
-// Create a mock for the main module
-const mockMain = {
-  Kanbn: MockKanbn,
-  initialised: async function() { return true; },
-  findTrackedTasks: async function() { return mockKanbnInstance.findTrackedTasks(); },
-  taskExists: async function() { return mockKanbnInstance.taskExists(); },
-  getTask: async function() { return mockKanbnInstance.getTask(); },
-  loadTask: async function() { return mockKanbnInstance.getTask(); },
-  getIndex: async function() { return mockKanbnInstance.getIndex(); },
-  status: async function() { return mockKanbnInstance.status(); },
-  findTaskColumn: async function() { return mockKanbnInstance.findTaskColumn(); },
-  createTask: async function() { return mockKanbnInstance.createTask(); },
-  updateTask: async function() { return mockKanbnInstance.updateTask(); }
+// Create a mock for the main module that returns the instance
+const mockMain = function() {
+  return mockKanbnInstance;
 };
+
+mockMain.Kanbn = function() {
+  return mockKanbnInstance;
+};
+mockMain.initialised = async function() { return true; };
+mockMain.findTrackedTasks = async function() { return mockKanbnInstance.findTrackedTasks(); };
+mockMain.taskExists = async function() { return mockKanbnInstance.taskExists(); };
+mockMain.getTask = async function() { return mockKanbnInstance.getTask(); };
+mockMain.loadTask = async function() { return mockKanbnInstance.getTask(); };
+mockMain.getIndex = async function() { return mockKanbnInstance.getIndex(); };
+mockMain.status = async function() { return mockKanbnInstance.status(); };
+mockMain.findTaskColumn = async function() { return mockKanbnInstance.findTaskColumn(); };
+mockMain.createTask = async function() { return mockKanbnInstance.createTask(); };
+mockMain.updateTask = async function() { return mockKanbnInstance.updateTask(); };
 
 // Create a mock for the axios module
 const mockAxios = {

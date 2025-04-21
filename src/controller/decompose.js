@@ -235,10 +235,6 @@ module.exports = async args => {
       utility.warning('Kanbn has not been initialised in this folder\nTry running: {b}kanbn init{b}');
       return;
     }
-  if (!await kanbn.initialised()) {
-    utility.error('Kanbn has not been initialised in this folder\nTry running: {b}kanbn init{b}');
-    return;
-  }
 
   let taskId = args.task ? utility.strArg(args.task) : null;
 
