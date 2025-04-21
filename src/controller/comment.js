@@ -86,7 +86,11 @@ module.exports = async args => {
   if (args.author && typeof args.author === 'string') {
     commentAuthor = utility.strArg(args.author);
   } else {
-    commentAuthor = getGitUsername();
+    commentAuthor = getGitUsername() || 'Anonymous';
+  }
+  
+  if (!commentAuthor || typeof commentAuthor !== 'string') {
+    commentAuthor = 'Anonymous';
   }
 
   // Add comment interactively
