@@ -120,7 +120,9 @@ QUnit.module('Chat controller tests', {
     const mockKanbnModule = require('../mock-kanbn');
     mockRequire('../../src/main', {
       ...mockKanbnModule,
-      Kanbn: MockKanbnValidColumns,
+      Kanbn: function() {
+        return new MockKanbnValidColumns();
+      },
       findTaskColumn: () => 'Backlog'
     });
   },
@@ -164,7 +166,9 @@ QUnit.test('should handle null columns gracefully', async function(assert) {
     const mockKanbnModule = require('../mock-kanbn');
     mockRequire('../../src/main', {
       ...mockKanbnModule,
-      Kanbn: MockKanbnNoColumns
+      Kanbn: function() {
+        return new MockKanbnNoColumns();
+      }
     });
 
     // Load the chat module with our mocks
@@ -184,7 +188,9 @@ QUnit.test('should handle empty columns object gracefully', async function(asser
     const mockKanbnModule = require('../mock-kanbn');
     mockRequire('../../src/main', {
       ...mockKanbnModule,
-      Kanbn: MockKanbnEmptyColumns
+      Kanbn: function() {
+        return new MockKanbnEmptyColumns();
+      }
     });
 
     // Load the chat module with our mocks
@@ -235,7 +241,9 @@ QUnit.test('should log AI interaction with valid columns', async function(assert
     const mockKanbnModule = require('../mock-kanbn');
     mockRequire('../../src/main', {
       ...mockKanbnModule,
-      Kanbn: MockKanbnValidColumns
+      Kanbn: function() {
+        return new MockKanbnValidColumns();
+      }
     });
 
     // Load the chat module with our mocks
