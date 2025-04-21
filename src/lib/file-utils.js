@@ -25,7 +25,11 @@ function getTaskPath(taskFolder, taskId) {
   if (typeof taskFolder !== 'string') {
     return '';
   }
-  return path.join(taskFolder, addFileExtension(taskId));
+  const taskIdWithExt = addFileExtension(taskId);
+  if (typeof taskIdWithExt !== 'string') {
+    return taskFolder;
+  }
+  return path.join(taskFolder, taskIdWithExt);
 }
 
 /**
@@ -35,7 +39,7 @@ function getTaskPath(taskFolder, taskId) {
  */
 function addFileExtension(taskId) {
   if (typeof taskId !== 'string') {
-    return taskId;
+    return '';
   }
   return taskId.endsWith('.md') ? taskId : `${taskId}.md`;
 }
