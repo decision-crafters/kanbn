@@ -131,7 +131,7 @@ run_command "$KANBN_BIN find --tag test" 0 "Find tasks by tag"
 
 run_command "$KANBN_BIN status" 0 "Get project and task statistics"
 
-run_command "$KANBN_BIN sort --column 'Todo' --by name" 0 "Sort a column by name"
+run_command "$KANBN_BIN sort 'Todo' --name" 0 "Sort a column by name"
 
 run_command "$KANBN_BIN validate" 0 "Validate index and task files"
 
