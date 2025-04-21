@@ -119,7 +119,9 @@ QUnit.module('Chat Board State', {
         this.originalEnv = { ...process.env };
         this.mockKanbn = new MockKanbn();
 
+        const mockKanbnModule = require('../mock-kanbn');
         mockRequire('../../src/main', {
+            ...mockKanbnModule,
             Kanbn: () => this.mockKanbn,
             findTaskColumn: (index, taskId) => {
                 for (const [column, tasks] of Object.entries(index.columns)) {
