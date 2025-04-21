@@ -22,6 +22,9 @@ async function exists(filePath) {
  * @return {string} The task path
  */
 function getTaskPath(taskFolder, taskId) {
+  if (typeof taskFolder !== 'string') {
+    return '';
+  }
   return path.join(taskFolder, addFileExtension(taskId));
 }
 
