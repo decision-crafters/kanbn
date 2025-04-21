@@ -43,7 +43,7 @@ async function interactive(columns, columnName, columnNames, sortedColumnNames, 
  * @param {boolean} [relative=false]
  */
 function moveTask(taskId, columnName, position = null, relative = false) {
-  const kanbn = new Kanbn();
+  const kanbn = Kanbn();
   kanbn
   .moveTask(taskId, columnName, position, relative)
   .then(taskId => {
@@ -62,7 +62,7 @@ function moveTask(taskId, columnName, position = null, relative = false) {
 
 module.exports = async args => {
   // Create a Kanbn instance
-  const kanbn = new Kanbn();
+  const kanbn = Kanbn();
 
   // Make sure kanbn has been initialised
   try {

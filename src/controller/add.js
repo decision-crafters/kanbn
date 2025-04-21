@@ -197,7 +197,7 @@ async function interactiveAddUntrackedTasks(untrackedTasks, columnName, columnNa
  */
 function createTask(taskData, columnName) {
   // Create a Kanbn instance
-  const kanbn = new Kanbn();
+  const kanbn = Kanbn();
 
   kanbn
   .createTask(taskData, columnName)
@@ -216,7 +216,7 @@ function createTask(taskData, columnName) {
  */
 async function addUntrackedTasks(untrackedTasks, columnName) {
   // Create a Kanbn instance
-  const kanbn = new Kanbn();
+  const kanbn = Kanbn();
 
   for (let untrackedTask of untrackedTasks) {
     try {
@@ -233,7 +233,7 @@ async function addUntrackedTasks(untrackedTasks, columnName) {
 
 module.exports = async args => {
   // Create a Kanbn instance
-  const kanbn = new Kanbn();
+  const kanbn = Kanbn();
 
   // Make sure kanbn has been initialised
   try {

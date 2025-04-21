@@ -6,7 +6,7 @@ const inquirer = require('inquirer');
  * Nuke kanbn
  */
 function removeAll() {
-  const kanbn = new Kanbn();
+  const kanbn = Kanbn();
   kanbn.removeAll()
   .then(() => {
     console.log('kanbn has been removed');
@@ -18,7 +18,7 @@ function removeAll() {
 
 module.exports = async args => {
   // Create a Kanbn instance
-  const kanbn = new Kanbn();
+  const kanbn = Kanbn();
 
   // Make sure kanbn has been initialised
   try {

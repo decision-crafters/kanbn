@@ -1,4 +1,5 @@
-const { Kanbn, findTaskColumn } = require('./main');
+const Kanbn = require('./main');
+const { findTaskColumn } = require('./main');
 const term = require('terminal-kit').terminal;
 const formatDate = require('dateformat');
 const utility = require('./utility');
@@ -13,7 +14,7 @@ module.exports = (() => {
    * @return {string} The selected task fields
    */
   function getTaskString(index, task) {
-    const kanbn = new Kanbn();
+    const kanbn = Kanbn();
     const taskTemplate = kanbn.getTaskTemplate(index);
     const dateFormat = kanbn.getDateFormat(index);
 
@@ -128,7 +129,7 @@ module.exports = (() => {
 
       // If a root-level filter is defined, apply it to the tasks
       if ('filters' in viewSettings) {
-        const kanbn = new Kanbn();
+        const kanbn = Kanbn();
         tasks = kanbn.filterAndSortTasks(index, tasks, viewSettings.filters, []);
       }
 
@@ -143,7 +144,7 @@ module.exports = (() => {
       for (let lane of viewSettings.lanes) {
         const columns = [];
         for (let column of viewSettings.columns) {
-          const kanbn = new Kanbn();
+          const kanbn = Kanbn();
           const cellTasks = kanbn.filterAndSortTasks(
             index,
             tasks,

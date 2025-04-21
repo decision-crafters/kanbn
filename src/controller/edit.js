@@ -337,7 +337,7 @@ async function interactive(taskData, taskIds, columnName, columnNames) {
  * @param {?string} columnName
  */
 function updateTask(taskId, taskData, columnName) {
-  const kanbn = new Kanbn();
+  const kanbn = Kanbn();
   kanbn
   .updateTask(taskId, taskData, columnName)
   .then(taskId => {
@@ -351,7 +351,7 @@ function updateTask(taskId, taskData, columnName) {
 module.exports = async args => {
 
   // Make sure kanbn has been initialised
-  const kanbn = new Kanbn();
+  const kanbn = Kanbn();
   try {
     if (!await kanbn.initialised()) {
       utility.warning('Kanbn has not been initialised in this folder\nTry running: {b}kanbn init{b}');

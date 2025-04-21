@@ -4,7 +4,7 @@ const board = require('../board');
 
 module.exports = async args => {
   // Create a Kanbn instance
-  const kanbn = new Kanbn();
+  const kanbn = Kanbn();
 
   // Make sure kanbn has been initialised
   try {

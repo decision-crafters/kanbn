@@ -205,7 +205,7 @@ async function interactive() {
  */
 function findTasks(filters, quiet, json) {
   // Create a Kanbn instance
-  const kanbn = new Kanbn();
+  const kanbn = Kanbn();
 
   const removeEmptyProperties = o => Object.fromEntries(Object.entries(o).filter(
     ([k, v]) => !(Array.isArray(v) && v.length == 0) && !!v
@@ -302,7 +302,7 @@ function convertDateFilters(filters, filterName) {
 
 module.exports = async args => {
   // Create a Kanbn instance
-  const kanbn = new Kanbn();
+  const kanbn = Kanbn();
 
   // Make sure kanbn has been initialised
   try {

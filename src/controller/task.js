@@ -1,4 +1,4 @@
-const { Kanbn } = require("../main");
+const Kanbn = require("../main");
 const utility = require("../utility");
 const parseTask = require("../parse-task");
 const marked = require("marked");
@@ -9,7 +9,7 @@ const markedTerminalRenderer = require("marked-terminal");
  * @param {string} taskId
  */
 function showTask(taskId, json = false) {
-  const kanbn = new Kanbn();
+  const kanbn = Kanbn();
   kanbn
     .getTask(taskId)
     .then((task) => {
@@ -29,7 +29,7 @@ function showTask(taskId, json = false) {
 
 module.exports = async (args) => {
   // Make sure kanbn has been initialised
-  const kanbn = new Kanbn();
+  const kanbn = Kanbn();
   try {
     if (!(await kanbn.initialised())) {
       utility.warning("Kanbn has not been initialised in this folder\nTry running: {b}kanbn init{b}");
