@@ -11,6 +11,7 @@ const rimraf = require("rimraf");
 const fileUtils = require("./lib/file-utils");
 const taskUtils = require("./lib/task-utils");
 const filterUtils = require("./lib/filter-utils");
+const indexUtils = require("./lib/index-utils");
 
 const DEFAULT_FOLDER_NAME = ".kanbn";
 const DEFAULT_INDEX_FILE_NAME = "index.md";
@@ -56,18 +57,7 @@ const defaultInitialiseOptions = {
  * @return {Set} A set of task ids appearing in the index
  */
 function getTrackedTaskIds(index, columnName = null) {
-  // Ensure index.columns exists
-  if (!index || !index.columns) {
-    return new Set();
-  }
-
-  return new Set(
-    columnName
-      ? (index.columns[columnName] || [])
-      : Object.keys(index.columns)
-          .map((columnName) => index.columns[columnName])
-          .flat()
-  );
+  return indexUtils.getTrackedTaskIds(index, columnName);
 }
 
 /**
@@ -87,7 +77,6 @@ function addFileExtension(taskId) {
 function removeFileExtension(taskId) {
   return fileUtils.removeFileExtension(taskId);
 }
-
 
 function taskInIndex(index, taskId) {
   return taskUtils.taskInIndex(index, taskId);
@@ -130,34 +119,7 @@ function taskCompleted(index, task) {
  * @return {object} The modified index object
  */
 function sortColumnInIndex(index, tasks, columnName, sorters) {
-  // Get a list of tasks in the target column and add computed fields
-  tasks = tasks.map((task) => ({
-    ...task,
-    ...task.metadata,
-    created: "created" in task.metadata ? task.metadata.created : "",
-    updated: "updated" in task.metadata ? task.metadata.updated : "",
-    started: "started" in task.metadata ? task.metadata.started : "",
-    completed: "completed" in task.metadata ? task.metadata.completed : "",
-    due: "due" in task.metadata ? task.metadata.due : "",
-    assigned: "assigned" in task.metadata ? task.metadata.assigned : "",
-    countSubTasks: task.subTasks.length,
-    subTasks: task.subTasks.map((subTask) => `[${subTask.completed ? "x" : ""}] ${subTask.text}`).join("\n"),
-    countTags: "tags" in task.metadata ? task.metadata.tags.length : 0,
-    tags: "tags" in task.metadata ? task.metadata.tags.join("\n") : "",
-    countRelations: task.relations.length,
-    relations: task.relations.map((relation) => `${relation.type} ${relation.task}`).join("\n"),
-    countComments: task.comments.length,
-    comments: task.comments.map((comment) => `${comment.author} ${comment.text}`).join("\n"),
-    workload: taskWorkload(index, task),
-    progress: taskProgress(index, task),
-  }));
-
-  // Sort the list of tasks
-  tasks = sortTasks(tasks, sorters);
-
-  // Save the list of tasks back to the index
-  index.columns[columnName] = tasks.map((task) => task.id);
-  return index;
+  return indexUtils.sortColumnInIndex(index, tasks, columnName, sorters);
 }
 
 /**
@@ -167,23 +129,7 @@ function sortColumnInIndex(index, tasks, columnName, sorters) {
  * @return {object[]} The sorted tasks
  */
 function sortTasks(tasks, sorters) {
-  tasks.sort((a, b) => {
-    let compareA, compareB;
-    for (let sorter of sorters) {
-      compareA = a[sorter.field];
-      compareB = b[sorter.field];
-      if (sorter.filter) {
-        compareA = sortFilter(compareA, sorter.filter);
-        compareB = sortFilter(compareB, sorter.filter);
-      }
-      if (compareA === compareB) {
-        continue;
-      }
-      return sorter.order === "descending" ? compareValues(compareB, compareA) : compareValues(compareA, compareB);
-    }
-    return 0;
-  });
-  return tasks;
+  return indexUtils.sortTasks(tasks, sorters);
 }
 
 /**
@@ -193,23 +139,7 @@ function sortTasks(tasks, sorters) {
  * @return {string} The transformed value
  */
 function sortFilter(value, filter) {
-  // Filter regex is global and case-insensitive
-  const matches = [...value.matchAll(new RegExp(filter, "gi"))];
-  const result = matches.map((match) => {
-    // If the matched string has named capturing groups, concatenate their contents
-    if (match.groups) {
-      return Object.values(match.groups).join("");
-    }
-
-    // If the matched string has non-named capturing groups, use the contents of the first group
-    if (match[1]) {
-      return match[1];
-    }
-
-    // Otherwise use the matched string
-    return match[0];
-  });
-  return result.join("");
+  return indexUtils.sortFilter(value, filter);
 }
 
 /**
@@ -219,15 +149,7 @@ function sortFilter(value, filter) {
  * @return {number} A positive value if a > b, negative if a < b, otherwise 0
  */
 function compareValues(a, b) {
-  if (a === undefined && b === undefined) {
-    return 0;
-  }
-  a = utility.coerceUndefined(a, typeof b);
-  b = utility.coerceUndefined(b, typeof a);
-  if (typeof a === "string" && typeof b === "string") {
-    return a.localeCompare(b, undefined, { sensitivity: "accent" });
-  }
-  return a - b;
+  return indexUtils.compareValues(a, b);
 }
 
 /**
@@ -237,186 +159,7 @@ function compareValues(a, b) {
  * @param {object} filters
  */
 function filterTasks(index, tasks, filters) {
-  return tasks.filter((task) => {
-    // Get task id and column
-    const taskId = utility.getTaskId(task.name);
-    const column = findTaskColumn(index, taskId);
-
-    // If no filters are defined, return all tasks
-    if (Object.keys(filters).length === 0) {
-      return true;
-    }
-
-    // Apply filters
-    let result = true;
-
-    // Id
-    if ("id" in filters && !stringFilter(filters.id, task.id)) {
-      result = false;
-    }
-
-    // Name
-    if ("name" in filters && !stringFilter(filters.name, task.name)) {
-      result = false;
-    }
-
-    // Description
-    if ("description" in filters && !stringFilter(filters.description, task.description)) {
-      result = false;
-    }
-
-    // Column
-    if ("column" in filters && !stringFilter(filters.column, column)) {
-      result = false;
-    }
-
-    // Created date
-    if (
-      "created" in filters &&
-      (!("created" in task.metadata) || !dateFilter(filters.created, task.metadata.created))
-    ) {
-      result = false;
-    }
-
-    // Updated date
-    if (
-      "updated" in filters &&
-      (!("updated" in task.metadata) || !dateFilter(filters.updated, task.metadata.updated))
-    ) {
-      result = false;
-    }
-
-    // Started date
-    if (
-      "started" in filters &&
-      (!("started" in task.metadata) || !dateFilter(filters.started, task.metadata.started))
-    ) {
-      result = false;
-    }
-
-    // Completed date
-    if (
-      "completed" in filters &&
-      (!("completed" in task.metadata) || !dateFilter(filters.completed, task.metadata.completed))
-    ) {
-      result = false;
-    }
-
-    // Due
-    if ("due" in filters && (!("due" in task.metadata) || !dateFilter(filters.due, task.metadata.due))) {
-      result = false;
-    }
-
-    // Workload
-    if ("workload" in filters && !numberFilter(filters.workload, taskWorkload(index, task))) {
-      result = false;
-    }
-
-    // Progress
-    if ("progress" in filters && !numberFilter(filters.progress, taskProgress(index, task))) {
-      result = false;
-    }
-
-    // Assigned
-    if (
-      "assigned" in filters &&
-      !stringFilter(filters.assigned, "assigned" in task.metadata ? task.metadata.assigned : "")
-    ) {
-      result = false;
-    }
-
-    // Sub-tasks
-    if (
-      "sub-task" in filters &&
-      !stringFilter(
-        filters["sub-task"],
-        task.subTasks.map((subTask) => `[${subTask.completed ? "x" : " "}] ${subTask.text}`).join("\n")
-      )
-    ) {
-      result = false;
-    }
-
-    // Count sub-tasks
-    if ("count-sub-tasks" in filters && !numberFilter(filters["count-sub-tasks"], task.subTasks.length)) {
-      result = false;
-    }
-
-    // Tag
-    if ("tag" in filters && !stringFilter(filters.tag, task.metadata.tags.join("\n"))) {
-      result = false;
-    }
-
-    // Count tags
-    if ("count-tags" in filters && !numberFilter(filters["count-tags"], task.tags.length)) {
-      result = false;
-    }
-
-    // Relation
-    if (
-      "relation" in filters &&
-      !stringFilter(
-        filters.relation,
-        task.relations.map((relation) => `${relation.type} ${relation.task}`).join("\n")
-      )
-    ) {
-      result = false;
-    }
-
-    // Count relations
-    if ("count-relations" in filters && !numberFilter(filters["count-relations"], task.relations.length)) {
-      result = false;
-    }
-
-    // Comments
-    if (
-      "comment" in filters &&
-      !stringFilter(filters.comment, task.comments.map((comment) => `${comment.author} ${comment.text}`).join("\n"))
-    ) {
-      result = false;
-    }
-
-    // Count comments
-    if ("count-comments" in filters && !numberFilter(filters["count-comments"], task.comments.length)) {
-      result = false;
-    }
-
-    // Custom metadata properties
-    if ("customFields" in index.options) {
-      for (let customField of index.options.customFields) {
-        if (customField.name in filters) {
-          if (!(customField.name in task.metadata)) {
-            result = false;
-          } else {
-            switch (customField.type) {
-              case "boolean":
-                if (task.metadata[customField.name] !== filters[customField.name]) {
-                  result = false;
-                }
-                break;
-              case "number":
-                if (!numberFilter(filters[customField.name], task.metadata[customField.name])) {
-                  result = false;
-                }
-                break;
-              case "string":
-                if (!stringFilter(filters[customField.name], task.metadata[customField.name])) {
-                  result = false;
-                }
-                break;
-              case "date":
-                if (!dateFilter(filters[customField.name], task.metadata[customField.name])) {
-                  result = false;
-                }
-                break;
-              default:
-                break;
-            }
-          }
-        }
-      }
-    }
-    return result;
-  });
+  return indexUtils.filterTasks(index, tasks, filters);
 }
 
 /**
@@ -458,24 +201,7 @@ function numberFilter(filter, input) {
  * @return {number} The task workload
  */
 function taskWorkload(index, task) {
-  const defaultTaskWorkload =
-    "defaultTaskWorkload" in index.options ? index.options.defaultTaskWorkload : DEFAULT_TASK_WORKLOAD;
-  const taskWorkloadTags =
-    "taskWorkloadTags" in index.options ? index.options.taskWorkloadTags : DEFAULT_TASK_WORKLOAD_TAGS;
-  let workload = 0;
-  let hasWorkloadTags = false;
-  if ("tags" in task.metadata) {
-    for (let workloadTag of Object.keys(taskWorkloadTags)) {
-      if (task.metadata.tags.indexOf(workloadTag) !== -1) {
-        workload += taskWorkloadTags[workloadTag];
-        hasWorkloadTags = true;
-      }
-    }
-  }
-  if (!hasWorkloadTags) {
-    workload = defaultTaskWorkload;
-  }
-  return workload;
+  return indexUtils.taskWorkload(index, task, DEFAULT_TASK_WORKLOAD, DEFAULT_TASK_WORKLOAD_TAGS);
 }
 
 /**
@@ -485,10 +211,7 @@ function taskWorkload(index, task) {
  * @return {number} Task progress
  */
 function taskProgress(index, task) {
-  if (taskCompleted(index, task)) {
-    return 1;
-  }
-  return "progress" in task.metadata ? task.metadata.progress : 0;
+  return indexUtils.taskProgress(index, task);
 }
 
 /**
@@ -500,20 +223,7 @@ function taskProgress(index, task) {
  * @return {object} A statistics object
  */
 function taskWorkloadInPeriod(tasks, metadataProperty, start, end) {
-  const filteredTasks = tasks.filter(
-    (task) =>
-      metadataProperty in task.metadata &&
-      task.metadata[metadataProperty] >= start &&
-      task.metadata[metadataProperty] <= end
-  );
-  return {
-    tasks: filteredTasks.map((task) => ({
-      id: task.id,
-      column: task.column,
-      workload: task.workload,
-    })),
-    workload: filteredTasks.reduce((a, task) => a + task.workload, 0),
-  };
+  return indexUtils.taskWorkloadInPeriod(tasks, metadataProperty, start, end);
 }
 
 /**
@@ -523,10 +233,7 @@ function taskWorkloadInPeriod(tasks, metadataProperty, start, end) {
  * @return {object[]} A filtered list of tasks
  */
 function getActiveTasksAtDate(tasks, date) {
-  return tasks.filter((task) => (
-    (task.started !== false && task.started <= date) &&
-    (task.completed === false || task.completed > date)
-  ));
+  return indexUtils.getActiveTasksAtDate(tasks, date);
 }
 
 /**
@@ -536,7 +243,7 @@ function getActiveTasksAtDate(tasks, date) {
  * @return {number} The total workload at the specified date
  */
 function getWorkloadAtDate(tasks, date) {
-  return getActiveTasksAtDate(tasks, date).reduce((a, task) => (a += task.workload), 0);
+  return indexUtils.getWorkloadAtDate(tasks, date);
 }
 
 /**
@@ -546,7 +253,7 @@ function getWorkloadAtDate(tasks, date) {
  * @return {number} The total number of active tasks at the specified date
  */
 function countActiveTasksAtDate(tasks, date) {
-  return getActiveTasksAtDate(tasks, date).length;
+  return indexUtils.countActiveTasksAtDate(tasks, date);
 }
 
 /**
@@ -556,26 +263,7 @@ function countActiveTasksAtDate(tasks, date) {
  * @return {object[]} A list of event objects, with event type and task id
  */
 function getTaskEventsAtDate(tasks, date) {
-  return [
-    ...tasks
-      .filter((task) => (task.created ? task.created.getTime() : 0) === date.getTime())
-      .map((task) => ({
-        eventType: "created",
-        task
-      })),
-    ...tasks
-      .filter((task) => (task.started ? task.started.getTime() : 0) === date.getTime())
-      .map((task) => ({
-        eventType: "started",
-        task
-      })),
-    ...tasks
-      .filter((task) => (task.completed ? task.completed.getTime() : 0) === date.getTime())
-      .map((task) => ({
-        eventType: "completed",
-        task
-      })),
-  ];
+  return indexUtils.getTaskEventsAtDate(tasks, date);
 }
 
 /**
@@ -585,20 +273,7 @@ function getTaskEventsAtDate(tasks, date) {
  * @return {Date} The quantized dates
  */
 function normaliseDate(date, resolution = 'minutes') {
-  const result = new Date(date.getTime());
-  switch (resolution) {
-    case 'days':
-      result.setHours(0);
-    case 'hours':
-      result.setMinutes(0);
-    case 'minutes':
-      result.setSeconds(0);
-    case 'seconds':
-      result.setMilliseconds(0);
-    default:
-      break;
-  }
-  return result;
+  return indexUtils.normaliseDate(date, resolution);
 }
 
 /**
@@ -610,25 +285,7 @@ function normaliseDate(date, resolution = 'minutes') {
  * @return {object} The updated task data
  */
 function updateColumnLinkedCustomFields(index, taskData, columnName) {
-  // Update built-in column-linked metadata properties first (started and completed dates)
-  taskData = updateColumnLinkedCustomField(index, taskData, columnName, "completed", "once");
-  taskData = updateColumnLinkedCustomField(index, taskData, columnName, "started", "once");
-
-  // Update column-linked custom fields
-  if ("customFields" in index.options) {
-    for (let customField of index.options.customFields) {
-      if (customField.type === "date") {
-        taskData = updateColumnLinkedCustomField(
-          index,
-          taskData,
-          columnName,
-          customField.name,
-          customField.updateDate || "none"
-        );
-      }
-    }
-  }
-  return taskData;
+  return indexUtils.updateColumnLinkedCustomFields(index, taskData, columnName);
 }
 
 /**
@@ -644,22 +301,7 @@ function updateColumnLinkedCustomFields(index, taskData, columnName) {
  * @param {string} [updateCriteria='none']
  */
 function updateColumnLinkedCustomField(index, taskData, columnName, fieldName, updateCriteria = "none") {
-  const columnList = `${fieldName}Columns`;
-  if (columnList in index.options && index.options[columnList].indexOf(columnName) !== -1) {
-    switch (updateCriteria) {
-      case "always":
-        taskData = setTaskMetadata(taskData, fieldName, new Date());
-        break;
-      case "once":
-        if (!(fieldName in taskData.metadata && taskData.metadata[fieldName])) {
-          taskData = setTaskMetadata(taskData, fieldName, new Date());
-        }
-        break;
-      default:
-        break;
-    }
-  }
-  return taskData;
+  return indexUtils.updateColumnLinkedCustomField(index, taskData, columnName, fieldName, updateCriteria);
 }
 
 class Kanbn {
