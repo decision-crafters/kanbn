@@ -264,9 +264,19 @@ module.exports = async args => {
   }
 
   try {
-    if (!await kanbn.taskExists(taskId)) {
-      utility.error(`Task "${taskId}" doesn't exist`);
-      return;
+    // Check if task exists by looking for the task file
+    const taskExists = await kanbn.taskExists(taskId);
+    if (!taskExists) {
+      const taskIdWithExt = taskId.endsWith('.md') ? taskId : `${taskId}.md`;
+      const taskExistsWithExt = await kanbn.taskExists(taskIdWithExt);
+      
+      if (!taskExistsWithExt) {
+        utility.error(`Task "${taskId}" doesn't exist`);
+        return;
+      }
+      
+      // Use the task ID with extension
+      taskId = taskId.endsWith('.md') ? taskId : `${taskId}.md`;
     }
   } catch (error) {
     utility.error(error);
