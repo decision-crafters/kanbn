@@ -1,4 +1,4 @@
-const Kanbn = require('../main');
+const kanbnModule = require('../main');
 const utility = require('../utility');
 const inquirer = require('inquirer');
 
@@ -42,9 +42,10 @@ async function interactive(name = null, description = null) {
  * Start a new sprint
  * @param {string} name
  * @param {string} description
+ * @param {object} kanbnInstance The Kanbn instance to use
  */
-function startSprint(name, description) {
-  kanbn
+function startSprint(name, description, kanbnInstance) {
+  kanbnInstance
   .sprint(name, description, new Date())
   .then(sprint => {
     console.log(`Started new sprint "${sprint.name}" at ${sprint.start.toISOString()}`);
@@ -55,6 +56,7 @@ function startSprint(name, description) {
 }
 
 module.exports = async args => {
+  const kanbn = kanbnModule();
 
   // Make sure kanbn has been initialised
   if (!await kanbn.initialised()) {
@@ -79,7 +81,7 @@ module.exports = async args => {
   if (args.interactive) {
     interactive(name, description)
     .then(answers => {
-      startSprint(answers.name, answers.description || '');
+      startSprint(answers.name, answers.description || '', kanbn);
     })
     .catch(error => {
       utility.error(error);
@@ -87,6 +89,6 @@ module.exports = async args => {
 
   // Otherwise start sprint non-interactively
   } else {
-    startSprint(name, description);
+    startSprint(name, description, kanbn);
   }
 };

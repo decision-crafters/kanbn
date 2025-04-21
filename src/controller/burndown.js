@@ -1,4 +1,4 @@
-const Kanbn = require('../main');
+const kanbnModule = require('../main');
 const utility = require('../utility');
 const asciichart = require('asciichart');
 const term = require('terminal-kit').terminal;
@@ -6,6 +6,7 @@ const chrono = require('chrono-node');
 const formatDate = require('dateformat');
 
 module.exports = async args => {
+  const kanbn = kanbnModule();
 
   // Make sure kanbn has been initialised
   if (!await kanbn.initialised()) {

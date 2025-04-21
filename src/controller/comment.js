@@ -1,4 +1,4 @@
-const Kanbn = require('../main');
+const kanbnModule = require('../main');
 const utility = require('../utility');
 const inquirer = require('inquirer');
 const getGitUsername = require('git-user-name');
@@ -37,9 +37,10 @@ async function interactive(text, author) {
  * @param {string} taskId
  * @param {string} text
  * @param {string} author
+ * @param {object} kanbnInstance The Kanbn instance to use
  */
-function addComment(taskId, text, author) {
-  kanbn
+function addComment(taskId, text, author, kanbnInstance) {
+  kanbnInstance
   .comment(taskId, text, author)
   .then(taskId => {
     console.log(`Added comment to task "${taskId}"`);
@@ -50,6 +51,7 @@ function addComment(taskId, text, author) {
 }
 
 module.exports = async args => {
+  const kanbn = kanbnModule();
 
   // Make sure kanbn has been initialised
   if (!await kanbn.initialised()) {
@@ -91,7 +93,7 @@ module.exports = async args => {
   if (args.interactive) {
     interactive(commentText, commentAuthor)
     .then(answers => {
-      addComment(taskId, answers.text, answers.author);
+      addComment(taskId, answers.text, answers.author, kanbn);
     })
     .catch(error => {
       utility.error(error);
@@ -99,6 +101,6 @@ module.exports = async args => {
 
   // Otherwise add comment non-interactively
   } else {
-    addComment(taskId, commentText, commentAuthor);
+    addComment(taskId, commentText, commentAuthor, kanbn);
   }
 };

@@ -1,4 +1,4 @@
-const Kanbn = require('../main');
+const kanbnModule = require('../main');
 const utility = require('../utility');
 const inquirer = require('inquirer');
 
@@ -245,9 +245,10 @@ async function interactive(columnName, columnNames, sorters) {
  * @param {string} columnName
  * @param {object[]} sorters
  * @param {boolean} save
+ * @param {object} kanbnInstance The Kanbn instance to use
  */
-function sortColumn(columnName, sorters, save) {
-  kanbn
+function sortColumn(columnName, sorters, save, kanbnInstance) {
+  kanbnInstance
   .sort(columnName, sorters, save)
   .then(() => {
     console.log(`Column "${columnName}" sorted`);
@@ -258,6 +259,7 @@ function sortColumn(columnName, sorters, save) {
 }
 
 module.exports = async (args, argv) => {
+  const kanbn = kanbnModule();
 
   // Sortable fields and aliases
   const sortOptions = Object.fromEntries(utility.zip(
@@ -378,7 +380,7 @@ module.exports = async (args, argv) => {
         default: args.save
       })
       .then(saveAnswer => {
-        sortColumn(answers.column, answers.sorters, saveAnswer.save);
+        sortColumn(answers.column, answers.sorters, saveAnswer.save, kanbn);
       })
       .catch(error => {
         utility.error(error);
@@ -390,6 +392,6 @@ module.exports = async (args, argv) => {
 
   // Otherwise sort a column non-interactively
   } else {
-    sortColumn(columnName, sorters, args.save);
+    sortColumn(columnName, sorters, args.save, kanbn);
   }
 };

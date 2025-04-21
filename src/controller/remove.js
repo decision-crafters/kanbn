@@ -1,4 +1,4 @@
-const Kanbn = require('../main');
+const kanbnModule = require('../main');
 const utility = require('../utility');
 const inquirer = require('inquirer');
 
@@ -6,9 +6,10 @@ const inquirer = require('inquirer');
  * Remove a task
  * @param {string} taskId
  * @param {boolean} removeFile
+ * @param {object} kanbnInstance The Kanbn instance to use
  */
-function removeTask(taskId, removeFile) {
-  kanbn
+function removeTask(taskId, removeFile, kanbnInstance) {
+  kanbnInstance
   .deleteTask(taskId, removeFile)
   .then(taskId => {
     console.log(`Removed task "${taskId}"${removeFile ? ' from the index' : ' file and index entry'}`);
@@ -19,6 +20,7 @@ function removeTask(taskId, removeFile) {
 }
 
 module.exports = async args => {
+  const kanbn = kanbnModule();
 
   // Make sure kanbn has been initialised
   if (!await kanbn.initialised()) {
@@ -52,7 +54,7 @@ module.exports = async args => {
 
   // If the force flag is specified, remove the task without asking
   if (args.force) {
-    removeTask(taskId, args.index);
+    removeTask(taskId, args.index, kanbn);
 
   // Otherwise, prompt for confirmation first
   } else {
@@ -65,7 +67,7 @@ module.exports = async args => {
       }
     ]).then(async answers => {
       if (answers.sure) {
-        removeTask(taskId, args.index);
+        removeTask(taskId, args.index, kanbn);
       }
     }).catch(error => {
       utility.error(error);
