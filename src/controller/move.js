@@ -105,7 +105,7 @@ module.exports = async args => {
   }
 
   // Get column name if specified
-  const currentColumnName = findTaskColumn(index, taskId);
+  const currentColumnName = Object.entries(index.columns).find(([_, tasks]) => tasks.includes(taskId))?.[0] || null;
   let columnName = currentColumnName;
 
   // Check for column name in positional arguments (args._[2]) or named argument (args.column)
