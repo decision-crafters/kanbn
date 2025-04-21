@@ -109,18 +109,20 @@ QUnit.module('Chat Domain Events', {
       }
     };
 
-    const mockKanbnModule = require('../mock-kanbn');
-    mockRequire('../../src/main', {
-      ...mockKanbnModule,
-      Kanbn: function() {
-        return new MockKanbnWithEvents(eventBus);
-      },
-      findTaskColumn: () => 'Backlog',
-      getProjectContext: async () => {
-        const kanbn = new MockKanbnWithEvents(eventBus);
-        return kanbn.getProjectContext();
-      }
-    });
+    // Create a function that returns our mock instance
+    const mockKanbnFunction = function() {
+      return new MockKanbnWithEvents(eventBus);
+    };
+    
+    mockKanbnFunction.Kanbn = MockKanbnWithEvents;
+    
+    mockKanbnFunction.findTaskColumn = () => 'Backlog';
+    mockKanbnFunction.getProjectContext = async () => {
+      const kanbn = new MockKanbnWithEvents(eventBus);
+      return kanbn.getProjectContext();
+    };
+    
+    mockRequire('../../src/main', mockKanbnFunction);
 
     // Reset cache for chat controller
     delete require.cache[require.resolve('../../src/controller/chat')];
@@ -150,18 +152,20 @@ QUnit.module('Chat Domain Events', {
           }
         };
 
-        const mockKanbnModule = require('../mock-kanbn');
-        mockRequire('../../src/main', {
-          ...mockKanbnModule,
-          Kanbn: function() {
-            return new MockKanbnWithEvents(eventBus);
-          },
-          findTaskColumn: () => 'Backlog',
-          getProjectContext: async () => {
-            const kanbn = new MockKanbnWithEvents(eventBus);
-            return kanbn.getProjectContext();
-          }
-        });
+        // Create a function that returns our mock instance
+        const mockKanbnFunction = function() {
+          return new MockKanbnWithEvents(eventBus);
+        };
+        
+        mockKanbnFunction.Kanbn = MockKanbnWithEvents;
+        
+        mockKanbnFunction.findTaskColumn = () => 'Backlog';
+        mockKanbnFunction.getProjectContext = async () => {
+          const kanbn = new MockKanbnWithEvents(eventBus);
+          return kanbn.getProjectContext();
+        };
+        
+        mockRequire('../../src/main', mockKanbnFunction);
         
         // Reset cache for chat controller
         delete require.cache[require.resolve('../../src/controller/chat')];

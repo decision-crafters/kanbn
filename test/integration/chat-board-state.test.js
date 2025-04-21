@@ -158,21 +158,23 @@ QUnit.module('Chat Board State', {
         
         const mockKanbn = this.mockKanbn;
         
-        const mockKanbnModule = require('../mock-kanbn');
-        mockRequire('../../src/main', {
-            ...mockKanbnModule,
-            Kanbn: function() {
-                return mockKanbn;
-            },
-            findTaskColumn: (index, taskId) => {
-                for (const [column, tasks] of Object.entries(index.columns)) {
-                    if (tasks.includes(taskId)) {
-                        return column;
-                    }
+        // Create a function that returns our mock instance
+        const mockKanbnFunction = function() {
+            return mockKanbn;
+        };
+        
+        mockKanbnFunction.Kanbn = MockKanbn;
+        
+        mockKanbnFunction.findTaskColumn = (index, taskId) => {
+            for (const [column, tasks] of Object.entries(index.columns)) {
+                if (tasks.includes(taskId)) {
+                    return column;
                 }
-                return null;
             }
-        });
+            return null;
+        };
+        
+        mockRequire('../../src/main', mockKanbnFunction);
 
         // Set up test environment
         process.env = {
@@ -214,21 +216,23 @@ QUnit.module('Chat Board State', {
         // Update the mock for each test
         const mockKanbn = this.mockKanbn;
         
-        const mockKanbnModule = require('../mock-kanbn');
-        mockRequire('../../src/main', {
-            ...mockKanbnModule,
-            Kanbn: function() {
-                return mockKanbn;
-            },
-            findTaskColumn: (index, taskId) => {
-                for (const [column, tasks] of Object.entries(index.columns)) {
-                    if (tasks.includes(taskId)) {
-                        return column;
-                    }
+        // Create a function that returns our mock instance
+        const mockKanbnFunction = function() {
+            return mockKanbn;
+        };
+        
+        mockKanbnFunction.Kanbn = MockKanbn;
+        
+        mockKanbnFunction.findTaskColumn = (index, taskId) => {
+            for (const [column, tasks] of Object.entries(index.columns)) {
+                if (tasks.includes(taskId)) {
+                    return column;
                 }
-                return null;
             }
-        });
+            return null;
+        };
+        
+        mockRequire('../../src/main', mockKanbnFunction);
         
         // Clear module cache to ensure we get a fresh instance
         delete require.cache[require.resolve('../../src/controller/chat')];
