@@ -1,4 +1,4 @@
-const { Kanbn } = require('../main');
+const Kanbn = require('../main');
 const utility = require('../utility');
 
 /**
