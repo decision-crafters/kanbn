@@ -1,11 +1,7 @@
 
 set -e
 
-TEST_DIR=$(mktemp -d)
-cd $TEST_DIR
-echo "Testing in directory: $TEST_DIR"
-
-export OPENROUTER_API_KEY="${OPENROUTER_API_KEY}"
+REPO_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 USE_BUILT_PACKAGE=false
 for arg in "$@"; do
@@ -47,14 +43,12 @@ run_command() {
   return $status
 }
 
-REPO_DIR="$(cd "$(dirname "$0")" && pwd)"
-
 if [ "$USE_BUILT_PACKAGE" = true ]; then
   echo "Using built package for testing"
   
   cd "$REPO_DIR"
-  PACKAGE_TGZ=$(find "$REPO_DIR" -name "kanbn-*.tgz" | sort -r | head -n 1)
   
+  PACKAGE_TGZ=$(find "$REPO_DIR" -name "kanbn-*.tgz" | sort -r | head -n 1)
   if [ -z "$PACKAGE_TGZ" ]; then
     echo "No built package found. Building package..."
     npm pack
@@ -64,24 +58,29 @@ if [ "$USE_BUILT_PACKAGE" = true ]; then
   echo "Installing package: $PACKAGE_TGZ"
   npm install -g "$PACKAGE_TGZ"
   
+  TEST_DIR=$(mktemp -d)
+  echo "Testing in directory: $TEST_DIR"
   cd "$TEST_DIR"
+  
+  export OPENROUTER_API_KEY="${OPENROUTER_API_KEY}"
+  
   KANBN_BIN="kanbn"
 else
   echo "Using source files for testing"
-  KANBN_BIN="$REPO_DIR/bin/kanbn"
-
-  if [ ! -f "$KANBN_BIN" ]; then
-    echo "Kanbn binary not found at $KANBN_BIN, using node directly"
-    KANBN_BIN="node $REPO_DIR/index.js"
-  fi
-
+  
+  TEST_DIR=$(mktemp -d)
+  echo "Testing in directory: $TEST_DIR"
+  
+  export OPENROUTER_API_KEY="${OPENROUTER_API_KEY}"
+  
   cp -r "$REPO_DIR/src" "$TEST_DIR/"
   cp -r "$REPO_DIR/bin" "$TEST_DIR/"
   cp "$REPO_DIR/index.js" "$TEST_DIR/"
   cp "$REPO_DIR/package.json" "$TEST_DIR/"
   ln -s "$REPO_DIR/node_modules" "$TEST_DIR/node_modules"
-
+  
   cd "$TEST_DIR"
+  
   KANBN_BIN="$TEST_DIR/bin/kanbn"
   if [ ! -f "$KANBN_BIN" ]; then
     echo "Kanbn binary not found at $KANBN_BIN, using node directly"
