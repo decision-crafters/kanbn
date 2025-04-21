@@ -160,7 +160,7 @@ How can I help you manage your project today?`
  */
 async function logAIInteraction(type, input, output) {
   try {
-    const kanbn = new Kanbn();
+    const kanbn = Kanbn();
     const taskId = 'ai-interaction-' + Date.now();
     const username = getGitUsername() || 'unknown';
     const date = new Date();
@@ -227,7 +227,7 @@ async function logAIInteraction(type, input, output) {
  */
 async function getProjectContext() {
   try {
-    const kanbn = new Kanbn();
+    const kanbn = Kanbn();
     const { findTaskColumn } = require('../main');
     const index = await kanbn.getIndex();
     const tasks = await kanbn.loadAllTrackedTasks();
@@ -322,7 +322,7 @@ async function interactiveChat(projectContext) {
 module.exports = async args => {
   try {
     // Create a Kanbn instance
-    const kanbn = new Kanbn();
+    const kanbn = Kanbn();
 
     try {
       if (!(await kanbn.initialised())) {
