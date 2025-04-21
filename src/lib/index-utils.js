@@ -668,6 +668,80 @@ async function findUntrackedTasks(index, initialised, getTaskFolderPath) {
   return new Set([...untrackedTasks].filter((x) => !trackedTasks.has(x)));
 }
 
+/**
+ * Update a task with new data
+ * @param {object} index The index object
+ * @param {string} taskId The task ID to update
+ * @param {object} taskData The new task data
+ * @param {string|null} columnName Optional column to move the task to
+ * @param {Function} initialised Function to check if kanbn is initialised
+ * @param {Function} getTaskFolderPath Function to get task folder path
+ * @param {Function} loadTask Function to load a task
+ * @param {Function} saveTask Function to save a task
+ * @param {Function} renameTask Function to rename a task
+ * @param {Function} moveTask Function to move a task
+ * @param {Function} saveIndex Function to save the index
+ * @return {Promise<string>} The task ID (may be updated if renamed)
+ */
+async function updateTask(
+  index,
+  taskId,
+  taskData,
+  columnName,
+  initialised,
+  getTaskFolderPath,
+  loadTask,
+  saveTask,
+  renameTask,
+  moveTask,
+  saveIndex
+) {
+  const fileUtils = require('./file-utils');
+  const taskUtils = require('./task-utils');
+  
+  // Check if this folder has been initialised
+  if (!(await initialised())) {
+    throw new Error("Not initialised in this folder");
+  }
+  taskId = fileUtils.removeFileExtension(taskId);
+
+  if (!(await fileUtils.exists(fileUtils.getTaskPath(await getTaskFolderPath(), taskId)))) {
+    throw new Error(`No task file found with id "${taskId}"`);
+  }
+
+  if (!taskUtils.taskInIndex(index, taskId)) {
+    throw new Error(`Task "${taskId}" is not in the index`);
+  }
+
+  if (!taskData.name) {
+    throw new Error("Task name cannot be blank");
+  }
+
+  const originalTaskData = await loadTask(taskId);
+  if (originalTaskData.name !== taskData.name) {
+    taskId = await renameTask(taskId, taskData.name);
+    
+    index = await loadTask(taskId);
+  }
+
+  if (columnName && !(columnName in index.columns)) {
+    throw new Error(`Column "${columnName}" doesn't exist`);
+  }
+
+  taskData = taskUtils.setTaskMetadata(taskData, "updated", new Date());
+
+  await saveTask(fileUtils.getTaskPath(await getTaskFolderPath(), taskId), taskData);
+
+  if (columnName) {
+    await moveTask(taskId, columnName);
+  } else {
+    // Otherwise save the index
+    await saveIndex(index);
+  }
+  
+  return taskId;
+}
+
 module.exports = {
   getTrackedTaskIds,
   sortColumnInIndex,
@@ -689,5 +763,6 @@ module.exports = {
   loadIndex,
   addUntrackedTaskToIndex,
   findTrackedTasks,
-  findUntrackedTasks
+  findUntrackedTasks,
+  updateTask
 };

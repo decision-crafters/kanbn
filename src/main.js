@@ -859,57 +859,20 @@ class Kanbn {
    * @return {Promise<string>} The id of the task that was updated
    */
   async updateTask(taskId, taskData, columnName = null) {
-    // Check if this folder has been initialised
-    if (!(await this.initialised())) {
-      throw new Error("Not initialised in this folder");
-    }
-    taskId = removeFileExtension(taskId);
-
-    // Make sure the task file exists
-    if (!(await fileUtils.exists(getTaskPath(await this.getTaskFolderPath(), taskId)))) {
-      throw new Error(`No task file found with id "${taskId}"`);
-    }
-
-    // Get index and make sure the task is indexed
-    let index = await this.loadIndex();
-    if (!taskInIndex(index, taskId)) {
-      throw new Error(`Task "${taskId}" is not in the index`);
-    }
-
-    // Make sure the updated task data has a name
-    if (!taskData.name) {
-      throw new Error("Task name cannot be blank");
-    }
-
-    // Rename the task if we're updating the name
-    const originalTaskData = await this.loadTask(taskId);
-    if (originalTaskData.name !== taskData.name) {
-      taskId = await this.renameTask(taskId, taskData.name);
-
-      // Re-load the index
-      index = await this.loadIndex();
-    }
-
-    // Get index and make sure the column exists
-    if (columnName && !(columnName in index.columns)) {
-      throw new Error(`Column "${columnName}" doesn't exist`);
-    }
-
-    // Set the updated date
-    taskData = setTaskMetadata(taskData, "updated", new Date());
-
-    // Save task
-    await this.saveTask(getTaskPath(await this.getTaskFolderPath(), taskId), taskData);
-
-    // Move the task if we're updating the column
-    if (columnName) {
-      await this.moveTask(taskId, columnName);
-
-      // Otherwise save the index
-    } else {
-      await this.saveIndex(index);
-    }
-    return taskId;
+    const index = await this.loadIndex();
+    return indexUtils.updateTask(
+      index,
+      taskId,
+      taskData,
+      columnName,
+      this.initialised.bind(this),
+      this.getTaskFolderPath.bind(this),
+      this.loadTask.bind(this),
+      this.saveTask.bind(this),
+      this.renameTask.bind(this),
+      this.moveTask.bind(this),
+      this.saveIndex.bind(this)
+    );
   }
 
   /**
