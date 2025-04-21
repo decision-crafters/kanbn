@@ -12,6 +12,7 @@ const fileUtils = require("./lib/file-utils");
 const taskUtils = require("./lib/task-utils");
 const filterUtils = require("./lib/filter-utils");
 const indexUtils = require("./lib/index-utils");
+const statusUtils = require("./lib/status-utils");
 
 const DEFAULT_FOLDER_NAME = ".kanbn";
 const DEFAULT_INDEX_FILE_NAME = "index.md";
@@ -1194,222 +1195,44 @@ class Kanbn {
 
       // If showing due information, calculate time remaining or overdue time for each task
       if (due) {
-        result.dueTasks = [];
-        tasks.forEach((task) => {
-          if ("dueData" in task) {
-            result.dueTasks.push({
-              task: task.id,
-              workload: task.workload,
-              progress: task.progress,
-              remainingWorkload: task.remainingWorkload,
-              ...task.dueData,
-            });
-          }
-        });
+        result.dueTasks = statusUtils.calculateDueTasks(tasks);
       }
 
       // Calculate total and per-column workload
-      let totalWorkload = 0,
-        totalRemainingWorkload = 0;
-      const columnWorkloads = tasks.reduce(
-        (a, task) => {
-          totalWorkload += task.workload;
-          totalRemainingWorkload += task.remainingWorkload;
-          a[task.column].workload += task.workload;
-          a[task.column].remainingWorkload += task.remainingWorkload;
-          return a;
-        },
-        Object.fromEntries(
-          columnNames.map((columnName) => [
-            columnName,
-            {
-              workload: 0,
-              remainingWorkload: 0,
-            },
-          ])
-        )
-      );
-      result.totalWorkload = totalWorkload;
-      result.totalRemainingWorkload = totalRemainingWorkload;
-      result.columnWorkloads = columnWorkloads;
-      result.taskWorkloads = Object.fromEntries(
-        tasks.map((task) => [
-          task.id,
-          {
-            workload: task.workload,
-            progress: task.progress,
-            remainingWorkload: task.remainingWorkload,
-            completed: taskCompleted(index, task),
-          },
-        ])
-      );
+      const workloadStats = statusUtils.calculateColumnWorkloads(tasks, columnNames);
+      result.totalWorkload = workloadStats.totalWorkload;
+      result.totalRemainingWorkload = workloadStats.totalRemainingWorkload;
+      result.columnWorkloads = workloadStats.columnWorkloads;
+      result.taskWorkloads = statusUtils.calculateTaskWorkloads(index, tasks);
 
       // Calculate assigned task totals and workloads
-      const assignedTasks = tasks.reduce((a, task) => {
-        if ("assigned" in task.metadata) {
-          if (!(task.metadata.assigned in a)) {
-            a[task.metadata.assigned] = {
-              total: 0,
-              workload: 0,
-              remainingWorkload: 0,
-            };
-          }
-          a[task.metadata.assigned].total++;
-          a[task.metadata.assigned].workload += task.workload;
-          a[task.metadata.assigned].remainingWorkload += task.remainingWorkload;
-        }
-        return a;
-      }, {});
+      const assignedTasks = statusUtils.calculateAssignedTaskStats(tasks);
       if (Object.keys(assignedTasks).length > 0) {
         result.assigned = assignedTasks;
       }
 
       // Calculate AI interaction metrics
-      const aiInteractions = tasks.filter(task =>
-        task.metadata.tags &&
-        task.metadata.tags.includes('ai-interaction')
-      );
-
-      if (aiInteractions.length > 0) {
-        result.aiMetrics = {
-          total: aiInteractions.length,
-          byType: {}
-        };
-
-        for (let interaction of aiInteractions) {
-          if (interaction.metadata.tags) {
-            for (let tag of interaction.metadata.tags) {
-              if (tag !== 'ai-interaction') {
-                if (!(tag in result.aiMetrics.byType)) {
-                  result.aiMetrics.byType[tag] = 0;
-                }
-                result.aiMetrics.byType[tag]++;
-              }
-            }
-          }
-        }
+      const aiMetrics = statusUtils.calculateAIMetrics(tasks);
+      if (aiMetrics) {
+        result.aiMetrics = aiMetrics;
       }
 
       // Calculate parent-child relationship metrics
-      const parentTasks = tasks.filter(task =>
-        task.relations &&
-        task.relations.some(relation => relation.type === 'parent-of')
-      );
-
-      const childTasks = tasks.filter(task =>
-        task.relations &&
-        task.relations.some(relation => relation.type === 'child-of')
-      );
-
-      if (parentTasks.length > 0 || childTasks.length > 0) {
-        result.relationMetrics = {
-          parentTasks: parentTasks.length,
-          childTasks: childTasks.length
-        };
+      const relationMetrics = statusUtils.calculateRelationMetrics(tasks);
+      if (relationMetrics) {
+        result.relationMetrics = relationMetrics;
       }
 
-      // If any sprints are defined in index options, calculate sprint statistics
-      if ("sprints" in index.options && index.options.sprints.length) {
-        const sprints = index.options.sprints;
-
-        // Default to current sprint
-        const currentSprint = index.options.sprints.length;
-        let sprintIndex = currentSprint - 1;
-
-        // Check if we're requesting stats for a specific sprint
-        if (sprint !== null) {
-          // Select sprint by number (1-based index)
-          if (typeof sprint === "number") {
-            if (sprint < 1 || sprint > sprints.length) {
-              throw new Error(`Sprint ${sprint} does not exist`);
-            } else {
-              sprintIndex = sprint - 1;
-            }
-
-            // Or select sprint by name
-          } else if (typeof sprint === "string") {
-            sprintIndex = sprints.findIndex((s) => s.name === sprint);
-            if (sprintIndex === -1) {
-              throw new Error(`No sprint found with name "${sprint}"`);
-            }
-          }
-        }
-
-        // Add sprint information
-        result.sprint = {
-          number: sprintIndex + 1,
-          name: sprints[sprintIndex].name,
-          start: sprints[sprintIndex].start,
-        };
-        if (currentSprint - 1 !== sprintIndex) {
-          if (sprintIndex === sprints.length - 1) {
-            result.sprint.end = sprints[sprintIndex + 1].start;
-          }
-          result.sprint.current = currentSprint;
-        }
-        if (sprints[sprintIndex].description) {
-          result.sprint.description = sprints[sprintIndex].description;
-        }
-        const sprintStartDate = sprints[sprintIndex].start;
-        const sprintEndDate = sprintIndex === sprints.length - 1 ? new Date() : sprints[sprintIndex + 1].start;
-
-        // Calculate sprint duration
-        const duration = sprintEndDate - sprintStartDate;
-        result.sprint.durationDelta = duration;
-        result.sprint.durationMessage = humanizeDuration(duration, {
-          largest: 3,
-          round: true,
-        });
-
-        // Add task workload information for the sprint
-        result.sprint.created = taskWorkloadInPeriod(tasks, "created", sprintStartDate, sprintEndDate);
-        result.sprint.started = taskWorkloadInPeriod(tasks, "started", sprintStartDate, sprintEndDate);
-        result.sprint.completed = taskWorkloadInPeriod(tasks, "completed", sprintStartDate, sprintEndDate);
-        result.sprint.due = taskWorkloadInPeriod(tasks, "due", sprintStartDate, sprintEndDate);
-
-        // Add custom date property workload information for the sprint
-        if ("customFields" in index.options) {
-          for (let customField of index.options.customFields) {
-            if (customField.type === "date") {
-              result.sprint[customField.name] = taskWorkloadInPeriod(
-                tasks,
-                customField.name,
-                sprintStartDate,
-                sprintEndDate
-              );
-            }
-          }
-        }
+      // Calculate sprint statistics
+      const sprintStats = statusUtils.calculateSprintStats(index, tasks, sprint);
+      if (sprintStats) {
+        result.sprint = sprintStats;
       }
 
-      // If any dates were specified, calculate task statistics for these dates
-      if (dates !== null && dates.length > 0) {
-        let periodStart, periodEnd;
-        result.period = {};
-        if (dates.length === 1) {
-          periodStart = new Date(+dates[0]);
-          periodStart.setHours(0, 0, 0, 0);
-          periodEnd = new Date(+dates[0]);
-          periodEnd.setHours(23, 59, 59, 999);
-          result.period.start = periodStart;
-          result.period.end = periodEnd;
-        } else {
-          result.period.start = periodStart = new Date(Math.min(...dates));
-          result.period.end = periodEnd = new Date(Math.max(...dates));
-        }
-        result.period.created = taskWorkloadInPeriod(tasks, "created", periodStart, periodEnd);
-        result.period.started = taskWorkloadInPeriod(tasks, "started", periodStart, periodEnd);
-        result.period.completed = taskWorkloadInPeriod(tasks, "completed", periodStart, periodEnd);
-        result.period.due = taskWorkloadInPeriod(tasks, "due", periodStart, periodEnd);
-
-        // Add custom date property workload information for the selected date range
-        if ("customFields" in index.options) {
-          for (let customField of index.options.customFields) {
-            if (customField.type === "date") {
-              result.sprint[customField.name] = taskWorkloadInPeriod(tasks, customField.name, periodStart, periodEnd);
-            }
-          }
-        }
+      // Calculate period statistics for specified dates
+      const periodStats = statusUtils.calculatePeriodStats(index, tasks, dates);
+      if (periodStats) {
+        result.period = periodStats;
       }
     }
     return result;
