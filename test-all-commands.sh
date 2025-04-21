@@ -41,6 +41,10 @@ run_command() {
 }
 
 KANBN_BIN="$(cd "$(dirname "$0")" && pwd)/bin/kanbn"
+if [ ! -f "$KANBN_BIN" ]; then
+  echo "Kanbn binary not found at $KANBN_BIN, using node directly"
+  KANBN_BIN="node $(cd "$(dirname "$0")" && pwd)/index.js"
+fi
 
 run_command "$KANBN_BIN init --name 'Test Project' --description 'Testing all commands'" 0 "Initialize a new kanbn board"
 
