@@ -19,7 +19,12 @@ module.exports = (() => {
     const dateFormat = kanbn.getDateFormat(index);
 
     // Make sure the task has the correct column
-    task.column = findTaskColumn(index, task.id);
+    if (typeof task.id === 'string') {
+      task.column = findTaskColumn(index, task.id);
+    } else {
+      console.error(`Invalid task id: expected string but got ${typeof task.id}`);
+      task.column = null;
+    }
 
     // Get an object containing custom fields from the task
     let customFields = {};
