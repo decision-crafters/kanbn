@@ -35,6 +35,16 @@ run_command() {
   else
     echo -e "\033[0;31mFAILED\033[0m (Expected status: $expected_status, Got: $status)"
     FAILED=$((FAILED + 1))
+    
+    echo "Test failed, exiting immediately"
+    echo "===================================================="
+    echo "TEST SUMMARY"
+    echo "===================================================="
+    echo "Total tests: $TOTAL"
+    echo "Passed: $PASSED"
+    echo "Failed: $FAILED"
+    echo "===================================================="
+    exit 1
   fi
   
   echo ""
