@@ -511,6 +511,123 @@ function updateColumnLinkedCustomField(index, taskData, columnName, fieldName, u
   return taskData;
 }
 
+/**
+ * Save index data to the index file
+ * @param {object} indexData Index data to save
+ * @param {Function} loadAllTrackedTasks Function to load all tracked tasks
+ * @param {Function} configExists Function to check if config exists
+ * @param {Function} saveConfig Function to save config
+ * @param {Function} getIndexPath Function to get index path
+ * @param {boolean} ignoreOptions Whether to ignore options when saving
+ * @return {Promise<void>}
+ */
+async function saveIndex(indexData, loadAllTrackedTasks, configExists, saveConfig, getIndexPath, ignoreOptions = false) {
+  const parseIndex = require('../parse-index');
+  const fs = require('fs');
+  
+  if ("columnSorting" in indexData.options && Object.keys(indexData.options.columnSorting).length) {
+    for (let columnName in indexData.options.columnSorting) {
+      indexData = sortColumnInIndex(
+        indexData,
+        await loadAllTrackedTasks(indexData, columnName),
+        columnName,
+        indexData.options.columnSorting[columnName]
+      );
+    }
+  }
+
+  if (!ignoreOptions && await configExists()) {
+    await saveConfig(indexData.options);
+    ignoreOptions = true;
+  }
+
+  await fs.promises.writeFile(await getIndexPath(), parseIndex.json2md(indexData, ignoreOptions));
+}
+
+/**
+ * Load the index file and parse it to an object
+ * @param {Function} getIndexPath Function to get index path
+ * @param {Function} getConfig Function to get config
+ * @return {Promise<object>} The index object
+ */
+async function loadIndex(getIndexPath, getConfig) {
+  const parseIndex = require('../parse-index');
+  const fs = require('fs');
+  
+  let indexData = "";
+  try {
+    indexData = await fs.promises.readFile(await getIndexPath(), { encoding: "utf-8" });
+  } catch (error) {
+    throw new Error(`Couldn't access index file: ${error.message}`);
+  }
+  
+  try {
+    const index = parseIndex.md2json(indexData);
+
+    const config = await getConfig();
+    if (config !== null) {
+      index.options = { ...index.options, ...config };
+    }
+    return index;
+  } catch (error) {
+    throw new Error(`Unable to parse index: ${error.message}`);
+  }
+}
+
+/**
+ * Add an untracked task to the index
+ * @param {object} index The index object
+ * @param {string} taskId The task ID to add
+ * @param {string} columnName The column to add the task to
+ * @param {Function} initialised Function to check if kanbn is initialised
+ * @param {Function} getTaskFolderPath Function to get task folder path
+ * @param {Function} loadTask Function to load a task
+ * @param {Function} saveTask Function to save a task
+ * @param {Function} saveIndex Function to save the index
+ * @return {Promise<string>} The task ID
+ */
+async function addUntrackedTaskToIndex(
+  index, 
+  taskId, 
+  columnName, 
+  initialised, 
+  getTaskFolderPath, 
+  loadTask, 
+  saveTask, 
+  saveIndex
+) {
+  const fs = require('fs');
+  
+  if (!(await initialised())) {
+    throw new Error("Not initialised in this folder");
+  }
+  taskId = fileUtils.removeFileExtension(taskId);
+
+  if (!(await fileUtils.exists(fileUtils.getTaskPath(await getTaskFolderPath(), taskId)))) {
+    throw new Error(`No task file found with id "${taskId}"`);
+  }
+
+  if (!(columnName in index.columns)) {
+    throw new Error(`Column "${columnName}" doesn't exist`);
+  }
+
+  if (taskUtils.taskInIndex(index, taskId)) {
+    throw new Error(`Task "${taskId}" is already in the index`);
+  }
+
+  // Load task data
+  let taskData = await loadTask(taskId);
+  const taskPath = fileUtils.getTaskPath(await getTaskFolderPath(), taskId);
+
+  taskData = updateColumnLinkedCustomFields(index, taskData, columnName);
+  await saveTask(taskPath, taskData);
+
+  // Add the task to the column and save the index
+  index = taskUtils.addTaskToIndex(index, taskId, columnName);
+  await saveIndex(index);
+  return taskId;
+}
+
 module.exports = {
   getTrackedTaskIds,
   sortColumnInIndex,
@@ -527,5 +644,8 @@ module.exports = {
   getTaskEventsAtDate,
   normaliseDate,
   updateColumnLinkedCustomFields,
-  updateColumnLinkedCustomField
+  updateColumnLinkedCustomField,
+  saveIndex,
+  loadIndex,
+  addUntrackedTaskToIndex
 };

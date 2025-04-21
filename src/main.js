@@ -546,27 +546,13 @@ class Kanbn {
    * @param {object} indexData Index data to save
    */
   async saveIndex(indexData) {
-    // Apply column sorting if any sorters are defined in options
-    if ("columnSorting" in indexData.options && Object.keys(indexData.options.columnSorting).length) {
-      for (let columnName in indexData.options.columnSorting) {
-        indexData = sortColumnInIndex(
-          indexData,
-          await this.loadAllTrackedTasks(indexData, columnName),
-          columnName,
-          indexData.options.columnSorting[columnName]
-        );
-      }
-    }
-
-    // If there is a separate config file, save options to this file
-    let ignoreOptions = false;
-    if (await this.configExists()) {
-      await this.saveConfig(indexData.options);
-      ignoreOptions = true;
-    }
-
-    // Save index
-    await fs.promises.writeFile(await this.getIndexPath(), parseIndex.json2md(indexData, ignoreOptions));
+    return indexUtils.saveIndex(
+      indexData,
+      this.loadAllTrackedTasks.bind(this),
+      this.configExists.bind(this),
+      this.saveConfig.bind(this),
+      this.getIndexPath.bind(this)
+    );
   }
 
   /**
@@ -574,25 +560,10 @@ class Kanbn {
    * @return {Promise<object>} The index object
    */
   async loadIndex() {
-    let indexData = "";
-    try {
-      indexData = await fs.promises.readFile(await this.getIndexPath(), { encoding: "utf-8" });
-    } catch (error) {
-      throw new Error(`Couldn't access index file: ${error.message}`);
-    }
-    
-    try {
-      const index = parseIndex.md2json(indexData);
-
-      // If configuration settings exist in a separate config file, merge them with index options
-      const config = await this.getConfig();
-      if (config !== null) {
-        index.options = { ...index.options, ...config };
-      }
-      return index;
-    } catch (error) {
-      throw new Error(`Unable to parse index: ${error.message}`);
-    }
+    return indexUtils.loadIndex(
+      this.getIndexPath.bind(this),
+      this.getConfig.bind(this)
+    );
   }
 
   /**
@@ -840,40 +811,17 @@ class Kanbn {
    * @return {Promise<string>} The id of the task that was added
    */
   async addUntrackedTaskToIndex(taskId, columnName) {
-    // Check if this folder has been initialised
-    if (!(await this.initialised())) {
-      throw new Error("Not initialised in this folder");
-    }
-    taskId = removeFileExtension(taskId);
-
-    // Make sure the task file exists
-    if (!(await fileUtils.exists(getTaskPath(await this.getTaskFolderPath(), taskId)))) {
-      throw new Error(`No task file found with id "${taskId}"`);
-    }
-
-    // Get index and make sure the column exists
-    let index = await this.loadIndex();
-    if (!(columnName in index.columns)) {
-      throw new Error(`Column "${columnName}" doesn't exist`);
-    }
-
-    // Check that the task isn't already indexed
-    if (taskInIndex(index, taskId)) {
-      throw new Error(`Task "${taskId}" is already in the index`);
-    }
-
-    // Load task data
-    let taskData = await this.loadTask(taskId);
-    const taskPath = getTaskPath(await this.getTaskFolderPath(), taskId);
-
-    // Update task metadata dates
-    taskData = updateColumnLinkedCustomFields(index, taskData, columnName);
-    await this.saveTask(taskPath, taskData);
-
-    // Add the task to the column and save the index
-    index = addTaskToIndex(index, taskId, columnName);
-    await this.saveIndex(index);
-    return taskId;
+    const index = await this.loadIndex();
+    return indexUtils.addUntrackedTaskToIndex(
+      index,
+      taskId,
+      columnName,
+      this.initialised.bind(this),
+      this.getTaskFolderPath.bind(this),
+      this.loadTask.bind(this),
+      this.saveTask.bind(this),
+      this.saveIndex.bind(this)
+    );
   }
 
   /**
