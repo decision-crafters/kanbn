@@ -923,6 +923,38 @@ async function deleteTask(
   return taskId;
 }
 
+/**
+ * Search for tasks matching the given filters
+ * @param {object} index The index object
+ * @param {object} filters Filters to apply
+ * @param {boolean} quiet Whether to return only task IDs
+ * @param {Function} initialised Function to check if kanbn is initialised
+ * @param {Function} loadAllTrackedTasks Function to load all tracked tasks
+ * @param {Function} hydrateTask Function to hydrate a task
+ * @return {Promise<Array>} Array of tasks or task IDs
+ */
+async function search(
+  index,
+  filters = {},
+  quiet = false,
+  initialised,
+  loadAllTrackedTasks,
+  hydrateTask
+) {
+  const utility = require('../utility');
+  
+  // Check if this folder has been initialised
+  if (!(await initialised())) {
+    throw new Error("Not initialised in this folder");
+  }
+
+  let tasks = filterTasks(index, await loadAllTrackedTasks(index), filters);
+
+  return tasks.map((task) => {
+    return quiet ? utility.getTaskId(task.name) : hydrateTask(index, task);
+  });
+}
+
 module.exports = {
   getTrackedTaskIds,
   sortColumnInIndex,
@@ -948,5 +980,6 @@ module.exports = {
   updateTask,
   renameTask,
   moveTask,
-  deleteTask
+  deleteTask,
+  search
 };

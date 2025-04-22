@@ -944,19 +944,15 @@ class Kanbn {
    * @return {Promise<object[]>} A list of tasks that match the filters
    */
   async search(filters = {}, quiet = false) {
-    // Check if this folder has been initialised
-    if (!(await this.initialised())) {
-      throw new Error("Not initialised in this folder");
-    }
-
-    // Load all tracked tasks and filter the results
     const index = await this.loadIndex();
-    let tasks = filterTasks(index, await this.loadAllTrackedTasks(index), filters);
-
-    // Return resulting task ids or the full tasks
-    return tasks.map((task) => {
-      return quiet ? utility.getTaskId(task.name) : this.hydrateTask(index, task);
-    });
+    return indexUtils.search(
+      index,
+      filters,
+      quiet,
+      this.initialised.bind(this),
+      this.loadAllTrackedTasks.bind(this),
+      this.hydrateTask.bind(this)
+    );
   }
 
   /**
