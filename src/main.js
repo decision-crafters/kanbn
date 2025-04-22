@@ -904,55 +904,19 @@ class Kanbn {
    * @return {Promise<string>} The id of the task that was moved
    */
   async moveTask(taskId, columnName, position = null, relative = false) {
-    // Check if this folder has been initialised
-    if (!(await this.initialised())) {
-      throw new Error("Not initialised in this folder");
-    }
-    taskId = removeFileExtension(taskId);
-
-    // Make sure the task file exists
-    if (!(await fileUtils.exists(getTaskPath(await this.getTaskFolderPath(), taskId)))) {
-      throw new Error(`No task file found with id "${taskId}"`);
-    }
-
-    // Get index and make sure the task is indexed
-    let index = await this.loadIndex();
-    if (!taskInIndex(index, taskId)) {
-      throw new Error(`Task "${taskId}" is not in the index`);
-    }
-
-    // Make sure the target column exists
-    if (!(columnName in index.columns)) {
-      throw new Error(`Column "${columnName}" doesn't exist`);
-    }
-
-    // Update the task's updated date
-    let taskData = await this.loadTask(taskId);
-    taskData = setTaskMetadata(taskData, "updated", new Date());
-
-    // Update task metadata dates
-    taskData = updateColumnLinkedCustomFields(index, taskData, columnName);
-    await this.saveTask(getTaskPath(await this.getTaskFolderPath(), taskId), taskData);
-
-    // If we're moving the task to a new position, calculate the absolute position
-    const currentColumnName = findTaskColumn(index, taskId);
-    const currentPosition = index.columns[currentColumnName].indexOf(taskId);
-
-    // Calculate the position
-    if (position !== null) {
-      if (relative) {
-        const startPosition = (columnName === currentColumnName) ? currentPosition : 0;
-        position = startPosition + position;
-      }
-      // Ensure position is within bounds of the target column
-      position = Math.max(Math.min(position, index.columns[columnName].length), 0);
-    }
-
-    // Remove the task from its current column and add it to the new column
-    index = removeTaskFromIndex(index, taskId);
-    index = addTaskToIndex(index, taskId, columnName, position);
-    await this.saveIndex(index);
-    return taskId;
+    const index = await this.loadIndex();
+    return indexUtils.moveTask(
+      index,
+      taskId,
+      columnName,
+      position,
+      relative,
+      this.initialised.bind(this),
+      this.getTaskFolderPath.bind(this),
+      this.loadTask.bind(this),
+      this.saveTask.bind(this),
+      this.saveIndex.bind(this)
+    );
   }
 
   /**
