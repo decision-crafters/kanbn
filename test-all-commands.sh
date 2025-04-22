@@ -95,6 +95,8 @@ else
   cp -r "$REPO_DIR/bin" "$TEST_DIR/"
   cp "$REPO_DIR/index.js" "$TEST_DIR/"
   cp "$REPO_DIR/package.json" "$TEST_DIR/"
+  cp -r "$REPO_DIR/routes" "$TEST_DIR/"
+  cp -r "$REPO_DIR/docs" "$TEST_DIR/"
   ln -s "$REPO_DIR/node_modules" "$TEST_DIR/node_modules"
   
   cd "$TEST_DIR"
