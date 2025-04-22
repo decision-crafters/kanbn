@@ -14,7 +14,7 @@ const FIXTURES_DIR = path.join(__dirname, 'real-fs-fixtures');
  * @return {object} A random task object
  */
 function generateTask(i) {
-  const COUNT_TAGS = faker.random.number(5);
+  const COUNT_TAGS = faker.datatype.number(5);
 
   return {
     name: `Task ${i + 1}`,
@@ -35,11 +35,11 @@ function generateTask(i) {
  * @return {object[]} Random sub-tasks
  */
 function generateSubTasks() {
-  const COUNT_SUB_TASKS = faker.random.number(10);
+  const COUNT_SUB_TASKS = faker.datatype.number(10);
 
   return new Array(COUNT_SUB_TASKS).fill(null).map(i => ({
     text: faker.lorem.sentence(),
-    completed: faker.random.boolean()
+    completed: faker.datatype.boolean()
   }));
 }
 
@@ -49,7 +49,7 @@ function generateSubTasks() {
  * @return {object[]} Random relations
  */
 function addRelations(taskIds) {
-  const COUNT_RELATIONS = faker.random.number(4);
+  const COUNT_RELATIONS = faker.datatype.number(4);
 
   const relationTypes = ['', 'blocks ', 'duplicates ', 'requires ', 'obsoletes '];
   return new Array(COUNT_RELATIONS).fill(null).map(i => ({
@@ -107,7 +107,7 @@ function createFixtures(testName, options = {}) {
     ));
     taskIds = tasks.filter(i => !i.untracked).map(i => utility.getTaskId(i.name));
   } else {
-    const COUNT_TASKS = options.countTasks || faker.random.number(9) + 1;
+    const COUNT_TASKS = options.countTasks || faker.datatype.number(9) + 1;
     tasks = new Array(COUNT_TASKS).fill(null).map((v, i) => generateTask(i));
     taskIds = tasks.filter(i => !i.untracked).map(i => utility.getTaskId(i.name));
     tasks.forEach(i => addRelations(taskIds));
@@ -116,7 +116,7 @@ function createFixtures(testName, options = {}) {
   if ('columns' in options) {
     columns = options.columns;
   } else {
-    const COUNT_COLUMNS = options.countColumns || faker.random.number(4) + 1;
+    const COUNT_COLUMNS = options.countColumns || faker.datatype.number(4) + 1;
     const TASKS_PER_COLUMN = options.tasksPerColumn || -1;
     const columnNames = options.columnNames || new Array(COUNT_COLUMNS).fill(null).map((v, i) => `Column ${i + 1}`);
     columns = Object.fromEntries(columnNames.map(i => [i, []]));
