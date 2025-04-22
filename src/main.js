@@ -926,27 +926,15 @@ class Kanbn {
    * @return {Promise<string>} The id of the task that was deleted
    */
   async deleteTask(taskId, removeFile = false) {
-    // Check if this folder has been initialised
-    if (!(await this.initialised())) {
-      throw new Error("Not initialised in this folder");
-    }
-    taskId = removeFileExtension(taskId);
-
-    // Get index and make sure the task is indexed
-    let index = await this.loadIndex();
-    if (!taskInIndex(index, taskId)) {
-      throw new Error(`Task "${taskId}" is not in the index`);
-    }
-
-    // Remove the task from whichever column it's in
-    index = removeTaskFromIndex(index, taskId);
-
-    // Optionally remove the task file as well
-    if (removeFile && (await fileUtils.exists(getTaskPath(await this.getTaskFolderPath(), taskId)))) {
-      await fs.promises.unlink(getTaskPath(await this.getTaskFolderPath(), taskId));
-    }
-    await this.saveIndex(index);
-    return taskId;
+    const index = await this.loadIndex();
+    return indexUtils.deleteTask(
+      index,
+      taskId,
+      removeFile,
+      this.initialised.bind(this),
+      this.getTaskFolderPath.bind(this),
+      this.saveIndex.bind(this)
+    );
   }
 
   /**

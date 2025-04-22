@@ -881,6 +881,48 @@ async function moveTask(
   return taskId;
 }
 
+/**
+ * Delete a task from the index
+ * @param {object} index The index object
+ * @param {string} taskId The task ID to delete
+ * @param {boolean} removeFile Whether to remove the task file
+ * @param {Function} initialised Function to check if kanbn is initialised
+ * @param {Function} getTaskFolderPath Function to get task folder path
+ * @param {Function} saveIndex Function to save the index
+ * @return {Promise<string>} The task ID
+ */
+async function deleteTask(
+  index,
+  taskId,
+  removeFile = false,
+  initialised,
+  getTaskFolderPath,
+  saveIndex
+) {
+  const fs = require('fs');
+  const fileUtils = require('./file-utils');
+  const taskUtils = require('./task-utils');
+  
+  // Check if this folder has been initialised
+  if (!(await initialised())) {
+    throw new Error("Not initialised in this folder");
+  }
+  taskId = fileUtils.removeFileExtension(taskId);
+
+  if (!taskUtils.taskInIndex(index, taskId)) {
+    throw new Error(`Task "${taskId}" is not in the index`);
+  }
+
+  index = taskUtils.removeTaskFromIndex(index, taskId);
+
+  if (removeFile && (await fileUtils.exists(fileUtils.getTaskPath(await getTaskFolderPath(), taskId)))) {
+    await fs.promises.unlink(fileUtils.getTaskPath(await getTaskFolderPath(), taskId));
+  }
+  
+  await saveIndex(index);
+  return taskId;
+}
+
 module.exports = {
   getTrackedTaskIds,
   sortColumnInIndex,
@@ -905,5 +947,6 @@ module.exports = {
   findUntrackedTasks,
   updateTask,
   renameTask,
-  moveTask
+  moveTask,
+  deleteTask
 };
