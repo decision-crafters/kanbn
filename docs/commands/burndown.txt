@@ -12,7 +12,9 @@ Options:
 
   {b}kanbn burndown --sprint N|"name"{b}
   {b}kanbn burndown -p N|"name"{b}
-    Show burndown data for the specified sprint. This option can be repeated to show burndown data for multiple sprints.
+    Show burndown data for the specified sprint. Multiple sprints can be specified either by:
+    - Repeating this option: --sprint "Sprint 1" --sprint "Sprint 2"
+    - Using comma-separated values: --sprint "Sprint 1,Sprint 2"
 
   {b}kanbn burndown --date "date"{b}
   {b}kanbn burndown -d "date"{b}

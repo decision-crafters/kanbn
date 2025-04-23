@@ -1325,7 +1325,7 @@ class Kanbn {
         if (indexSprints === null) {
           throw new Error(`No sprints defined`);
         } else {
-          for (sprint of sprints) {
+          for (const sprint of sprints) {
             let sprintIndex = null;
 
             // Select sprint by number (1-based index)

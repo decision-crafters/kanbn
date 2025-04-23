@@ -155,6 +155,18 @@ run_command "$KANBN_BIN board --show-archived" 0 "Show board with archived tasks
 
 run_command "$KANBN_BIN restore renamed-task-1" 0 "Restore a task from archive"
 
+# Test single task removal
+run_command "$KANBN_BIN remove task-2 --force" 0 "Remove a single task"
+
+# Test sprint functionality
+run_command "$KANBN_BIN sprint --name 'Sprint 1' --description 'First sprint'" 0 "Create first sprint"
+run_command "$KANBN_BIN sprint --name 'Sprint 2' --description 'Second sprint'" 0 "Create second sprint"
+run_command "$KANBN_BIN move task-3 --column 'Sprint 1'" 0 "Move task to sprint"
+
+# Test burndown chart with multiple sprints
+run_command "$KANBN_BIN burndown --sprint 'Sprint 1,Sprint 2' --json" 0 "Show multi-sprint burndown"
+run_command "$KANBN_BIN burndown" 0 "Show overall burndown chart"
+
 REMOVE_TEST_DIR=$(mktemp -d)
 cd $REMOVE_TEST_DIR
 run_command "$KANBN_BIN init --name 'Remove Test'" 0 "Initialize a board for removal test"

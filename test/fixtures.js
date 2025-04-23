@@ -1,5 +1,6 @@
 const mockFileSystem = require('mock-fs');
 const faker = require('faker');
+const path = require('path');
 const parseIndex = require('../src/parse-index');
 const parseTask = require('../src/parse-task');
 const utility = require('../src/utility');
@@ -123,7 +124,9 @@ module.exports = (options = {}) => {
     '.kanbn': {
       'index.md': parseIndex.json2md(index),
       'tasks': Object.fromEntries(tasks.map(i => [`${utility.getTaskId(i.name)}.md`, parseTask.json2md(i)]))
-    }
+    },
+    'src': mockFileSystem.load(path.join(__dirname, '..', 'src')),
+    'node_modules': mockFileSystem.load(path.join(__dirname, '..', 'node_modules'))
   });
 
   return index;
