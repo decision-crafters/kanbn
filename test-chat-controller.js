@@ -51,14 +51,22 @@ async function testChatController() {
 
     // Add a test task
     console.log('Adding a test task...');
-    await kanbn.createTask({
-      name: 'Test Task',
-      description: 'A test task',
-      metadata: {
-        created: new Date(),
-        tags: ['test']
+    try {
+      await kanbn.createTask({
+        name: 'Test Task',
+        description: 'A test task',
+        metadata: {
+          created: new Date(),
+          tags: ['test']
+        }
+      }, 'Backlog');
+    } catch (error) {
+      // If the task already exists, that's fine
+      if (!error.message.includes('already exists')) {
+        throw error;
       }
-    }, 'Backlog');
+      console.log('Task already exists, continuing...');
+    }
 
     console.log('Calling chat controller...');
 
