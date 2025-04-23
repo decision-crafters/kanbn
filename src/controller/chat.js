@@ -426,6 +426,14 @@ const chatController = async args => {
               return 'Error: OpenRouter API key not found. Please set OPENROUTER_API_KEY environment variable or use --api-key option.';
             }
 
+            // Set the API key in the environment for the OpenRouterClient to use
+            process.env.OPENROUTER_API_KEY = apiKey;
+            console.log('DEBUG: Set process.env.OPENROUTER_API_KEY to:', process.env.OPENROUTER_API_KEY.substring(0, 5) + '... (' + process.env.OPENROUTER_API_KEY.length + ' chars)');
+
+            // Set the model in the environment for the OpenRouterClient to use
+            process.env.OPENROUTER_MODEL = model;
+            console.log('DEBUG: Set process.env.OPENROUTER_MODEL to:', process.env.OPENROUTER_MODEL);
+
             try {
               console.log('Attempting to call OpenRouter API...');
 
