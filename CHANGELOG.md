@@ -13,6 +13,7 @@ All notable changes to this project will be documented in this file.
 - Added centralized OpenRouter configuration module for consistent settings
 - Added OpenRouterClient class to encapsulate API communication
 - Added dedicated API key verification script
+- Added response validation to OpenRouter API tests
 
 ### Fixed
 - Fixed circular dependency issue with eventBus in chat module
