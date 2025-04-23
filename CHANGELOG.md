@@ -6,6 +6,9 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 - Added `--api-key` option to chat command for specifying OpenRouter API key directly
+- Added `--model` option to chat command for specifying OpenRouter model to use
+- Added streaming responses to chat functionality for better user experience
+- Added model information display in chat output
 
 ### Fixed
 - Fixed circular dependency issue with eventBus in chat module
