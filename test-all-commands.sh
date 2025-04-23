@@ -273,62 +273,35 @@ run_command "$KANBN_BIN task event-test-task" 0 "Verify comment added by event"
 
 # Test AI-specific event communication if OpenRouter API key is available
 echo "\n\n🔍 Checking for OpenRouter API key..."
-if [ -n "$OPENROUTER_API_KEY" ]; then
-  # Show first few characters of API key for verification (security-conscious approach)
-  KEY_LENGTH=${#OPENROUTER_API_KEY}
-  KEY_PREFIX="${OPENROUTER_API_KEY:0:5}..."
-  echo "🔑 OpenRouter API key found: $KEY_PREFIX ($KEY_LENGTH chars). Testing API key validity..."
 
-  # Create a temporary file to store the API response
-  API_RESPONSE_FILE=$(mktemp)
+# Use the centralized script to check the OpenRouter API key
+if "$REPO_DIR/scripts/check-openrouter-key.sh" > /dev/null 2>&1; then
+  echo "✅ OpenRouter API key is valid! Proceeding with AI tests."
 
-  # Test the API key with a simple request and save the response
-  echo "🌐 Sending test request to OpenRouter API..."
-  curl -s -X POST \
-    -H "Authorization: Bearer $OPENROUTER_API_KEY" \
-    -H "Content-Type: application/json" \
-    -d '{"model":"google/gemma-3-4b-it:free","messages":[{"role":"user","content":"Hello"}]}' \
-    https://openrouter.ai/api/v1/chat/completions > "$API_RESPONSE_FILE"
+  # Test that chat creates an AI interaction task (which emits events)
+  echo "\n📝 Testing chat with event emission..."
+  run_command "$KANBN_BIN chat --message 'Test event communication'" 0 "Chat with event emission"
 
-  # Check if the response contains expected fields
-  if grep -q "choices" "$API_RESPONSE_FILE"; then
-    echo "✅ OpenRouter API key is valid! Response contains expected data."
-    echo "Response excerpt:"
-    head -n 5 "$API_RESPONSE_FILE"
+  # Test that we can find the AI interaction task (verifying the event had its effect)
+  echo "\n🔍 Verifying AI interaction task was created..."
+  run_command "$KANBN_BIN find --tag ai-interaction --created 'today'" 0 "Find task created by event"
 
-    # Test that chat creates an AI interaction task (which emits events)
-    echo "\n📝 Testing chat with event emission..."
-    run_command "$KANBN_BIN chat --message 'Test event communication'" 0 "Chat with event emission"
+  # Test streaming response with default model
+  echo "\n🌊 Testing streaming response with default model..."
+  run_command "$KANBN_BIN chat --message 'Give a very brief response to test streaming'" 0 "Chat with streaming response (default model)"
 
-    # Test that we can find the AI interaction task (verifying the event had its effect)
-    echo "\n🔍 Verifying AI interaction task was created..."
-    run_command "$KANBN_BIN find --tag ai-interaction --created 'today'" 0 "Find task created by event"
+  # Test with specific model if supported
+  echo "\n🤖 Testing with specific model..."
+  run_command "$KANBN_BIN chat --message 'Give a very brief response' --model 'google/gemma-3-4b-it:free'" 0 "Chat with specific model"
 
-    # Test streaming response with default model
-    echo "\n🌊 Testing streaming response with default model..."
-    run_command "$KANBN_BIN chat --message 'Give a very brief response to test streaming'" 0 "Chat with streaming response (default model)"
+  # Test with API key specified in command line
+  echo "\n🔑 Testing with API key specified in command line..."
+  run_command "$KANBN_BIN chat --message 'Give a very brief response' --api-key $OPENROUTER_API_KEY" 0 "Chat with API key in command line"
 
-    # Test with specific model if supported
-    echo "\n🤖 Testing with specific model..."
-    run_command "$KANBN_BIN chat --message 'Give a very brief response' --model 'google/gemma-3-4b-it:free'" 0 "Chat with specific model"
-
-    # Test with API key specified in command line
-    echo "\n🔑 Testing with API key specified in command line..."
-    run_command "$KANBN_BIN chat --message 'Give a very brief response' --api-key $OPENROUTER_API_KEY" 0 "Chat with API key in command line"
-
-    # Note: Skipping decompose test due to issues with task ID handling
-    echo "\n⏩ Skipping decompose test due to issues with task ID handling"
-  else
-    echo "❌ OpenRouter API key is invalid or API is unreachable."
-    echo "Response content:"
-    cat "$API_RESPONSE_FILE"
-    echo "Skipping AI tests."
-  fi
-
-  # Clean up temporary file
-  rm -f "$API_RESPONSE_FILE"
+  # Note: Skipping decompose test due to issues with task ID handling
+  echo "\n⏩ Skipping decompose test due to issues with task ID handling"
 else
-  echo "⚠️ No OpenRouter API key found. Skipping AI tests."
+  echo "⚠️ OpenRouter API key is invalid or not found. Skipping AI tests."
   echo "Please set OPENROUTER_API_KEY in your .env file or as an environment variable."
   echo "Current environment variables:"
   env | grep -i openrouter || echo "No OpenRouter-related environment variables found."
