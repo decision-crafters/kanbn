@@ -10,6 +10,7 @@ Description:
 Options:
   -m, --message     Specify a one-off message to send to the assistant
   -k, --api-key     Specify the OpenRouter API key (overrides environment variable)
+  --model, --mod    Specify the OpenRouter model to use (overrides environment variable)
   --with-refs       Include task references in the context
   --include-refs    Same as --with-refs
   --references      Same as --with-refs
@@ -23,9 +24,11 @@ Examples:
   kanbn chat --message "Move the first subtask to In Progress"
   kanbn chat --message "Summarize my current project status"
   kanbn chat --api-key "your-api-key" --message "What should I work on next?"
+  kanbn chat --model "openai/gpt-4o" --message "Analyze my project and suggest improvements"
 
 Notes:
   - Requires an OpenRouter API key set as OPENROUTER_API_KEY environment variable or via --api-key option
+  - Can specify a model via OPENROUTER_MODEL environment variable or --model option (default: google/gemma-3-4b-it:free)
   - Maintains context across chat sessions for natural conversations
   - Preserves board state consistency during operations
   - Handles task relationships and dependencies

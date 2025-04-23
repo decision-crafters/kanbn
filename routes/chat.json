@@ -11,13 +11,15 @@
     ],
     "string": [
       "message",
-      "api-key"
+      "api-key",
+      "model"
     ],
     "alias": {
       "help": ["h"],
       "message": ["m"],
       "with-refs": ["include-refs", "references"],
-      "api-key": ["key", "k"]
+      "api-key": ["key", "k"],
+      "model": ["mod"]
     }
   },
   "controller": "./src/controller/chat",

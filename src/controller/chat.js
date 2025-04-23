@@ -2,6 +2,7 @@ const kanbnModule = require('../main');
 const utility = require('../utility');
 const inquirer = require('inquirer');
 const axios = require('axios');
+const fetch = require('node-fetch');
 const eventBus = require('../lib/event-bus');
 const ChatHandler = require('../lib/chat-handler');
 
@@ -19,9 +20,11 @@ const getGitUsername = require('git-user-name');
  * Call OpenRouter API for project chat
  * @param {string} message User message
  * @param {Object} projectContext Project context information
+ * @param {string|null} apiKeyOverride Optional API key override
+ * @param {string|null} modelOverride Optional model override
  * @return {Promise<string>} AI response
  */
-async function callOpenRouterAPI(message, projectContext, apiKeyOverride = null) {
+async function callOpenRouterAPI(message, projectContext, apiKeyOverride = null, modelOverride = null) {
   try {
     console.log('Starting OpenRouter API call...');
     // Use the override if provided, otherwise check environment
@@ -31,8 +34,8 @@ async function callOpenRouterAPI(message, projectContext, apiKeyOverride = null)
     }
     console.log('API key found, length:', apiKey.length);
 
-    // Use the model specified in the environment or default to a cost-effective option
-    const model = process.env.OPENROUTER_MODEL || 'google/gemma-3-4b-it:free';
+    // Use the model specified in the command line arguments, environment, or default to a cost-effective option
+    const model = modelOverride || process.env.OPENROUTER_MODEL || 'google/gemma-3-4b-it:free';
     console.log(`Using model: ${model}`);
 
     // Handle undefined project context
@@ -114,36 +117,128 @@ ${Object.entries(safeContext.references).map(([taskId, refs]) => `- ${taskId}: $
     ];
 
     // Make the actual API call
-    console.log('Making API call to OpenRouter...');
-    const response = await axios.post(
-      'https://openrouter.ai/api/v1/chat/completions',
-      {
-        model: model,
-        messages: messages
-      },
-      {
+    console.log(`Making API call to OpenRouter using model: ${model}...`);
+
+    // Check if we should use streaming (default to true)
+    const useStreaming = process.env.OPENROUTER_STREAM !== 'false';
+
+    if (useStreaming) {
+      console.log('Using streaming response...');
+
+      // Use fetch for streaming
+      const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
         headers: {
           'Authorization': `Bearer ${apiKey}`,
           'Content-Type': 'application/json',
           'HTTP-Referer': 'https://github.com/decision-crafters/kanbn',
           'X-Title': 'Kanbn Project Assistant'
-        }
+        },
+        body: JSON.stringify({
+          model: model,
+          messages: messages,
+          stream: true
+        })
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`OpenRouter API error: ${response.status} ${errorText}`);
       }
-    );
 
-    const aiResponse = response.data.choices[0].message;
+      const reader = response.body?.getReader();
+      if (!reader) {
+        throw new Error('Response body is not readable');
+      }
 
-    // Update conversation history
-    global.chatHistory = [
-      ...history,
-      { role: 'user', content: message },
-      { role: 'assistant', content: aiResponse.content }
-    ];
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let fullContent = '';
 
-    console.log('Logging AI interaction...');
-    await logAIInteraction('chat', message, aiResponse.content);
+      try {
+        process.stdout.write(chalk.yellow('Project Assistant: '));
 
-    return aiResponse.content;
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          // Append new chunk to buffer
+          buffer += decoder.decode(value, { stream: true });
+
+          // Process complete lines from buffer
+          while (true) {
+            const lineEnd = buffer.indexOf('\n');
+            if (lineEnd === -1) break;
+
+            const line = buffer.slice(0, lineEnd).trim();
+            buffer = buffer.slice(lineEnd + 1);
+
+            if (line.startsWith('data: ')) {
+              const data = line.slice(6);
+              if (data === '[DONE]') break;
+
+              try {
+                const parsed = JSON.parse(data);
+                const content = parsed.choices[0].delta.content;
+                if (content) {
+                  process.stdout.write(content);
+                  fullContent += content;
+                }
+              } catch (e) {
+                // Ignore invalid JSON
+              }
+            }
+          }
+        }
+
+        console.log(); // Add a newline at the end
+
+        // Update conversation history
+        global.chatHistory = [
+          ...history,
+          { role: 'user', content: message },
+          { role: 'assistant', content: fullContent }
+        ];
+
+        console.log('Logging AI interaction...');
+        await logAIInteraction('chat', message, fullContent);
+
+        return fullContent;
+      } finally {
+        reader.cancel();
+      }
+    } else {
+      // Use axios for non-streaming response
+      const response = await axios.post(
+        'https://openrouter.ai/api/v1/chat/completions',
+        {
+          model: model,
+          messages: messages
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json',
+            'HTTP-Referer': 'https://github.com/decision-crafters/kanbn',
+            'X-Title': 'Kanbn Project Assistant'
+          }
+        }
+      );
+
+      const aiResponse = response.data.choices[0].message;
+
+      // Update conversation history
+      global.chatHistory = [
+        ...history,
+        { role: 'user', content: message },
+        { role: 'assistant', content: aiResponse.content }
+      ];
+
+      console.log('Logging AI interaction...');
+      await logAIInteraction('chat', message, aiResponse.content);
+
+      return aiResponse.content;
+    }
   } catch (error) {
     console.error('Error in OpenRouter API:', error);
     return `I'm having trouble with the project assistant. ${error.message}`;
@@ -302,6 +397,11 @@ async function getProjectContext(includeReferences = false) {
  */
 async function interactiveChat(projectContext, chatHandler, args) {
   console.log(chalk.blue.bold('\n📊 Kanbn Project Assistant 📊'));
+
+  // Show model information if available
+  const model = args['model'] || process.env.OPENROUTER_MODEL || 'google/gemma-3-4b-it:free';
+  console.log(chalk.gray(`Using model: ${model}`));
+
   console.log(chalk.gray('Type "exit" or "quit" to end the conversation\n'));
 
   let chatActive = true;
@@ -337,9 +437,10 @@ async function interactiveChat(projectContext, chatHandler, args) {
         } catch (error) {
           // Fall back to AI chat if command fails
           console.log('Chat handler failed, falling back to OpenRouter API:', error.message);
-          // Check for API key in command line arguments
+          // Check for API key and model in command line arguments
           const apiKey = args['api-key'] || null;
-          response = await callOpenRouterAPI(message, projectContext, apiKey);
+          const model = args['model'] || null;
+          response = await callOpenRouterAPI(message, projectContext, apiKey, model);
         }
       }
 
@@ -380,6 +481,10 @@ const chatController = async args => {
       if (args.message) {
         const message = utility.strArg(args.message);
 
+        // Show model information if available
+        const model = args['model'] || process.env.OPENROUTER_MODEL || 'google/gemma-3-4b-it:free';
+        console.log(chalk.gray(`Using model: ${model}`));
+
         let response;
         if (process.env.KANBN_ENV === 'test' || process.env.CI === 'true') {
           response = await chatHandler.handleMessage(message);
@@ -391,9 +496,10 @@ const chatController = async args => {
           } catch (error) {
             // Fall back to AI chat if command fails
             console.log('Chat handler failed, falling back to OpenRouter API:', error.message);
-            // Check for API key in command line arguments
+            // Check for API key and model in command line arguments
             const apiKey = args['api-key'] || null;
-            response = await callOpenRouterAPI(message, projectContext, apiKey);
+            const model = args['model'] || null;
+            response = await callOpenRouterAPI(message, projectContext, apiKey, model);
           }
         }
 

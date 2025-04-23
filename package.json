@@ -68,6 +68,7 @@
     "marked": "^1.2.7",
     "marked-terminal": "^4.1.1",
     "minimist": "^1.2.5",
+    "node-fetch": "^2.7.0",
     "rimraf": "^3.0.2",
     "terminal-kit": "^1.44.0",
     "yamljs": "^0.3.0"
