@@ -389,6 +389,12 @@ const chatController = async args => {
             const apiKey = openRouterConfig.getApiKey(args['api-key']);
             const model = openRouterConfig.getModel(args['model']);
 
+            // Debug logging
+            console.log('DEBUG: API key from args:', args['api-key'] ? `${args['api-key'].substring(0, 5)}... (${args['api-key'].length} chars)` : 'not set');
+            console.log('DEBUG: API key after getApiKey:', apiKey ? `${apiKey.substring(0, 5)}... (${apiKey.length} chars)` : 'not set');
+            console.log('DEBUG: Model from args:', args['model'] || 'not set');
+            console.log('DEBUG: Model after getModel:', model);
+
             response = await callOpenRouterAPI(message, projectContext, apiKey, model);
           }
         }

@@ -9,8 +9,22 @@
  * @returns {string|null} The API key or null if not found
  */
 function getApiKey(apiKeyOverride = null) {
+  // Debug logging
+  if (process.env.DEBUG === 'true') {
+    console.log('DEBUG: getApiKey called');
+    console.log('DEBUG: apiKeyOverride:', apiKeyOverride ? `${apiKeyOverride.substring(0, 5)}... (${apiKeyOverride.length} chars)` : 'not set');
+    console.log('DEBUG: process.env.OPENROUTER_API_KEY:', process.env.OPENROUTER_API_KEY ? `${process.env.OPENROUTER_API_KEY.substring(0, 5)}... (${process.env.OPENROUTER_API_KEY.length} chars)` : 'not set');
+  }
+
   // Use the override if provided, otherwise check environment
-  return apiKeyOverride || process.env.OPENROUTER_API_KEY || null;
+  const result = apiKeyOverride || process.env.OPENROUTER_API_KEY || null;
+
+  // Debug logging
+  if (process.env.DEBUG === 'true') {
+    console.log('DEBUG: getApiKey result:', result ? `${result.substring(0, 5)}... (${result.length} chars)` : 'not set');
+  }
+
+  return result;
 }
 
 /**

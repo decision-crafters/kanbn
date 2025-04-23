@@ -14,10 +14,24 @@ class OpenRouterClient {
    * @param {string|null} modelOverride Optional model override
    */
   constructor(apiKeyOverride = null, modelOverride = null) {
+    // Debug logging
+    if (process.env.DEBUG === 'true') {
+      console.log('DEBUG: OpenRouterClient constructor');
+      console.log('DEBUG: apiKeyOverride:', apiKeyOverride ? `${apiKeyOverride.substring(0, 5)}... (${apiKeyOverride.length} chars)` : 'not set');
+      console.log('DEBUG: modelOverride:', modelOverride || 'not set');
+      console.log('DEBUG: process.env.OPENROUTER_API_KEY:', process.env.OPENROUTER_API_KEY ? `${process.env.OPENROUTER_API_KEY.substring(0, 5)}... (${process.env.OPENROUTER_API_KEY.length} chars)` : 'not set');
+    }
+
     this.apiKey = openRouterConfig.getApiKey(apiKeyOverride);
     this.model = openRouterConfig.getModel(modelOverride);
     this.useStreaming = openRouterConfig.useStreaming();
     this.baseUrl = openRouterConfig.getApiBaseUrl();
+
+    // Debug logging
+    if (process.env.DEBUG === 'true') {
+      console.log('DEBUG: this.apiKey:', this.apiKey ? `${this.apiKey.substring(0, 5)}... (${this.apiKey.length} chars)` : 'not set');
+      console.log('DEBUG: this.model:', this.model);
+    }
   }
 
   /**
@@ -44,10 +58,10 @@ class OpenRouterClient {
    */
   async chatCompletion(messages, onChunk = null) {
     this.validateApiKey();
-    
+
     // Log which model is being used
     console.log(`Making API call to OpenRouter using model: ${this.model}...`);
-    
+
     // Debug log to verify API key is being used (only show prefix for security)
     if (this.apiKey) {
       console.log(`API call using key: ${this.apiKey.substring(0, 5)}... (${this.apiKey.length} chars)`);
@@ -141,7 +155,7 @@ class OpenRouterClient {
    */
   async standardChatCompletion(messages) {
     console.log('Using standard (non-streaming) response...');
-    
+
     // Use axios for non-streaming response
     const response = await axios.post(
       `${this.baseUrl}/chat/completions`,
@@ -164,7 +178,7 @@ class OpenRouterClient {
   async testApiKey() {
     try {
       this.validateApiKey();
-      
+
       const response = await axios.post(
         `${this.baseUrl}/chat/completions`,
         {
@@ -175,7 +189,7 @@ class OpenRouterClient {
           headers: this.getHeaders()
         }
       );
-      
+
       return response.data && response.data.choices && response.data.choices.length > 0;
     } catch (error) {
       console.error('Error testing API key:', error.message);
