@@ -57,6 +57,14 @@ class OpenRouterClient {
    * @returns {Promise<string>} The response content
    */
   async chatCompletion(messages, onChunk = null) {
+    // Debug logging
+    if (process.env.DEBUG === 'true') {
+      console.log('DEBUG: chatCompletion method');
+      console.log('DEBUG: this.apiKey:', this.apiKey ? `${this.apiKey.substring(0, 5)}... (${this.apiKey.length} chars)` : 'not set');
+      console.log('DEBUG: this.model:', this.model);
+      console.log('DEBUG: messages:', JSON.stringify(messages.slice(0, 1)));
+    }
+
     this.validateApiKey();
 
     // Log which model is being used
@@ -82,6 +90,18 @@ class OpenRouterClient {
    */
   async streamingChatCompletion(messages, onChunk) {
     console.log('Using streaming response...');
+
+    // Debug logging
+    if (process.env.DEBUG === 'true') {
+      console.log('DEBUG: streamingChatCompletion method');
+      console.log('DEBUG: API URL:', `${this.baseUrl}/chat/completions`);
+      console.log('DEBUG: Headers:', JSON.stringify(this.getHeaders()));
+      console.log('DEBUG: Request body:', JSON.stringify({
+        model: this.model,
+        messages: messages.slice(0, 1),
+        stream: true
+      }));
+    }
 
     // Use fetch for streaming
     const response = await fetch(`${this.baseUrl}/chat/completions`, {
@@ -155,6 +175,17 @@ class OpenRouterClient {
    */
   async standardChatCompletion(messages) {
     console.log('Using standard (non-streaming) response...');
+
+    // Debug logging
+    if (process.env.DEBUG === 'true') {
+      console.log('DEBUG: standardChatCompletion method');
+      console.log('DEBUG: API URL:', `${this.baseUrl}/chat/completions`);
+      console.log('DEBUG: Headers:', JSON.stringify(this.getHeaders()));
+      console.log('DEBUG: Request body:', JSON.stringify({
+        model: this.model,
+        messages: messages.slice(0, 1)
+      }));
+    }
 
     // Use axios for non-streaming response
     const response = await axios.post(

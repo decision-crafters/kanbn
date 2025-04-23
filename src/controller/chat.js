@@ -28,6 +28,14 @@ async function callOpenRouterAPI(message, projectContext, apiKeyOverride = null,
   try {
     console.log('Starting OpenRouter API call...');
 
+    // Debug logging
+    if (process.env.DEBUG === 'true') {
+      console.log('DEBUG: callOpenRouterAPI function');
+      console.log('DEBUG: apiKeyOverride:', apiKeyOverride ? `${apiKeyOverride.substring(0, 5)}... (${apiKeyOverride.length} chars)` : 'not set');
+      console.log('DEBUG: modelOverride:', modelOverride || 'not set');
+      console.log('DEBUG: process.env.OPENROUTER_API_KEY:', process.env.OPENROUTER_API_KEY ? `${process.env.OPENROUTER_API_KEY.substring(0, 5)}... (${process.env.OPENROUTER_API_KEY.length} chars)` : 'not set');
+    }
+
     // Create a new OpenRouter client
     const client = new OpenRouterClient(apiKeyOverride, modelOverride);
 
