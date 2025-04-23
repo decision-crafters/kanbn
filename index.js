@@ -4,7 +4,13 @@ const utility = require('./src/utility');
 
 module.exports = async () => {
   // Try to load .env from current working directory first, then fallback to package root
-  require('dotenv').config() || require('dotenv').config({ path: path.join(__dirname, '.env') });
+  const dotenvResult = require('dotenv').config() || require('dotenv').config({ path: path.join(__dirname, '.env') });
+
+  // Debug logging for dotenv
+  if (process.env.DEBUG === 'true') {
+    console.log('DEBUG: dotenv result:', dotenvResult.error ? `Error: ${dotenvResult.error.message}` : 'Success');
+    console.log('DEBUG: dotenv parsed:', dotenvResult.parsed ? Object.keys(dotenvResult.parsed).join(', ') : 'No parsed values');
+  }
 
   // Log environment variables for debugging (only in test mode)
   if (process.env.KANBN_ENV === 'test' || process.env.DEBUG) {
@@ -17,6 +23,19 @@ module.exports = async () => {
     }
     if (process.env.OPENROUTER_MODEL) {
       console.log(`OPENROUTER_MODEL: ${process.env.OPENROUTER_MODEL}`);
+    }
+  }
+
+  // Parse command line arguments to check for API key
+  const rawArgs = minimist(process.argv.slice(2));
+  if (rawArgs['api-key'] && !process.env.OPENROUTER_API_KEY) {
+    // Set the API key from command line arguments
+    process.env.OPENROUTER_API_KEY = rawArgs['api-key'];
+
+    if (process.env.DEBUG === 'true') {
+      console.log('DEBUG: Setting OPENROUTER_API_KEY from command line arguments');
+      const keyPrefix = process.env.OPENROUTER_API_KEY.substring(0, 5);
+      console.log(`DEBUG: OPENROUTER_API_KEY now set to: ${keyPrefix}... (${process.env.OPENROUTER_API_KEY.length} chars)`);
     }
   }
 
