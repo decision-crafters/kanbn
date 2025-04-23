@@ -118,9 +118,24 @@ ${Object.entries(safeContext.references).map(([taskId, refs]) => `- ${taskId}: $
     ];
 
     // Use the client to make the API call with streaming output to console
-    let fullContent = await client.chatCompletion(messages, (content) => {
-      process.stdout.write(content);
-    });
+    console.log('About to call client.chatCompletion...');
+    let fullContent;
+
+    try {
+      if (process.env.OPENROUTER_STREAM === 'false') {
+        console.log('Using non-streaming API call...');
+        fullContent = await client.chatCompletion(messages);
+      } else {
+        console.log('Using streaming API call...');
+        fullContent = await client.chatCompletion(messages, (content) => {
+          process.stdout.write(content);
+        });
+      }
+      console.log('client.chatCompletion completed successfully.');
+    } catch (error) {
+      console.error('Error in client.chatCompletion:', error);
+      throw error;
+    }
 
     console.log(); // Add a newline at the end
 
@@ -406,6 +421,17 @@ const chatController = async args => {
 
             try {
               console.log('Attempting to call OpenRouter API...');
+
+              // More detailed debug logging
+              if (process.env.DEBUG === 'true') {
+                console.log('DEBUG: projectContext:', JSON.stringify(projectContext, null, 2));
+                console.log('DEBUG: message:', message);
+                console.log('DEBUG: process.env.OPENROUTER_STREAM:', process.env.OPENROUTER_STREAM || 'not set');
+              }
+
+              // Force disable streaming for testing
+              process.env.OPENROUTER_STREAM = 'false';
+
               response = await callOpenRouterAPI(message, projectContext, apiKey, model);
               console.log('OpenRouter API call completed successfully.');
             } catch (apiError) {
