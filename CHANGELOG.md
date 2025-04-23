@@ -7,6 +7,7 @@ All notable changes to this project will be documented in this file.
 ### Fixed
 - Fixed circular dependency issue with eventBus in chat module
 - Fixed "Cannot read properties of undefined (reading 'join')" error in tag filtering
+- Fixed chat functionality to properly use OpenRouter API when API key is set
 - Added comprehensive event communication tests
 - Improved test coverage for event emission and handling
 
