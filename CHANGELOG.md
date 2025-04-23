@@ -10,6 +10,9 @@ All notable changes to this project will be documented in this file.
 - Added streaming responses to chat functionality for better user experience
 - Added model information display in chat output
 - Added comprehensive tests for streaming responses and model selection
+- Added centralized OpenRouter configuration module for consistent settings
+- Added OpenRouterClient class to encapsulate API communication
+- Added dedicated API key verification script
 
 ### Fixed
 - Fixed circular dependency issue with eventBus in chat module
@@ -17,6 +20,8 @@ All notable changes to this project will be documented in this file.
 - Fixed chat functionality to properly use OpenRouter API when API key is set
 - Added comprehensive event communication tests
 - Improved test coverage for event emission and handling
+- Fixed environment variable loading from .env files
+- Improved API key validation and error reporting
 
 ## [0.11.0] - 2023-06-15
 
