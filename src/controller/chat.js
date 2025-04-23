@@ -3,23 +3,23 @@ const utility = require('../utility');
 const inquirer = require('inquirer');
 const axios = require('axios');
 const EventEmitter = require('events');
+const ChatHandler = require('../lib/chat-handler');
 
 // Create global event bus
 const eventBus = new EventEmitter();
 
 // Export event bus for testing
 module.exports.eventBus = eventBus;
+
 // Use a simple color function since chalk v5+ is ESM-only
 const chalk = {
-  yellow: (text) => `\x1b[33m${text}\x1b[0m`,
-  blue: (text) => `\x1b[34m${text}\x1b[0m`,
-  green: (text) => `\x1b[32m${text}\x1b[0m`,
-  gray: (text) => `\x1b[90m${text}\x1b[0m`
+  yellow: (text) => `[33m${text}[0m`,
+  blue: (text) => `[34m${text}[0m`,
+  green: (text) => `[32m${text}[0m`,
+  gray: (text) => `[90m${text}[0m`
 };
-chalk.blue.bold = (text) => `\x1b[1;34m${text}\x1b[0m`;
+chalk.blue.bold = (text) => `[1;34m${text}[0m`;
 const getGitUsername = require('git-user-name');
-
-// Create Kanbn instance when needed in each function
 
 /**
  * Call OpenRouter API for project chat
@@ -57,10 +57,10 @@ async function callOpenRouterAPI(message, projectContext) {
     // Check if we're in a test environment or CI environment
     if (process.env.KANBN_ENV === 'test' || process.env.CI === 'true') {
       console.log('Skipping actual API call for testing or CI environment...');
-      
+
       // Load conversation history
       const history = global.chatHistory || [];
-      
+
       // Create mock response
       const mockResponse = {
         role: 'assistant',
@@ -105,6 +105,9 @@ How can I help you manage your project today?`
         Number of tasks: ${safeContext.taskCount}
         Columns: ${safeContext.columns.length > 0 ? safeContext.columns.join(', ') : 'None'}
         Tags used: ${safeContext.tags && safeContext.tags.length > 0 ? safeContext.tags.join(', ') : 'None'}
+        ${safeContext.references ? `
+References by task:
+${Object.entries(safeContext.references).map(([taskId, refs]) => `- ${taskId}: ${refs.join(', ')}`).join('\n')}` : ''}
 
         Provide helpful, concise responses to help the user manage their project.`
       },
@@ -124,12 +127,12 @@ How can I help you manage your project today?`
         messages: messages
       },
       {
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-        'HTTP-Referer': 'https://github.com/decision-crafters/kanbn',
-        'X-Title': 'Kanbn Project Assistant'
-      }
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+          'HTTP-Referer': 'https://github.com/decision-crafters/kanbn',
+          'X-Title': 'Kanbn Project Assistant'
+        }
       }
     );
 
@@ -160,12 +163,7 @@ How can I help you manage your project today?`
  */
 async function logAIInteraction(type, input, output) {
   try {
-    if (typeof kanbnModule !== 'function') {
-      console.error('Error: kanbnModule is not a function');
-      return null;
-    }
-    
-    const kanbn = kanbnModule();
+    const kanbn = typeof kanbnModule === 'function' ? kanbnModule() : kanbnModule;
     const taskId = 'ai-interaction-' + Date.now();
     const username = getGitUsername() || 'unknown';
     const date = new Date();
@@ -190,13 +188,13 @@ async function logAIInteraction(type, input, output) {
     try {
       // Get the index to check if it has columns
       const index = await kanbn.getIndex();
-      
+
       // Initialize index.columns if null or undefined
       if (!index) {
         console.log('Skipping AI interaction logging: Invalid index structure');
         return taskId;
       }
-      
+
       if (!index.columns) {
         index.columns = { 'Backlog': [] };
         console.log('No columns defined, creating default Backlog column');
@@ -228,15 +226,16 @@ async function logAIInteraction(type, input, output) {
 
 /**
  * Get project context for AI
+ * @param {boolean} includeReferences Whether to include task references in the context
  * @return {Promise<Object>} Project context
  */
-async function getProjectContext() {
+async function getProjectContext(includeReferences = false) {
   try {
-    const kanbn = kanbnModule();
+    const kanbn = typeof kanbnModule === 'function' ? kanbnModule() : kanbnModule;
     const index = await kanbn.getIndex();
     const tasks = await kanbn.loadAllTrackedTasks();
     const status = await kanbn.status(false, false, false, null, null);
-    
+
     const findTaskColumn = (index, taskId) => {
       for (const [column, tasks] of Object.entries(index.columns)) {
         if (tasks.includes(taskId)) {
@@ -282,6 +281,17 @@ async function getProjectContext() {
       statistics: status || {}
     };
 
+    // Include references if requested
+    if (includeReferences && tasks && tasks.length > 0) {
+      const referencesMap = {};
+      for (const task of tasks) {
+        if (task.metadata && task.metadata.references && task.metadata.references.length > 0) {
+          referencesMap[task.id] = task.metadata.references;
+        }
+      }
+      projectContext.references = referencesMap;
+    }
+
     eventBus.emit('contextQueried', { context: projectContext });
     return projectContext;
   } catch (error) {
@@ -293,8 +303,9 @@ async function getProjectContext() {
 /**
  * Interactive chat mode
  * @param {Object} projectContext Project context
+ * @param {ChatHandler} chatHandler Chat handler instance
  */
-async function interactiveChat(projectContext) {
+async function interactiveChat(projectContext, chatHandler) {
   console.log(chalk.blue.bold('\n📊 Kanbn Project Assistant 📊'));
   console.log(chalk.gray('Type "exit" or "quit" to end the conversation\n'));
 
@@ -320,10 +331,20 @@ async function interactiveChat(projectContext) {
 
       console.log(chalk.yellow('Project Assistant: ') + chalk.gray('Thinking...'));
 
-      const response = await callOpenRouterAPI(message, projectContext);
+      let response;
+      if (process.env.KANBN_ENV === 'test' || process.env.CI === 'true') {
+        response = await chatHandler.handleMessage(message);
+      } else {
+        // Try direct command first
+        try {
+          response = await chatHandler.handleMessage(message);
+        } catch (error) {
+          // Fall back to AI chat if command fails
+          response = await callOpenRouterAPI(message, projectContext);
+        }
+      }
 
-      process.stdout.write('\r\x1b[K');
-
+      process.stdout.write('\r[K');
       console.log(chalk.yellow('Project Assistant: ') + response + '\n');
     } catch (error) {
       console.error('Error in chat:', error.message);
@@ -334,8 +355,8 @@ async function interactiveChat(projectContext) {
 
 module.exports = async args => {
   try {
-    // Create a Kanbn instance
-    const kanbn = kanbnModule();
+    // Create a Kanbn instance - handle both function and object shapes
+    const kanbn = typeof kanbnModule === 'function' ? kanbnModule() : kanbnModule;
 
     try {
       if (!(await kanbn.initialised())) {
@@ -353,15 +374,29 @@ module.exports = async args => {
     }
 
     try {
-      const projectContext = await getProjectContext();
+      const projectContext = await getProjectContext(args['with-refs']);
+      const chatHandler = new ChatHandler(kanbn);
 
       if (args.message) {
         const message = utility.strArg(args.message);
-        const response = await callOpenRouterAPI(message, projectContext);
+
+        let response;
+        if (process.env.KANBN_ENV === 'test' || process.env.CI === 'true') {
+          response = await chatHandler.handleMessage(message);
+        } else {
+          // Try direct command first
+          try {
+            response = await chatHandler.handleMessage(message);
+          } catch (error) {
+            // Fall back to AI chat if command fails
+            response = await callOpenRouterAPI(message, projectContext);
+          }
+        }
+
         console.log(chalk.yellow('Project Assistant: ') + response);
         return response;
       } else {
-        await interactiveChat(projectContext);
+        await interactiveChat(projectContext, chatHandler);
         return '';
       }
     } catch (error) {

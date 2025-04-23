@@ -9,6 +9,9 @@ Description:
 
 Options:
   -m, --message     Specify a one-off message to send to the assistant
+  --with-refs       Include task references in the context
+  --include-refs    Same as --with-refs
+  --references      Same as --with-refs
   -h, --help        Show help
 
 Examples:

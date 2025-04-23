@@ -50,6 +50,7 @@ The chat feature includes robust error handling:
 ### Options
 
 - `-m, --message`: Send a one-off message to the assistant without entering interactive mode
+- `--with-refs`, `--include-refs`, `--references`: Include task references in the context
 - `-h, --help`: Show help
 
 ### Interactive Mode
@@ -84,6 +85,7 @@ kanbn decompose --task my-task
 - `-i, --interactive`: Decompose a task interactively
 - `-t, --task`: Specify the task ID to decompose
 - `-d, --description`: Provide a custom description for decomposition (optional)
+- `--with-refs`, `--include-refs`, `--references`: Include task references in the decomposition context
 
 ### Requirements
 
@@ -146,3 +148,35 @@ kanbn task my-task
 ```
 
 Parent-child relationships are also considered in progress calculations, with parent task progress reflecting the completion status of child tasks.
+
+## Task References in AI Features
+
+Kanbn now supports task references, which can be used to store URLs and external resources related to tasks. These references can be included in AI features to provide additional context.
+
+### Including References in Chat
+
+When using the chat feature, you can include task references in the context:
+
+```
+kanbn chat --with-refs
+```
+
+This allows the AI assistant to see and reference external resources when answering questions or providing insights about your tasks.
+
+### Including References in Task Decomposition
+
+When decomposing a task, you can include its references to help the AI generate more relevant subtasks:
+
+```
+kanbn decompose --task my-task --with-refs
+```
+
+This is particularly useful when the task references contain specifications, requirements, or other information that can help with decomposition.
+
+### Benefits of References in AI Features
+
+- Provides additional context for AI-powered features
+- Helps generate more relevant and accurate responses
+- Allows the AI to consider external resources when analyzing tasks
+- Improves the quality of task decomposition
+- Enhances the overall AI experience

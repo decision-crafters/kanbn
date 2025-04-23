@@ -19,7 +19,10 @@
       "relation",
       "remove-relation",
       "due",
-      "progress"
+      "progress",
+      "refs",
+      "add-ref",
+      "remove-ref"
     ],
     "alias": {
       "interactive": ["i"],
@@ -30,7 +33,10 @@
       "tag": ["t"],
       "relation": ["r"],
       "due": ["e"],
-      "assigned": ["a"]
+      "assigned": ["a"],
+      "refs": ["ref", "references"],
+      "add-ref": ["add-reference"],
+      "remove-ref": ["remove-reference"]
     }
   },
   "controller": "./src/controller/edit",

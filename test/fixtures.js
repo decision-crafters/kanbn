@@ -1,5 +1,7 @@
 const mockFileSystem = require('mock-fs');
 const faker = require('faker');
+const path = require('path');
+const fs = require('fs');
 const parseIndex = require('../src/parse-index');
 const parseTask = require('../src/parse-task');
 const utility = require('../src/utility');
@@ -70,7 +72,7 @@ function addRelations(taskIds) {
  * Generate an index and tasks
  * @param {fixtureOptions} [options={}]
  */
-module.exports = (options = {}) => {
+const createFixtures = (options = {}) => {
   let tasks, taskIds, columns;
 
   // Generate tasks
@@ -118,13 +120,135 @@ module.exports = (options = {}) => {
     index.options = options.options;
   }
 
-  // Generate in-memory files
-  mockFileSystem({
-    '.kanbn': {
-      'index.md': parseIndex.json2md(index),
-      'tasks': Object.fromEntries(tasks.map(i => [`${utility.getTaskId(i.name)}.md`, parseTask.json2md(i)]))
-    }
-  });
+  // Get absolute paths
+  const projectRoot = path.resolve(__dirname, '..');
+  const testRoot = path.join(projectRoot, 'test');
+
+  console.log('Debug - Paths:');
+  console.log('Project root:', projectRoot);
+  console.log('Test root:', testRoot);
+  console.log('Burndown test dir:', path.join(testRoot, 'burndown-test'));
+
+  // First, restore any existing mock filesystem
+  try {
+    mockFileSystem.restore();
+  } catch (e) {
+    // Ignore errors if no mock filesystem exists
+  }
+
+  try {
+    // Generate in-memory files
+    const mockConfig = {
+      // Include the source and node_modules directories
+      [path.join(projectRoot, 'src')]: mockFileSystem.load(path.join(projectRoot, 'src')),
+      [path.join(projectRoot, 'routes')]: mockFileSystem.load(path.join(projectRoot, 'routes')),
+      [path.join(projectRoot, 'node_modules')]: mockFileSystem.load(path.join(projectRoot, 'node_modules')),
+
+      // Add test directory structure with .kanbn folder
+      [path.join(testRoot, 'burndown-test')]: {
+        '.kanbn': {
+          'index.md': parseIndex.json2md(index),
+          'tasks': Object.fromEntries(tasks.map(i => [`${utility.getTaskId(i.name)}.md`, parseTask.json2md(i)]))
+        }
+      }
+    };
+
+    // Log mock filesystem structure and paths
+    console.error('Debug - Paths:');
+    console.error('Project root:', projectRoot);
+    console.error('Test root:', testRoot);
+    console.error('Mock filesystem structure:', JSON.stringify({
+      'src': 'loaded',
+      'routes': 'loaded',
+      'node_modules': 'loaded',
+      'test/burndown-test': 'created with test data'
+    }, null, 2));
+
+    mockFileSystem(mockConfig);
+
+    // Verify files exist
+    console.error('Verifying files exist:');
+    console.error('src exists:', fs.existsSync(path.join(projectRoot, 'src')));
+    console.error('routes exists:', fs.existsSync(path.join(projectRoot, 'routes')));
+    console.error('node_modules exists:', fs.existsSync(path.join(projectRoot, 'node_modules')));
+    console.error('burndown-test exists:', fs.existsSync(path.join(testRoot, 'burndown-test')));
+  } catch (error) {
+    console.error('Error in fixtures.js:', error);
+  }
 
   return index;
+};
+
+// Create a mock kanbn instance
+const mockKanbn = {
+  getIndex: async function() {
+    return require('../src/parse-index').md2json(
+      fs.readFileSync(path.join(process.cwd(), '.kanbn', 'index.md'), 'utf8')
+    );
+  },
+  getTask: async function(taskId) {
+    const taskPath = path.join(process.cwd(), '.kanbn', 'tasks', `${taskId}.md`);
+    if (!fs.existsSync(taskPath)) {
+      throw new Error(`No task file found for task "${taskId}"`);
+    }
+    return require('../src/parse-task').md2json(
+      fs.readFileSync(taskPath, 'utf8')
+    );
+  },
+  deleteTask: async function(taskId, removeFile) {
+    const index = await this.getIndex();
+
+    // Remove task from index
+    for (const column in index.columns) {
+      const taskIndex = index.columns[column].indexOf(taskId);
+      if (taskIndex !== -1) {
+        index.columns[column].splice(taskIndex, 1);
+        break;
+      }
+    }
+
+    // Write updated index
+    fs.writeFileSync(
+      path.join(process.cwd(), '.kanbn', 'index.md'),
+      require('../src/parse-index').json2md(index)
+    );
+
+    // Remove task file if requested
+    if (removeFile) {
+      const taskPath = path.join(process.cwd(), '.kanbn', 'tasks', `${taskId}.md`);
+      if (fs.existsSync(taskPath)) {
+        fs.unlinkSync(taskPath);
+      }
+    }
+
+    return taskId;
+  },
+  taskExists: async function(taskId) {
+    const index = await this.getIndex();
+    for (const column in index.columns) {
+      if (index.columns[column].includes(taskId)) {
+        return true;
+      }
+    }
+    throw new Error(`Task "${taskId}" not found in index`);
+  },
+  initialised: async function() {
+    return fs.existsSync(path.join(process.cwd(), '.kanbn'));
+  }
+};
+
+// Export the main function
+module.exports = createFixtures;
+
+// Add the mock kanbn instance
+module.exports.kanbn = mockKanbn;
+
+// Add a cleanup function to restore the filesystem
+module.exports.cleanup = () => {
+  try {
+    mockFileSystem.restore();
+    console.error('Mock filesystem restored');
+  } catch (e) {
+    console.error('Error restoring mock filesystem:', e);
+  }
 };

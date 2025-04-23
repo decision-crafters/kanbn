@@ -8,6 +8,9 @@ created: 2021-03-18T02:08:42.293Z
 updated: 2021-03-18T02:08:42.293Z
 tags:
   - TagName
+references:
+  - https://example.com/reference1
+  - https://github.com/decision-crafters/kanbn/issues/123
 assigned: Username
 progress: 0.5
 started: 2021-03-21T04:58:38.653Z
@@ -23,6 +26,11 @@ Task description...
 
 - [ ] This is an incomplete sub-task
 - [x] This sub-task has been completed
+
+## References
+
+- https://example.com/reference1
+- https://github.com/decision-crafters/kanbn/issues/123
 
 ## Relations
 
@@ -75,6 +83,10 @@ The date and time that the task was last updated. This is automatically populate
 ### `tags`
 
 An array of tags to apply to this task.
+
+### `references`
+
+An array of URLs or other references related to this task. These can be links to external resources, documentation, GitHub issues, or any other relevant information.
 
 ### `assigned`
 

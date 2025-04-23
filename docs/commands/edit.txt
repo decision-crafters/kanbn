@@ -41,6 +41,19 @@ Options:
   {b}kanbn edit "task-id" -t "tag"{b}
     Add a tag.
 
+  {b}kanbn edit "task-id" --remove-ref "reference"{b}
+  {b}kanbn edit "task-id" --remove-reference "reference"{b}
+    Remove a reference.
+
+  {b}kanbn edit "task-id" --add-ref "reference"{b}
+  {b}kanbn edit "task-id" --add-reference "reference"{b}
+    Add a reference URL or external resource link.
+
+  {b}kanbn edit "task-id" --refs "reference"{b}
+  {b}kanbn edit "task-id" --ref "reference"{b}
+  {b}kanbn edit "task-id" --references "reference"{b}
+    Replace all references with the specified reference(s).
+
   {b}kanbn edit "task-id" --remove-relation "relation"{b}
     Remove a relation.
 

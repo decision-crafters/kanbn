@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.11.0] - 2025-05-01
+
+### Added
+- Added task references feature to store URLs and external resources
+- Added CLI commands for adding, removing, and managing references
+- Added support for including references in AI features (chat and decompose)
+- Added comprehensive test suite for references feature
+
 ## [0.10.9] - 2025-04-20
 
 ### Fixed

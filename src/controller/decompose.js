@@ -10,9 +10,11 @@ inquirer.registerPrompt('autocomplete', require('inquirer-autocomplete-prompt'))
 /**
  * Call OpenRouter API to decompose a task
  * @param {string} description Task description to decompose
+ * @param {Object} task The task object
+ * @param {boolean} includeReferences Whether to include references in the context
  * @return {Promise<Array>} Array of subtasks
  */
-async function callOpenRouterAPI(description) {
+async function callOpenRouterAPI(description, task, includeReferences = false) {
   try {
     // Check if we're in a test environment or CI environment
     if (process.env.KANBN_ENV === 'test' || process.env.CI === 'true') {
@@ -43,7 +45,9 @@ async function callOpenRouterAPI(description) {
         messages: [
           {
             role: 'system',
-            content: 'You are a task decomposition assistant. Given a task description, break it down into smaller, actionable subtasks.'
+            content: `You are a task decomposition assistant. Given a task description, break it down into smaller, actionable subtasks.
+            ${includeReferences && task.metadata && task.metadata.references && task.metadata.references.length > 0 ?
+              `\nHere are references that might be helpful:\n${task.metadata.references.map(ref => `- ${ref}`).join('\n')}` : ''}`
           },
           {
             role: 'user',
@@ -224,7 +228,7 @@ async function createChildTasks(parentTaskId, subtasks) {
 module.exports = async args => {
     // Create a Kanbn instance
     const kanbn = Kanbn();
-  
+
     // Make sure kanbn has been initialised
     try {
       if (!await kanbn.initialised()) {
@@ -269,12 +273,12 @@ module.exports = async args => {
     if (!taskExists) {
       const taskIdWithExt = taskId.endsWith('.md') ? taskId : `${taskId}.md`;
       const taskExistsWithExt = await kanbn.taskExists(taskIdWithExt);
-      
+
       if (!taskExistsWithExt) {
         utility.error(`Task "${taskId}" doesn't exist`);
         return;
       }
-      
+
       // Use the task ID with extension
       taskId = taskId.endsWith('.md') ? taskId : `${taskId}.md`;
     }
@@ -294,7 +298,7 @@ module.exports = async args => {
   const description = customDescription || task.description;
 
   console.log(`Decomposing task "${task.name}"...`);
-  const subtasks = await callOpenRouterAPI(description);
+  const subtasks = await callOpenRouterAPI(description, task, args['with-refs']);
 
   if (subtasks.length === 0) {
     utility.error('Failed to decompose task. No subtasks generated.');
