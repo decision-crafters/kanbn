@@ -174,6 +174,39 @@ kanbn task my-task
 
 Parent-child relationships are also considered in progress calculations, with parent task progress reflecting the completion status of child tasks.
 
+## AI-Friendly Task Prompts
+
+The `task` command now includes a `--prompt` flag that generates an AI-friendly prompt from task data. This makes it easy to use task information with external AI tools.
+
+```
+kanbn task my-task --prompt
+```
+
+### How It Works
+
+1. The system extracts all relevant information from the task (name, description, metadata, subtasks, relations, comments)
+2. This information is formatted into a well-structured prompt
+3. The prompt can be copied and pasted into AI tools like ChatGPT, Claude, or other AI assistants
+4. The AI can then provide insights, suggestions, or next steps for the task
+
+### Benefits of AI-Friendly Prompts
+
+- Easily share task context with external AI tools
+- Get AI insights on specific tasks without switching context
+- Generate task-specific suggestions and recommendations
+- Streamline your workflow by combining Kanbn with your preferred AI tools
+- Maintain task context when collaborating with team members
+
+### Example Usage
+
+```bash
+# Generate an AI-friendly prompt for a specific task
+kanbn task complex-task --prompt > task-prompt.txt
+
+# Use the prompt with your preferred AI tool
+cat task-prompt.txt | pbcopy  # Copy to clipboard on macOS
+```
+
 ## Task References in AI Features
 
 Kanbn now supports task references, which can be used to store URLs and external resources related to tasks. These references can be included in AI features to provide additional context.

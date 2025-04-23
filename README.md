@@ -95,6 +95,7 @@ Where <command> is one of:
 ```bash
 kanbn decompose  # Use AI to break down tasks
 kanbn chat       # Chat with AI project assistant
+kanbn task task-id --prompt  # Generate AI-friendly prompt from task data
 ```
 
 #### Environment Variables for AI Features

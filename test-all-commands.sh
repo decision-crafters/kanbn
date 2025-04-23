@@ -378,7 +378,22 @@ fi
 # Test task view with different options
 run_command "$KANBN_BIN task progress-task --json" 0 "View task in JSON format"
 run_command "$KANBN_BIN task due-task --quiet" 0 "View task in quiet mode"
-run_command "$KANBN_BIN task references-task --prompt" 0 "View task as AI prompt"
+# Create a temporary file to store prompt output
+PROMPT_OUTPUT_FILE=$(mktemp)
+
+# Test task prompt flag
+run_command "$KANBN_BIN task references-task --prompt" 0 "View task as AI prompt" > "$PROMPT_OUTPUT_FILE"
+
+# Validate the prompt output
+if grep -q "# Task:" "$PROMPT_OUTPUT_FILE" && grep -q "## AI Prompt" "$PROMPT_OUTPUT_FILE"; then
+  echo "✅ Prompt output contains expected sections."
+else
+  echo "❌ Prompt output does not contain expected sections."
+  cat "$PROMPT_OUTPUT_FILE"
+fi
+
+# Clean up temporary file
+rm -f "$PROMPT_OUTPUT_FILE"
 
 # Test sort with different options
 run_command "$KANBN_BIN sort 'Todo' --created" 0 "Sort column by creation date"
