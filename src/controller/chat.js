@@ -403,7 +403,14 @@ const chatController = async args => {
             console.log('DEBUG: Model from args:', args['model'] || 'not set');
             console.log('DEBUG: Model after getModel:', model);
 
-            response = await callOpenRouterAPI(message, projectContext, apiKey, model);
+            try {
+              console.log('Attempting to call OpenRouter API...');
+              response = await callOpenRouterAPI(message, projectContext, apiKey, model);
+              console.log('OpenRouter API call completed successfully.');
+            } catch (apiError) {
+              console.error('Error calling OpenRouter API:', apiError);
+              response = `I'm having trouble with the project assistant. ${apiError.message}`;
+            }
           }
         }
 

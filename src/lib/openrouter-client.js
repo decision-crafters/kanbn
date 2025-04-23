@@ -104,15 +104,23 @@ class OpenRouterClient {
     }
 
     // Use fetch for streaming
-    const response = await fetch(`${this.baseUrl}/chat/completions`, {
-      method: 'POST',
-      headers: this.getHeaders(),
-      body: JSON.stringify({
-        model: this.model,
-        messages: messages,
-        stream: true
-      })
-    });
+    let response;
+    try {
+      console.log('Making fetch request to OpenRouter API...');
+      response = await fetch(`${this.baseUrl}/chat/completions`, {
+        method: 'POST',
+        headers: this.getHeaders(),
+        body: JSON.stringify({
+          model: this.model,
+          messages: messages,
+          stream: true
+        })
+      });
+      console.log('Fetch request completed with status:', response.status);
+    } catch (error) {
+      console.error('Error making fetch request:', error);
+      throw new Error(`Failed to connect to OpenRouter API: ${error.message}`);
+    }
 
     if (!response.ok) {
       const errorText = await response.text();
