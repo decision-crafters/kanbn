@@ -119,6 +119,15 @@ ${Object.entries(safeContext.references).map(([taskId, refs]) => `- ${taskId}: $
     // Make the actual API call
     console.log(`Making API call to OpenRouter using model: ${model}...`);
 
+    // Debug log to verify API key is being used (only show prefix for security)
+    if (apiKey) {
+      console.log(`API call using key from args: ${apiKey.substring(0, 5)}...`);
+    } else if (process.env.OPENROUTER_API_KEY) {
+      console.log(`API call using key from environment: ${process.env.OPENROUTER_API_KEY.substring(0, 5)}...`);
+    } else {
+      console.log('WARNING: No API key available for API call!');
+    }
+
     // Check if we should use streaming (default to true)
     const useStreaming = process.env.OPENROUTER_STREAM !== 'false';
 
@@ -440,6 +449,16 @@ async function interactiveChat(projectContext, chatHandler, args) {
           // Check for API key and model in command line arguments
           const apiKey = args['api-key'] || null;
           const model = args['model'] || null;
+
+          // Debug log to verify API key is being used (only show prefix for security)
+          if (apiKey) {
+            console.log(`Using API key from command line args: ${apiKey.substring(0, 5)}...`);
+          } else if (process.env.OPENROUTER_API_KEY) {
+            console.log(`Using API key from environment: ${process.env.OPENROUTER_API_KEY.substring(0, 5)}...`);
+          } else {
+            console.log('No API key found in args or environment!');
+          }
+
           response = await callOpenRouterAPI(message, projectContext, apiKey, model);
         }
       }
@@ -499,6 +518,16 @@ const chatController = async args => {
             // Check for API key and model in command line arguments
             const apiKey = args['api-key'] || null;
             const model = args['model'] || null;
+
+            // Debug log to verify API key is being used (only show prefix for security)
+            if (apiKey) {
+              console.log(`Using API key from command line args: ${apiKey.substring(0, 5)}...`);
+            } else if (process.env.OPENROUTER_API_KEY) {
+              console.log(`Using API key from environment: ${process.env.OPENROUTER_API_KEY.substring(0, 5)}...`);
+            } else {
+              console.log('No API key found in args or environment!');
+            }
+
             response = await callOpenRouterAPI(message, projectContext, apiKey, model);
           }
         }
