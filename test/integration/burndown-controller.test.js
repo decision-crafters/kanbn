@@ -5,23 +5,29 @@ const fs = require('fs');
 const rimraf = require('rimraf');
 const fixtures = require('../fixtures');
 
+console.error('Starting burndown controller tests');
+
 QUnit.module('Burndown Controller tests', {
   before: function() {
-    // Create test board
-    this.testDir = path.join(__dirname, '..', 'burndown-test');
+    console.error('Setting up test environment');
+    // Create test board and get absolute paths
+    this.projectRoot = path.resolve(__dirname, '..', '..');
+    this.testDir = path.join(this.projectRoot, 'test', 'burndown-test');
     fs.mkdirSync(this.testDir, { recursive: true });
     process.chdir(this.testDir);
   },
 
   after: function() {
     rimraf.sync(this.testDir);
+    fixtures.cleanup();
   },
 
   beforeEach: async function() {
+    console.error('Running test setup');
     const now = new Date();
     const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
     const twoDaysAgo = new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000);
-    
+
     // Set up a fresh board with tasks for each test
     this.index = fixtures({
       tasks: [
@@ -59,11 +65,12 @@ QUnit.module('Burndown Controller tests', {
 
   afterEach: function() {
     mockRequire.stopAll();
+    fixtures.cleanup();
   }
 });
 
 QUnit.test('should generate burndown data in JSON format', async function(assert) {
-  const burndown = require('../../src/controller/burndown');
+  const burndown = require(path.join(this.projectRoot, 'src/controller/burndown'));
 
   const data = await burndown({
     json: true
@@ -77,7 +84,7 @@ QUnit.test('should generate burndown data in JSON format', async function(assert
 });
 
 QUnit.test('should handle comma-separated sprint list', async function(assert) {
-  const burndown = require('../../src/controller/burndown');
+  const burndown = require(path.join(this.projectRoot, 'src/controller/burndown'));
 
   const data = await burndown({
     sprint: 'Sprint 1,Sprint 2',
@@ -89,7 +96,7 @@ QUnit.test('should handle comma-separated sprint list', async function(assert) {
 });
 
 QUnit.test('should handle repeated sprint options', async function(assert) {
-  const burndown = require('../../src/controller/burndown');
+  const burndown = require(path.join(this.projectRoot, 'src/controller/burndown'));
 
   const data = await burndown({
     sprint: ['Sprint 1', 'Sprint 2'],
@@ -101,7 +108,7 @@ QUnit.test('should handle repeated sprint options', async function(assert) {
 });
 
 QUnit.test('should ignore empty entries in comma-separated list', async function(assert) {
-  const burndown = require('../../src/controller/burndown');
+  const burndown = require(path.join(this.projectRoot, 'src/controller/burndown'));
 
   const data = await burndown({
     sprint: 'Sprint 1,,Sprint 2,',
@@ -113,7 +120,7 @@ QUnit.test('should ignore empty entries in comma-separated list', async function
 });
 
 QUnit.test('should trim whitespace from sprint names', async function(assert) {
-  const burndown = require('../../src/controller/burndown');
+  const burndown = require(path.join(this.projectRoot, 'src/controller/burndown'));
 
   const data = await burndown({
     sprint: ' Sprint 1 , Sprint 2 ',
@@ -125,7 +132,7 @@ QUnit.test('should trim whitespace from sprint names', async function(assert) {
 });
 
 QUnit.test('should filter by sprint', async function(assert) {
-  const burndown = require('../../src/controller/burndown');
+  const burndown = require(path.join(this.projectRoot, 'src/controller/burndown'));
 
   const data = await burndown({
     sprint: 'Sprint 1',
@@ -137,7 +144,7 @@ QUnit.test('should filter by sprint', async function(assert) {
 });
 
 QUnit.test('should filter by assigned user', async function(assert) {
-  const burndown = require('../../src/controller/burndown');
+  const burndown = require(path.join(this.projectRoot, 'src/controller/burndown'));
 
   const data = await burndown({
     assigned: 'user1',
@@ -153,7 +160,7 @@ QUnit.test('should filter by assigned user', async function(assert) {
 });
 
 QUnit.test('should filter by column', async function(assert) {
-  const burndown = require('../../src/controller/burndown');
+  const burndown = require(path.join(this.projectRoot, 'src/controller/burndown'));
 
   const data = await burndown({
     column: 'Done',
@@ -164,7 +171,7 @@ QUnit.test('should filter by column', async function(assert) {
 });
 
 QUnit.test('should respect date range', async function(assert) {
-  const burndown = require('../../src/controller/burndown');
+  const burndown = require(path.join(this.projectRoot, 'src/controller/burndown'));
   const now = new Date();
   const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
@@ -181,7 +188,7 @@ QUnit.test('should respect date range', async function(assert) {
 });
 
 QUnit.test('should normalize data when requested', async function(assert) {
-  const burndown = require('../../src/controller/burndown');
+  const burndown = require(path.join(this.projectRoot, 'src/controller/burndown'));
 
   const data = await burndown({
     normalise: '10',
@@ -195,7 +202,7 @@ QUnit.test('should normalize data when requested', async function(assert) {
 });
 
 QUnit.test('should handle missing sprint', async function(assert) {
-  const burndown = require('../../src/controller/burndown');
+  const burndown = require(path.join(this.projectRoot, 'src/controller/burndown'));
 
   try {
     await burndown({
@@ -209,7 +216,7 @@ QUnit.test('should handle missing sprint', async function(assert) {
 });
 
 QUnit.test('should handle invalid date format', async function(assert) {
-  const burndown = require('../../src/controller/burndown');
+  const burndown = require(path.join(this.projectRoot, 'src/controller/burndown'));
 
   try {
     await burndown({
@@ -223,7 +230,7 @@ QUnit.test('should handle invalid date format', async function(assert) {
 });
 
 QUnit.test('should handle normalisation value of zero', async function(assert) {
-  const burndown = require('../../src/controller/burndown');
+  const burndown = require(path.join(this.projectRoot, 'src/controller/burndown'));
 
   try {
     await burndown({

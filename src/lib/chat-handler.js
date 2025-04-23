@@ -1,6 +1,7 @@
 const chatParser = require('./chat-parser');
 const ChatContext = require('./chat-context');
 const utility = require('../utility');
+const { eventBus } = require('../controller/chat');
 
 class ChatHandler {
   constructor(kanbn) {
@@ -66,6 +67,12 @@ class ChatHandler {
 
     const taskId = await this.kanbn.createTask(taskData, 'Backlog');
     this.context.setLastTask(taskId, taskName);
+    eventBus.emit('taskCreated', {
+      taskId,
+      column: 'Backlog',
+      taskData,
+      source: 'chat'
+    });
     return `Created task "${taskName}" in Backlog`;
   }
 

@@ -105,7 +105,7 @@ QUnit.module('Chat workflow tests', {
 
 QUnit.test('should create task and add subtask', async function(assert) {
   const chat = require('../../src/controller/chat');
-  const eventBus = new EventEmitter();
+  const { eventBus } = require('../../src/controller/chat');
 
   let taskCreatedEventFired = false;
   eventBus.on('taskCreated', () => {
