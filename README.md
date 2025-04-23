@@ -99,6 +99,33 @@ You can add these to a `.env` file in your project root. A `.env.example` file i
 
 We welcome contributions! Please read our [Contributing Guide](CONTRIBUTING.md) for details on our code of conduct and the process for submitting pull requests.
 
+## 🧪 Testing
+
+Run tests with:
+
+```bash
+npm test
+```
+
+### Testing OpenRouter API Integration
+
+To verify that your OpenRouter API key is working correctly, you can use the included test script:
+
+```bash
+./test-openrouter-api.sh
+```
+
+This script will:
+1. Load your API key from the `.env` file or environment variables
+2. Make a test request to the OpenRouter API
+3. Verify that the response contains the expected data
+
+You can also run the full test suite including API tests with:
+
+```bash
+./test-all-commands.sh
+```
+
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
