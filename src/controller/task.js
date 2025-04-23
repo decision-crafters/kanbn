@@ -14,6 +14,12 @@ const eventBus = require("../lib/event-bus");
  */
 function showTask(taskId, json = false, prompt = false) {
   const kanbn = Kanbn();
+
+  // Emit event before attempting to get the task
+  if (prompt) {
+    eventBus.emit('task:prompt:start', { taskId });
+  }
+
   kanbn
     .getTask(taskId)
     .then((task) => {
@@ -21,9 +27,6 @@ function showTask(taskId, json = false, prompt = false) {
         console.log(task);
       } else if (prompt) {
         try {
-          // Emit event before generating prompt
-          eventBus.emit('task:prompt:start', { taskId });
-
           const taskPrompt = promptBuilder.buildPromptForTask(task);
           console.log(taskPrompt);
 
@@ -51,6 +54,15 @@ function showTask(taskId, json = false, prompt = false) {
       }
     })
     .catch((error) => {
+      // Emit error event if prompt flag was used
+      if (prompt) {
+        eventBus.emit('task:prompt:error', {
+          taskId,
+          error: error.toString(),
+          timestamp: new Date().toISOString()
+        });
+      }
+
       utility.error(error);
     });
 }
