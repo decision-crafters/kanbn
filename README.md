@@ -40,16 +40,37 @@ For full documentation, visit [https://decision-crafters.github.io/kanbn/](https
 ### Available Commands
 
 ```bash
-kanbn help      # Show help menu
-kanbn init      # Initialize kanbn board
-kanbn board     # Show the kanbn board
-kanbn task      # Show a kanbn task
-kanbn add       # Add a kanbn task
-kanbn edit      # Edit a kanbn task
-kanbn move      # Move a task to another column
-kanbn status    # Get project statistics
-kanbn sprint    # Start a new sprint
-kanbn burndown  # View a burndown chart
+
+====================================================
+COMMAND: kanbn help
+DESCRIPTION: Show help menu
+====================================================
+Usage:
+  kanbn ......... Show help menu
+  kanbn <command> [options]
+
+Where <command> is one of:
+  help .......... Show help menu
+  version ....... Show package version
+  init .......... Initialise kanbn board
+  board ......... Show the kanbn board
+  task .......... Show a kanbn task
+  add ........... Add a kanbn task
+  edit .......... Edit a kanbn task
+  rename ........ Rename a kanbn task
+  move .......... Move a kanbn task to another column
+  comment ....... Add a comment to a task
+  remove ........ Remove a kanbn task
+  find .......... Search for kanbn tasks
+  status ........ Get project and task statistics
+  sort .......... Sort a column in the index
+  sprint ........ Start a new sprint
+  burndown ...... View a burndown chart
+  validate ...... Validate index and task files
+  archive ....... Archive a task
+  restore ....... Restore a task from the archive
+  remove-all .... Remove the kanbn board and all tasks
+  decompose ..... Use AI to break down tasks into subtas
 ```
 
 ### AI Features
@@ -72,7 +93,7 @@ OPENROUTER_MODEL=google/gemma-3-4b-it:free
 USE_REAL_API=true
 ```
 
-You can add these to a `.env` file in your project root.
+You can add these to a `.env` file in your project root. A `.env.example` file is provided as a template.
 
 ## 🤝 Contributing
 
