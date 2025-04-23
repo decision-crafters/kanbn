@@ -133,11 +133,29 @@ fi
 
 # Test error handling by creating an invalid task scenario
 echo -e "${YELLOW}Testing prompt generation with error handling...${NC}"
+
+# Create a test file with an invalid task
+mkdir -p .kanbn/tasks
+cat > .kanbn/tasks/invalid-task.md << 'EOF'
+---
+created: 2025-04-23T20:50:00.000Z
+updated: 2025-04-23T20:50:30.000Z
+---
+
+# Invalid Task
+
+This task is intentionally invalid for testing error handling.
+EOF
+
+# Update the index file to include the invalid task
+echo "- [invalid-task](tasks/invalid-task.md)" >> .kanbn/index.md
+
+# Create a temporary file to capture the output
 INVALID_TASK_OUTPUT=$(mktemp)
 
-# Try to generate a prompt for a non-existent task
-echo -e "${YELLOW}Attempting to generate prompt for non-existent task...${NC}"
-kanbn task non-existent-task --prompt > "$INVALID_TASK_OUTPUT" 2>&1 || echo -e "${RED}Command failed as expected${NC}"
+# Try to generate a prompt for the invalid task (missing required fields)
+echo -e "${YELLOW}Attempting to generate prompt for invalid task...${NC}"
+kanbn task invalid-task --prompt > "$INVALID_TASK_OUTPUT" 2>&1 || echo -e "${RED}Command failed as expected${NC}"
 
 # Display the output
 echo -e "${BLUE}Error output:${NC}"
