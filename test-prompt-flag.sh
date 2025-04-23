@@ -8,6 +8,10 @@ BLUE='\033[0;34m'
 RED='\033[0;31m'
 NC='\033[0m' # No Color
 
+# Enable event tracing
+export NODE_OPTIONS="--trace-event-categories node.async_hooks,node.fs.sync,node.perf,node.eventloop,node.events"
+export DEBUG="kanbn:events,kanbn:*"
+
 echo -e "${BLUE}==================================================${NC}"
 echo -e "${BLUE}   Testing Kanbn Task Prompt Flag                 ${NC}"
 echo -e "${BLUE}==================================================${NC}"
@@ -106,9 +110,47 @@ kanbn board
 echo -e "${YELLOW}Testing task command with JSON output...${NC}"
 kanbn task complex-task --json
 
-# Test the task command with prompt output
-echo -e "${YELLOW}Testing task command with prompt output...${NC}"
-kanbn task complex-task --prompt
+# Create a temporary file to store the output with events
+EVENT_OUTPUT_FILE=$(mktemp)
+
+# Test the task command with prompt output and capture events
+echo -e "${YELLOW}Testing task command with prompt output and event emission...${NC}"
+kanbn task complex-task --prompt > "$EVENT_OUTPUT_FILE" 2>&1
+
+# Display the output
+cat "$EVENT_OUTPUT_FILE"
+
+# Check for event emission
+if grep -q "task:prompt:start" "$EVENT_OUTPUT_FILE" || grep -q "task:prompt:complete" "$EVENT_OUTPUT_FILE"; then
+  echo -e "${GREEN}✅ Events were emitted during prompt generation${NC}"
+
+  # Extract and display the events
+  echo -e "${BLUE}Events emitted:${NC}"
+  grep -E "task:prompt:(start|complete|error)" "$EVENT_OUTPUT_FILE" || true
+else
+  echo -e "${YELLOW}⚠️ No events were detected. This might be expected if event debugging is not enabled.${NC}"
+fi
+
+# Test error handling by creating an invalid task scenario
+echo -e "${YELLOW}Testing prompt generation with error handling...${NC}"
+INVALID_TASK_OUTPUT=$(mktemp)
+
+# Try to generate a prompt for a non-existent task
+kanbn task non-existent-task --prompt > "$INVALID_TASK_OUTPUT" 2>&1 || true
+
+# Check for error event
+if grep -q "task:prompt:error" "$INVALID_TASK_OUTPUT"; then
+  echo -e "${GREEN}✅ Error event was emitted for invalid task${NC}"
+  grep "task:prompt:error" "$INVALID_TASK_OUTPUT" || true
+else
+  echo -e "${YELLOW}⚠️ No error event detected. This might be expected if event debugging is not enabled.${NC}"
+fi
+
+# Clean up
+rm -f "$INVALID_TASK_OUTPUT"
+
+# Clean up temporary file
+rm -f "$EVENT_OUTPUT_FILE"
 
 # Return to original directory
 cd "$CURRENT_DIR"

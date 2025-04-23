@@ -4,6 +4,7 @@ const parseTask = require("../parse-task");
 const marked = require("marked");
 const markedTerminalRenderer = require("marked-terminal");
 const promptBuilder = require("../promptBuilder");
+const eventBus = require("../lib/event-bus");
 
 /**
  * Show task information
@@ -20,9 +21,26 @@ function showTask(taskId, json = false, prompt = false) {
         console.log(task);
       } else if (prompt) {
         try {
+          // Emit event before generating prompt
+          eventBus.emit('task:prompt:start', { taskId });
+
           const taskPrompt = promptBuilder.buildPromptForTask(task);
           console.log(taskPrompt);
+
+          // Emit event after generating prompt
+          eventBus.emit('task:prompt:complete', {
+            taskId,
+            promptLength: taskPrompt.length,
+            timestamp: new Date().toISOString()
+          });
         } catch (error) {
+          // Emit error event
+          eventBus.emit('task:prompt:error', {
+            taskId,
+            error: error.message,
+            timestamp: new Date().toISOString()
+          });
+
           utility.error(`Error generating prompt: ${error.message}`);
         }
       } else {

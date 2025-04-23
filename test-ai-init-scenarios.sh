@@ -8,6 +8,10 @@ BLUE='\033[0;34m'
 RED='\033[0;31m'
 NC='\033[0m' # No Color
 
+# Enable event tracing
+export NODE_OPTIONS="--trace-event-categories node.async_hooks,node.fs.sync,node.perf,node.eventloop,node.events"
+export DEBUG="kanbn:events,kanbn:*"
+
 echo -e "${BLUE}==================================================${NC}"
 echo -e "${BLUE}   Testing Kanbn AI Initialization Scenarios      ${NC}"
 echo -e "${BLUE}==================================================${NC}"

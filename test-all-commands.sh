@@ -6,6 +6,10 @@ REPO_DIR="$(cd "$(dirname "$0")" && pwd)"
 # Enable debug mode to see environment variables
 export DEBUG=true
 
+# Enable event tracing
+export NODE_OPTIONS="--trace-event-categories node.async_hooks,node.fs.sync,node.perf,node.eventloop,node.events"
+export DEBUG="kanbn:events,kanbn:*,true"
+
 # Load environment variables from .env file if it exists
 if [ -f "$REPO_DIR/.env" ]; then
   echo "📂 Loading environment variables from .env file"
