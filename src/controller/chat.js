@@ -21,12 +21,13 @@ const getGitUsername = require('git-user-name');
  * @param {Object} projectContext Project context information
  * @return {Promise<string>} AI response
  */
-async function callOpenRouterAPI(message, projectContext) {
+async function callOpenRouterAPI(message, projectContext, apiKeyOverride = null) {
   try {
     console.log('Starting OpenRouter API call...');
-    const apiKey = process.env.OPENROUTER_API_KEY;
+    // Use the override if provided, otherwise check environment
+    const apiKey = apiKeyOverride || process.env.OPENROUTER_API_KEY;
     if (!apiKey) {
-      throw new Error('OpenRouter API key not found. Please set the OPENROUTER_API_KEY environment variable.');
+      throw new Error('OpenRouter API key not found. Please set the OPENROUTER_API_KEY environment variable or use the --api-key option.');
     }
     console.log('API key found, length:', apiKey.length);
 
@@ -297,8 +298,9 @@ async function getProjectContext(includeReferences = false) {
  * Interactive chat mode
  * @param {Object} projectContext Project context
  * @param {ChatHandler} chatHandler Chat handler instance
+ * @param {Object} args Command line arguments
  */
-async function interactiveChat(projectContext, chatHandler) {
+async function interactiveChat(projectContext, chatHandler, args) {
   console.log(chalk.blue.bold('\n📊 Kanbn Project Assistant 📊'));
   console.log(chalk.gray('Type "exit" or "quit" to end the conversation\n'));
 
@@ -335,7 +337,9 @@ async function interactiveChat(projectContext, chatHandler) {
         } catch (error) {
           // Fall back to AI chat if command fails
           console.log('Chat handler failed, falling back to OpenRouter API:', error.message);
-          response = await callOpenRouterAPI(message, projectContext);
+          // Check for API key in command line arguments
+          const apiKey = args['api-key'] || null;
+          response = await callOpenRouterAPI(message, projectContext, apiKey);
         }
       }
 
@@ -387,14 +391,16 @@ const chatController = async args => {
           } catch (error) {
             // Fall back to AI chat if command fails
             console.log('Chat handler failed, falling back to OpenRouter API:', error.message);
-            response = await callOpenRouterAPI(message, projectContext);
+            // Check for API key in command line arguments
+            const apiKey = args['api-key'] || null;
+            response = await callOpenRouterAPI(message, projectContext, apiKey);
           }
         }
 
         console.log(chalk.yellow('Project Assistant: ') + response);
         return response;
       } else {
-        await interactiveChat(projectContext, chatHandler);
+        await interactiveChat(projectContext, chatHandler, args);
         return '';
       }
     } catch (error) {

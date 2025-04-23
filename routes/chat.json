@@ -10,12 +10,14 @@
       "with-refs"
     ],
     "string": [
-      "message"
+      "message",
+      "api-key"
     ],
     "alias": {
       "help": ["h"],
       "message": ["m"],
-      "with-refs": ["include-refs", "references"]
+      "with-refs": ["include-refs", "references"],
+      "api-key": ["key", "k"]
     }
   },
   "controller": "./src/controller/chat",
