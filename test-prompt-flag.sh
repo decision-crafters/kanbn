@@ -136,7 +136,12 @@ echo -e "${YELLOW}Testing prompt generation with error handling...${NC}"
 INVALID_TASK_OUTPUT=$(mktemp)
 
 # Try to generate a prompt for a non-existent task
-kanbn task non-existent-task --prompt > "$INVALID_TASK_OUTPUT" 2>&1 || true
+echo -e "${YELLOW}Attempting to generate prompt for non-existent task...${NC}"
+kanbn task non-existent-task --prompt > "$INVALID_TASK_OUTPUT" 2>&1 || echo -e "${RED}Command failed as expected${NC}"
+
+# Display the output
+echo -e "${BLUE}Error output:${NC}"
+cat "$INVALID_TASK_OUTPUT"
 
 # Check for error event
 if grep -q "task:prompt:error" "$INVALID_TASK_OUTPUT"; then
