@@ -348,6 +348,15 @@ if "$REPO_DIR/scripts/check-openrouter-key.sh" > /dev/null 2>&1; then
   # Clean up temporary file
   rm -f "$CHAT_RESPONSE_FILE"
 
+  # Run comprehensive chat command tests
+  echo "\n💬 Running comprehensive chat command tests..."
+  if "$REPO_DIR/test-chat-commands.sh" > /dev/null; then
+    echo "✅ Comprehensive chat command tests passed."
+  else
+    echo "❌ Comprehensive chat command tests failed."
+    exit 1
+  fi
+
   # Note: Skipping decompose test due to issues with task ID handling
   echo "\n⏩ Skipping decompose test due to issues with task ID handling"
 else
