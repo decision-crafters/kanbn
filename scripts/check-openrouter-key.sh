@@ -14,7 +14,7 @@ if [ -f "$SCRIPT_DIR/.env" ]; then
       value=$(echo $value | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' -e 's/^"\(.*\)"$/\1/' -e "s/^'\(.*\)'$/\1/")
       # Export the variable
       export $key="$value"
-      
+
       # For OPENROUTER_API_KEY, show a prefix for verification
       if [ "$key" = "OPENROUTER_API_KEY" ]; then
         KEY_PREFIX="${value:0:5}..."
@@ -51,19 +51,42 @@ curl -s -X POST \
 # Check if the response contains expected fields
 if grep -q "choices" "$API_RESPONSE_FILE"; then
   echo "✅ OpenRouter API key is valid! Response contains expected data."
-  echo "Response excerpt:"
-  head -n 10 "$API_RESPONSE_FILE"
-  echo "🎉 API key verification successful!"
-  
-  # Clean up temporary file
-  rm -f "$API_RESPONSE_FILE"
-  exit 0
+
+  # Extract and validate the model name
+  MODEL_NAME=$(grep -o '"model":"[^"]*"' "$API_RESPONSE_FILE" | head -1 | cut -d '"' -f 4)
+  echo "📊 Model used: $MODEL_NAME"
+
+  # Extract and validate the message content
+  if grep -q "content" "$API_RESPONSE_FILE"; then
+    echo "💬 Response contains message content."
+
+    # Extract a snippet of the content for verification
+    CONTENT_SNIPPET=$(grep -o '"content":"[^"]*"' "$API_RESPONSE_FILE" | head -1 | cut -d '"' -f 4 | cut -c 1-50)
+    echo "📝 Content snippet: '$CONTENT_SNIPPET...'"
+
+    echo "Response excerpt:"
+    head -n 10 "$API_RESPONSE_FILE"
+    echo "🎉 API key verification successful!"
+
+    # Clean up temporary file
+    rm -f "$API_RESPONSE_FILE"
+    exit 0
+  else
+    echo "⚠️ Response does not contain message content."
+    echo "Response content:"
+    cat "$API_RESPONSE_FILE"
+    echo "⚠️ API key verification partially successful, but response format is unexpected."
+
+    # Clean up temporary file
+    rm -f "$API_RESPONSE_FILE"
+    exit 1
+  fi
 else
   echo "❌ OpenRouter API key is invalid or API is unreachable."
   echo "Response content:"
   cat "$API_RESPONSE_FILE"
   echo "❌ API key verification failed!"
-  
+
   # Clean up temporary file
   rm -f "$API_RESPONSE_FILE"
   exit 1

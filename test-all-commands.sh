@@ -44,14 +44,25 @@ run_command() {
   local cmd="$1"
   local expected_status="${2:-0}"
   local description="${3:-Running command}"
+  local output_file="${4:-/dev/stdout}"
 
   echo "===================================================="
   echo "COMMAND: $cmd"
   echo "DESCRIPTION: $description"
   echo "===================================================="
 
-  eval "$cmd"
+  # Run the command and capture its output
+  local output
+  output=$(eval "$cmd" 2>&1)
   local status=$?
+
+  # Display the output to the console
+  echo "$output"
+
+  # Also save the output to the specified file if not stdout
+  if [ "$output_file" != "/dev/stdout" ]; then
+    echo "$output" > "$output_file"
+  fi
 
   TOTAL=$((TOTAL + 1))
 
@@ -278,9 +289,20 @@ echo "\n\n🔍 Checking for OpenRouter API key..."
 if "$REPO_DIR/scripts/check-openrouter-key.sh" > /dev/null 2>&1; then
   echo "✅ OpenRouter API key is valid! Proceeding with AI tests."
 
+  # Create a temporary file to store chat responses
+  CHAT_RESPONSE_FILE=$(mktemp)
+
   # Test that chat creates an AI interaction task (which emits events)
   echo "\n📝 Testing chat with event emission..."
-  run_command "$KANBN_BIN chat --message 'Test event communication'" 0 "Chat with event emission"
+  run_command "$KANBN_BIN chat --message 'Test event communication'" 0 "Chat with event emission" > "$CHAT_RESPONSE_FILE"
+
+  # Validate the chat response
+  if grep -q "Project Assistant:" "$CHAT_RESPONSE_FILE"; then
+    echo "✅ Chat response contains 'Project Assistant:' prefix."
+  else
+    echo "❌ Chat response does not contain 'Project Assistant:' prefix."
+    cat "$CHAT_RESPONSE_FILE"
+  fi
 
   # Test that we can find the AI interaction task (verifying the event had its effect)
   echo "\n🔍 Verifying AI interaction task was created..."
@@ -288,15 +310,43 @@ if "$REPO_DIR/scripts/check-openrouter-key.sh" > /dev/null 2>&1; then
 
   # Test streaming response with default model
   echo "\n🌊 Testing streaming response with default model..."
-  run_command "$KANBN_BIN chat --message 'Give a very brief response to test streaming'" 0 "Chat with streaming response (default model)"
+  run_command "$KANBN_BIN chat --message 'Give a very brief response to test streaming'" 0 "Chat with streaming response (default model)" > "$CHAT_RESPONSE_FILE"
+
+  # Validate the streaming response
+  if grep -q "Using model:" "$CHAT_RESPONSE_FILE"; then
+    echo "✅ Streaming response shows model information."
+    MODEL_INFO=$(grep "Using model:" "$CHAT_RESPONSE_FILE")
+    echo "  $MODEL_INFO"
+  else
+    echo "❌ Streaming response does not show model information."
+  fi
 
   # Test with specific model if supported
   echo "\n🤖 Testing with specific model..."
-  run_command "$KANBN_BIN chat --message 'Give a very brief response' --model 'google/gemma-3-4b-it:free'" 0 "Chat with specific model"
+  run_command "$KANBN_BIN chat --message 'Give a very brief response' --model 'google/gemma-3-4b-it:free'" 0 "Chat with specific model" > "$CHAT_RESPONSE_FILE"
+
+  # Validate the model-specific response
+  if grep -q "google/gemma-3-4b-it:free" "$CHAT_RESPONSE_FILE"; then
+    echo "✅ Response shows correct model (google/gemma-3-4b-it:free)."
+  else
+    echo "❌ Response does not show the specified model."
+    grep "Using model:" "$CHAT_RESPONSE_FILE" || echo "No model information found."
+  fi
 
   # Test with API key specified in command line
   echo "\n🔑 Testing with API key specified in command line..."
-  run_command "$KANBN_BIN chat --message 'Give a very brief response' --api-key $OPENROUTER_API_KEY" 0 "Chat with API key in command line"
+  run_command "$KANBN_BIN chat --message 'Give a very brief response' --api-key $OPENROUTER_API_KEY" 0 "Chat with API key in command line" > "$CHAT_RESPONSE_FILE"
+
+  # Validate the API key response
+  if grep -q "Project Assistant:" "$CHAT_RESPONSE_FILE"; then
+    echo "✅ API key response contains 'Project Assistant:' prefix."
+  else
+    echo "❌ API key response does not contain 'Project Assistant:' prefix."
+    cat "$CHAT_RESPONSE_FILE"
+  fi
+
+  # Clean up temporary file
+  rm -f "$CHAT_RESPONSE_FILE"
 
   # Note: Skipping decompose test due to issues with task ID handling
   echo "\n⏩ Skipping decompose test due to issues with task ID handling"
