@@ -7,3 +7,8 @@ Options:
   {b}kanbn task "task-id" --json{b}
   {b}kanbn task "task-id" -j{b}
     Show task information in JSON format.
+
+  {b}kanbn task "task-id" --prompt{b}
+  {b}kanbn task "task-id" -p{b}
+    Generate an AI-friendly prompt from the task information.
+    This format is optimized for use with AI tools and chat interfaces.

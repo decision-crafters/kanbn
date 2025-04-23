@@ -6,10 +6,12 @@
   ],
   "args": {
     "boolean": [
-      "json"
+      "json",
+      "prompt"
     ],
     "alias": {
-      "json": ["j"]
+      "json": ["j"],
+      "prompt": ["p"]
     }
   },
   "controller": "./src/controller/task",

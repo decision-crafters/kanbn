@@ -3,18 +3,28 @@ const utility = require("../utility");
 const parseTask = require("../parse-task");
 const marked = require("marked");
 const markedTerminalRenderer = require("marked-terminal");
+const promptBuilder = require("../promptBuilder");
 
 /**
  * Show task information
  * @param {string} taskId
+ * @param {boolean} json - Whether to show as JSON
+ * @param {boolean} prompt - Whether to show as AI prompt
  */
-function showTask(taskId, json = false) {
+function showTask(taskId, json = false, prompt = false) {
   const kanbn = Kanbn();
   kanbn
     .getTask(taskId)
     .then((task) => {
       if (json) {
         console.log(task);
+      } else if (prompt) {
+        try {
+          const taskPrompt = promptBuilder.buildPromptForTask(task);
+          console.log(taskPrompt);
+        } catch (error) {
+          utility.error(`Error generating prompt: ${error.message}`);
+        }
       } else {
         marked.setOptions({
           renderer: new markedTerminalRenderer(),
@@ -56,5 +66,5 @@ module.exports = async (args) => {
   }
 
   // Show the task
-  showTask(taskId, args.json);
+  showTask(taskId, args.json, args.prompt);
 };

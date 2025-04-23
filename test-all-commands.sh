@@ -378,6 +378,7 @@ fi
 # Test task view with different options
 run_command "$KANBN_BIN task progress-task --json" 0 "View task in JSON format"
 run_command "$KANBN_BIN task due-task --quiet" 0 "View task in quiet mode"
+run_command "$KANBN_BIN task references-task --prompt" 0 "View task as AI prompt"
 
 # Test sort with different options
 run_command "$KANBN_BIN sort 'Todo' --created" 0 "Sort column by creation date"

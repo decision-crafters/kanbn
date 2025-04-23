@@ -14,7 +14,8 @@
     "test:ai-init-scenarios": "./test-ai-init-scenarios.sh",
     "test:binary": "./test-binary-ai-init.sh",
     "test:interactive": "./test-interactive-ai-init.sh",
-    "test:all": "npm run test && npm run test:real && npm run test:ai-init",
+    "test:prompt-flag": "./test-prompt-flag.sh",
+    "test:all": "npm run test && npm run test:real && npm run test:ai-init && npm run test:prompt-flag",
     "lint": "echo 'No linting configured'",
     "docs": "./scripts/serve-docs.sh",
     "docs:install": "npm install -g docsify-cli"
