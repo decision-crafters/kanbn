@@ -1,7 +1,7 @@
 const chatParser = require('./chat-parser');
 const ChatContext = require('./chat-context');
 const utility = require('../utility');
-const { eventBus } = require('../controller/chat');
+const eventBus = require('./event-bus');
 
 class ChatHandler {
   constructor(kanbn) {
@@ -26,7 +26,7 @@ class ChatHandler {
    */
   async handleMessage(message) {
     const { intent, params } = chatParser.parseMessage(message);
-    
+
     try {
       switch (intent) {
         case 'createTask':
@@ -84,7 +84,7 @@ class ChatHandler {
   async handleAddSubtask(params) {
     const [subtaskText, taskRef] = params;
     const taskId = this.context.resolveTaskReference(taskRef);
-    
+
     if (!taskId) {
       throw new Error(`Could not find task "${taskRef}"`);
     }
@@ -111,7 +111,7 @@ class ChatHandler {
   async handleMoveTask(params) {
     const [taskRef, columnName] = params;
     const taskId = this.context.resolveTaskReference(taskRef);
-    
+
     if (!taskId) {
       throw new Error(`Could not find task "${taskRef}"`);
     }
@@ -122,7 +122,7 @@ class ChatHandler {
 
     const task = await this.kanbn.getTask(taskId);
     const currentColumn = await this.kanbn.findTaskColumn(taskId);
-    
+
     if (currentColumn === columnName) {
       return `Task "${task.name}" is already in ${columnName}`;
     }
@@ -186,7 +186,7 @@ class ChatHandler {
   async handleStatus() {
     const index = await this.kanbn.getIndex();
     const stats = await this.kanbn.status(true, true, true, null, null);
-    
+
     let response = `Project: ${index.name}\n`;
     for (const [column, tasks] of Object.entries(index.columns)) {
       response += `\n${column}: ${tasks.length} tasks`;
@@ -209,7 +209,7 @@ class ChatHandler {
     if (process.env.KANBN_ENV === 'test') {
       return `Test mode response to: ${message}`;
     }
-    
+
     // In production, this would call the AI chat function
     return 'I understand you want to chat, but I work best with specific commands.';
   }

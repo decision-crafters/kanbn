@@ -2,14 +2,8 @@ const kanbnModule = require('../main');
 const utility = require('../utility');
 const inquirer = require('inquirer');
 const axios = require('axios');
-const EventEmitter = require('events');
+const eventBus = require('../lib/event-bus');
 const ChatHandler = require('../lib/chat-handler');
-
-// Create global event bus
-const eventBus = new EventEmitter();
-
-// Export event bus for testing
-module.exports.eventBus = eventBus;
 
 // Use a simple color function since chalk v5+ is ESM-only
 const chalk = {
@@ -259,7 +253,6 @@ async function getProjectContext(includeReferences = false) {
       console.log('Empty columns object, creating default Backlog column');
     }
 
-    const columns = Object.keys(index.columns);
     const projectContext = {
       projectName: index.name || 'Unnamed Project',
       projectDescription: index.description || 'No description available',
