@@ -36,16 +36,30 @@ jobs:
         env:
           KANBN_ENV: test
 
+      - name: Run AI initialization tests
+        run: |
+          set -e
+          chmod +x ./test-ai-init.sh
+          ./test-ai-init.sh
+        env:
+          KANBN_ENV: test
+
       - name: Build package
         run: |
           set -e
           npm pack
-          
+
       - name: Run binary tests
         run: |
           set -e
           chmod +x ./test-all-commands.sh
           ./test-all-commands.sh --use-built-package
+
+      - name: Run binary tests
+        run: |
+          set -e
+          chmod +x ./test-ai-init-scenarios.sh
+          ./test-ai-init-scenarios.sh
 
       - name: Run linting
         run: |

@@ -2,7 +2,32 @@
 
 Kanbn includes AI-powered features to help you manage your tasks more efficiently.
 
-> For detailed examples and usage instructions, check out the [Chat Demo](demos/chat-demo.md) and [Decompose Demo](demos/decompose-demo.md).
+> For detailed examples and usage instructions, check out the [Chat Demo](demos/chat-demo.md), [Decompose Demo](demos/decompose-demo.md), and [AI-Powered Initialization](ai-init.md).
+
+## AI-Powered Initialization
+
+The `init --ai` command provides an AI-powered initialization process that helps you set up your Kanbn board based on your project description.
+
+```
+kanbn init --ai
+```
+
+### How It Works
+
+1. You provide a project name and description
+2. The AI analyzes your project information and suggests appropriate columns
+3. You can accept the suggested columns or customize them
+4. The system creates your Kanbn board with the selected columns
+5. The AI suggests initial tasks to help you get started
+
+### Features
+
+- **Memory Persistence**: Your conversation with the AI is saved between sessions
+- **Custom Prompts**: You can customize the prompts used by the AI
+- **Project Type Detection**: The AI detects your project type and suggests appropriate columns
+- **Initial Task Suggestions**: The AI suggests initial tasks based on your project description
+
+For more details, see the [AI-Powered Initialization](ai-init.md) documentation.
 
 ## Project Management Chat
 

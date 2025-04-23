@@ -7,6 +7,7 @@
   * [Task Structure](task-structure.md)
   * [Task References](references.md)
   * [AI Features](ai-features.md)
+  * [AI-Powered Initialization](ai-init.md)
 
 * Demos
   * [Chat Demo](demos/chat-demo.md)

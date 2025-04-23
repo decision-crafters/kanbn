@@ -23,6 +23,9 @@ npm install -g @tosin2013/kanbn
 # Initialize a new board
 kanbn init
 
+# Or use AI-powered initialization
+kanbn init --ai
+
 # Add a task
 kanbn add
 
@@ -31,6 +34,20 @@ kanbn board
 
 # Get help for any command
 kanbn help <command>
+```
+
+## 🧪 Example Scripts
+
+Check out the `examples` directory for interactive scripts that demonstrate Kanbn's features:
+
+- `interactive-demo.sh` - A comprehensive demo of Kanbn's features
+- `ai-init-examples.sh` - Examples of AI initialization for different project types
+- `github-repo-init.sh` - How to use Kanbn with existing GitHub repositories
+
+Run any example with:
+
+```bash
+./examples/interactive-demo.sh
 ```
 
 ## 📚 Documentation

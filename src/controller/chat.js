@@ -5,6 +5,8 @@ const eventBus = require('../lib/event-bus');
 const ChatHandler = require('../lib/chat-handler');
 const OpenRouterClient = require('../lib/openrouter-client');
 const openRouterConfig = require('../config/openrouter');
+const MemoryManager = require('../lib/memory-manager');
+const PromptLoader = require('../lib/prompt-loader');
 
 // Use a simple color function since chalk v5+ is ESM-only
 const chalk = {
@@ -53,12 +55,15 @@ async function callOpenRouterAPI(message, projectContext, apiKeyOverride = null,
       safeContext.columns = ['Backlog'];
     }
 
+    // Get memory manager if provided
+    const memoryManager = client.memoryManager;
+
     // Check if we're in a test environment or CI environment
     if (process.env.KANBN_ENV === 'test' || process.env.CI === 'true') {
       console.log('Skipping actual API call for testing or CI environment...');
 
       // Load conversation history
-      const history = global.chatHistory || [];
+      const history = memoryManager ? memoryManager.getConversationHistory('chat') : (global.chatHistory || []);
 
       // Create mock response
       const mockResponse = {
@@ -77,11 +82,16 @@ How can I help you manage your project today?`
       };
 
       // Update conversation history
-      global.chatHistory = [
-        ...history,
-        { role: 'user', content: message },
-        mockResponse
-      ];
+      if (memoryManager) {
+        await memoryManager.addMessage('user', message, 'chat');
+        await memoryManager.addMessage('assistant', mockResponse.content, 'chat');
+      } else {
+        global.chatHistory = [
+          ...history,
+          { role: 'user', content: message },
+          mockResponse
+        ];
+      }
 
       console.log('Logging AI interaction...');
       await logAIInteraction('chat', message, mockResponse.content);
@@ -89,9 +99,8 @@ How can I help you manage your project today?`
       return mockResponse.content;
     }
 
-    // Load conversation history with size limit
-    const MAX_HISTORY = 20;
-    const history = (global.chatHistory || []).slice(-MAX_HISTORY);
+    // Load conversation history
+    const history = memoryManager ? memoryManager.getConversationHistory('chat') : (global.chatHistory || []).slice(-20);
 
     // Prepare messages array with system prompt and history
     const messages = [
@@ -140,11 +149,16 @@ ${Object.entries(safeContext.references).map(([taskId, refs]) => `- ${taskId}: $
     console.log(); // Add a newline at the end
 
     // Update conversation history
-    global.chatHistory = [
-      ...history,
-      { role: 'user', content: message },
-      { role: 'assistant', content: fullContent }
-    ];
+    if (memoryManager) {
+      await memoryManager.addMessage('user', message, 'chat');
+      await memoryManager.addMessage('assistant', fullContent, 'chat');
+    } else {
+      global.chatHistory = [
+        ...history,
+        { role: 'user', content: message },
+        { role: 'assistant', content: fullContent }
+      ];
+    }
 
     console.log('Logging AI interaction...');
     await logAIInteraction('chat', message, fullContent);
@@ -387,8 +401,20 @@ const chatController = async args => {
     }
 
     try {
+      // Get the main folder
+      const mainFolder = await kanbn.getMainFolder();
+
+      // Create memory manager and prompt loader
+      const memoryManager = new MemoryManager(mainFolder);
+      await memoryManager.loadMemory();
+
+      const promptLoader = new PromptLoader(mainFolder);
+
+      // Get project context
       const projectContext = await getProjectContext(args['with-refs']);
-      const chatHandler = new ChatHandler(kanbn);
+
+      // Create chat handler with memory manager and prompt loader
+      const chatHandler = new ChatHandler(kanbn, memoryManager, promptLoader);
 
       if (args.message) {
         const message = utility.strArg(args.message);
@@ -406,6 +432,10 @@ const chatController = async args => {
           // Use the API key directly from args if available, otherwise use the environment variable
           const apiKey = args['api-key'] || process.env.OPENROUTER_API_KEY;
           const model = args['model'] || process.env.OPENROUTER_MODEL || 'google/gemma-3-4b-it:free';
+
+          // Create OpenRouter client with memory manager
+          const client = new OpenRouterClient(apiKey, model);
+          client.memoryManager = memoryManager;
 
           // Debug logging
           console.log('DEBUG: API key from args:', args['api-key'] ? `${args['api-key'].substring(0, 5)}... (${args['api-key'].length} chars)` : 'not set');
