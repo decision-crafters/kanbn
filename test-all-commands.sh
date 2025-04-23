@@ -364,6 +364,10 @@ if "$REPO_DIR/scripts/check-openrouter-key.sh" > /dev/null 2>&1; then
   # Verify that subtasks were created
   echo "\n🔍 Verifying subtasks were created..."
   run_command "$KANBN_BIN find --description 'Subtask'" 0 "Find subtasks created by decompose"
+
+  # Verify that the parent-child relationship was established
+  echo "\n🔍 Verifying parent-child relationship..."
+  run_command "$KANBN_BIN task task-3" 0 "Check parent task for child relations"
 else
   echo "⚠️ OpenRouter API key is invalid or not found. Skipping AI tests."
   echo "Please set OPENROUTER_API_KEY in your .env file or as an environment variable."

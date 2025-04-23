@@ -271,19 +271,24 @@ module.exports = async args => {
   }
 
   try {
-    // Check if task exists by looking for the task file
-    const taskExists = await kanbn.taskExists(taskId);
-    if (!taskExists) {
-      const taskIdWithExt = taskId.endsWith('.md') ? taskId : `${taskId}.md`;
-      const taskExistsWithExt = await kanbn.taskExists(taskIdWithExt);
+    // Normalize the task ID by removing any file extension
+    if (taskId.endsWith('.md')) {
+      taskId = taskId.slice(0, -3);
+    }
 
-      if (!taskExistsWithExt) {
+    // Check if task exists
+    const allTasks = await kanbn.findTrackedTasks();
+    if (!allTasks.includes(taskId)) {
+      // Try to find a task that matches the given ID (case-insensitive)
+      const matchingTask = allTasks.find(t => t.toLowerCase() === taskId.toLowerCase());
+
+      if (matchingTask) {
+        // Use the matching task ID with correct case
+        taskId = matchingTask;
+      } else {
         utility.error(`Task "${taskId}" doesn't exist`);
         return;
       }
-
-      // Use the task ID with extension
-      taskId = taskId.endsWith('.md') ? taskId : `${taskId}.md`;
     }
   } catch (error) {
     utility.error(error);
