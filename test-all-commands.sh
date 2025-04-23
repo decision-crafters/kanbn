@@ -1,7 +1,13 @@
-
+#!/bin/bash
 set -e
 
 REPO_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+# Load environment variables from .env file if it exists
+if [ -f "$REPO_DIR/.env" ]; then
+  echo "Loading environment variables from .env file"
+  export $(grep -v '^#' "$REPO_DIR/.env" | xargs)
+fi
 
 USE_BUILT_PACKAGE=false
 for arg in "$@"; do
@@ -245,6 +251,15 @@ if [ -n "$OPENROUTER_API_KEY" ]; then
 
   # Test that we can find the AI interaction task (verifying the event had its effect)
   run_command "$KANBN_BIN find --tag ai-interaction --created 'today'" 0 "Find task created by event"
+
+  # Test streaming response with default model
+  run_command "$KANBN_BIN chat --message 'Give a very brief response to test streaming'" 0 "Chat with streaming response (default model)"
+
+  # Test with specific model if supported
+  run_command "$KANBN_BIN chat --message 'Give a very brief response' --model 'google/gemma-3-4b-it:free'" 0 "Chat with specific model"
+
+  # Test with API key specified in command line
+  run_command "$KANBN_BIN chat --message 'Give a very brief response' --api-key '$OPENROUTER_API_KEY'" 0 "Chat with API key in command line"
 
   # Test that decompose creates subtasks (which emits events)
   run_command "$KANBN_BIN decompose --task task-3" 0 "Decompose task with event emission"
