@@ -408,6 +408,7 @@ const chatController = async args => {
           } catch (error) {
             // Fall back to AI chat if command fails
             console.log('Chat handler failed, falling back to OpenRouter API:', error.message);
+
             // Get API key and model from args
             // Use the API key directly from args if available, otherwise use the environment variable
             const apiKey = args['api-key'] || process.env.OPENROUTER_API_KEY;
@@ -418,6 +419,12 @@ const chatController = async args => {
             console.log('DEBUG: API key being used:', apiKey ? `${apiKey.substring(0, 5)}... (${apiKey.length} chars)` : 'not set');
             console.log('DEBUG: Model from args:', args['model'] || 'not set');
             console.log('DEBUG: Model being used:', model);
+
+            // Verify that we have an API key
+            if (!apiKey) {
+              console.error('ERROR: No API key available. Please set OPENROUTER_API_KEY environment variable or use --api-key option.');
+              return 'Error: OpenRouter API key not found. Please set OPENROUTER_API_KEY environment variable or use --api-key option.';
+            }
 
             try {
               console.log('Attempting to call OpenRouter API...');
