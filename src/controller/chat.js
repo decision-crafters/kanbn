@@ -394,14 +394,15 @@ const chatController = async args => {
             // Fall back to AI chat if command fails
             console.log('Chat handler failed, falling back to OpenRouter API:', error.message);
             // Get API key and model from args
-            const apiKey = openRouterConfig.getApiKey(args['api-key']);
-            const model = openRouterConfig.getModel(args['model']);
+            // Use the API key directly from args if available, otherwise use the environment variable
+            const apiKey = args['api-key'] || process.env.OPENROUTER_API_KEY;
+            const model = args['model'] || process.env.OPENROUTER_MODEL || 'google/gemma-3-4b-it:free';
 
             // Debug logging
             console.log('DEBUG: API key from args:', args['api-key'] ? `${args['api-key'].substring(0, 5)}... (${args['api-key'].length} chars)` : 'not set');
-            console.log('DEBUG: API key after getApiKey:', apiKey ? `${apiKey.substring(0, 5)}... (${apiKey.length} chars)` : 'not set');
+            console.log('DEBUG: API key being used:', apiKey ? `${apiKey.substring(0, 5)}... (${apiKey.length} chars)` : 'not set');
             console.log('DEBUG: Model from args:', args['model'] || 'not set');
-            console.log('DEBUG: Model after getModel:', model);
+            console.log('DEBUG: Model being used:', model);
 
             try {
               console.log('Attempting to call OpenRouter API...');
