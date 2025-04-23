@@ -19,6 +19,12 @@ kanbn add -n "My new task"
 
 This will create a task file `.kanbn/tasks/my-new-task.md`.
 
+You can also add references to external resources:
+
+```
+kanbn add -n "Task with references" --refs "https://example.com/reference" --refs "https://github.com/org/repo/issues/123"
+```
+
 Run `kanbn add --help` for more information on creating tasks.
 
 ## Using AI Features
@@ -31,6 +37,12 @@ kanbn decompose --task "my-complex-task"
 
 This will use AI to break down your complex task into smaller, manageable subtasks.
 
+You can include task references in the decomposition context:
+
+```
+kanbn decompose --task "my-complex-task" --with-refs
+```
+
 ### Get AI assistance
 
 ```
@@ -39,6 +51,12 @@ kanbn chat --message "Summarize my project status"
 ```
 
 Chat with an AI assistant that understands your project context and can help with task management.
+
+You can include task references in the chat context:
+
+```
+kanbn chat --with-refs
+```
 
 ## View the kanbn board
 
