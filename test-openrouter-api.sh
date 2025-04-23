@@ -1,8 +1,13 @@
 #!/bin/bash
 set -e
 
+# Enable debug mode to see environment variables
+export DEBUG=true
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
 # Load environment variables from .env file if it exists
-if [ -f ".env" ]; then
+if [ -f "$SCRIPT_DIR/.env" ]; then
   echo "📂 Loading environment variables from .env file"
   # Use a safer way to load environment variables
   while IFS='=' read -r key value; do
@@ -12,16 +17,16 @@ if [ -f ".env" ]; then
       value=$(echo $value | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' -e 's/^"\(.*\)"$/\1/' -e "s/^'\(.*\)'$/\1/")
       # Export the variable
       export $key="$value"
-      
+
       # For OPENROUTER_API_KEY, show a prefix for verification
       if [ "$key" = "OPENROUTER_API_KEY" ]; then
         KEY_PREFIX="${value:0:5}..."
-        echo "  ✅ Loaded: $key = $KEY_PREFIX"
+        echo "  ✅ Loaded: $key = $KEY_PREFIX (${#value} chars)"
       else
-        echo "  ✅ Loaded: $key"
+        echo "  ✅ Loaded: $key = $value"
       fi
     fi
-  done < ".env"
+  done < "$SCRIPT_DIR/.env"
 fi
 
 # Check if OPENROUTER_API_KEY is set

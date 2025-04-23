@@ -3,7 +3,22 @@ const path = require('path');
 const utility = require('./src/utility');
 
 module.exports = async () => {
-  require('dotenv').config({ path: path.join(__dirname, '.env') });
+  // Try to load .env from current working directory first, then fallback to package root
+  require('dotenv').config() || require('dotenv').config({ path: path.join(__dirname, '.env') });
+
+  // Log environment variables for debugging (only in test mode)
+  if (process.env.KANBN_ENV === 'test' || process.env.DEBUG) {
+    console.log('Environment variables loaded:');
+    if (process.env.OPENROUTER_API_KEY) {
+      const keyPrefix = process.env.OPENROUTER_API_KEY.substring(0, 5);
+      console.log(`OPENROUTER_API_KEY: ${keyPrefix}... (${process.env.OPENROUTER_API_KEY.length} chars)`);
+    } else {
+      console.log('OPENROUTER_API_KEY: not set');
+    }
+    if (process.env.OPENROUTER_MODEL) {
+      console.log(`OPENROUTER_MODEL: ${process.env.OPENROUTER_MODEL}`);
+    }
+  }
 
   // Get the command
   const command = process.argv[2] || '';

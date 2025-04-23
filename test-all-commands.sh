@@ -3,6 +3,9 @@ set -e
 
 REPO_DIR="$(cd "$(dirname "$0")" && pwd)"
 
+# Enable debug mode to see environment variables
+export DEBUG=true
+
 # Load environment variables from .env file if it exists
 if [ -f "$REPO_DIR/.env" ]; then
   echo "📂 Loading environment variables from .env file"
@@ -18,9 +21,9 @@ if [ -f "$REPO_DIR/.env" ]; then
       # For OPENROUTER_API_KEY, show a prefix for verification
       if [ "$key" = "OPENROUTER_API_KEY" ]; then
         KEY_PREFIX="${value:0:5}..."
-        echo "  ✅ Loaded: $key = $KEY_PREFIX"
+        echo "  ✅ Loaded: $key = $KEY_PREFIX (${#value} chars)"
       else
-        echo "  ✅ Loaded: $key"
+        echo "  ✅ Loaded: $key = $value"
       fi
     fi
   done < "$REPO_DIR/.env"
@@ -256,16 +259,18 @@ run_command "$KANBN_BIN comment event-test-task --text 'Comment added via event 
 run_command "$KANBN_BIN task event-test-task" 0 "Verify comment added by event"
 
 # Test AI-specific event communication if OpenRouter API key is available
+echo "\n\n🔍 Checking for OpenRouter API key..."
 if [ -n "$OPENROUTER_API_KEY" ]; then
   # Show first few characters of API key for verification (security-conscious approach)
+  KEY_LENGTH=${#OPENROUTER_API_KEY}
   KEY_PREFIX="${OPENROUTER_API_KEY:0:5}..."
-  echo "OpenRouter API key found: $KEY_PREFIX. Testing API key validity..."
+  echo "🔑 OpenRouter API key found: $KEY_PREFIX ($KEY_LENGTH chars). Testing API key validity..."
 
   # Create a temporary file to store the API response
   API_RESPONSE_FILE=$(mktemp)
 
   # Test the API key with a simple request and save the response
-  echo "Sending test request to OpenRouter API..."
+  echo "🌐 Sending test request to OpenRouter API..."
   curl -s -X POST \
     -H "Authorization: Bearer $OPENROUTER_API_KEY" \
     -H "Content-Type: application/json" \
@@ -311,6 +316,9 @@ if [ -n "$OPENROUTER_API_KEY" ]; then
   rm -f "$API_RESPONSE_FILE"
 else
   echo "⚠️ No OpenRouter API key found. Skipping AI tests."
+  echo "Please set OPENROUTER_API_KEY in your .env file or as an environment variable."
+  echo "Current environment variables:"
+  env | grep -i openrouter || echo "No OpenRouter-related environment variables found."
 fi
 
 # Test task view with different options
