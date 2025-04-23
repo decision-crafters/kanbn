@@ -399,9 +399,9 @@ const chatController = async args => {
 
         let response;
         if (process.env.KANBN_ENV === 'test' || process.env.CI === 'true') {
+          // In test mode, just use the chat handler
           response = await chatHandler.handleMessage(message);
         } else {
-          // Try direct command first
           // Get API key and model from args
           // Use the API key directly from args if available, otherwise use the environment variable
           const apiKey = args['api-key'] || process.env.OPENROUTER_API_KEY;
@@ -428,37 +428,57 @@ const chatController = async args => {
           console.log('DEBUG: Set process.env.OPENROUTER_MODEL to:', process.env.OPENROUTER_MODEL);
 
           try {
-            console.log('Attempting to handle message with chat handler...');
-            response = await chatHandler.handleMessage(message);
-          } catch (error) {
-            // Fall back to AI chat if command fails
-            console.log('Chat handler failed, falling back to OpenRouter API:', error.message);
+            // Try AI first - this is the new approach
+            console.log('Attempting to call OpenRouter API first...');
 
-            // Only proceed with OpenRouter API if the error is about falling back
-            if (error.message === 'No command matched, falling back to AI chat') {
-
-            try {
-              console.log('Attempting to call OpenRouter API...');
-
-              // More detailed debug logging
-              if (process.env.DEBUG === 'true') {
-                console.log('DEBUG: projectContext:', JSON.stringify(projectContext, null, 2));
-                console.log('DEBUG: message:', message);
-                console.log('DEBUG: process.env.OPENROUTER_STREAM:', process.env.OPENROUTER_STREAM || 'not set');
-              }
-
-              // Force disable streaming for testing
-              process.env.OPENROUTER_STREAM = 'false';
-
-              response = await callOpenRouterAPI(message, projectContext, apiKey, model);
-              console.log('OpenRouter API call completed successfully.');
-            } catch (apiError) {
-              console.error('Error calling OpenRouter API:', apiError);
-              response = `I'm having trouble with the project assistant. ${apiError.message}`;
+            // More detailed debug logging
+            if (process.env.DEBUG === 'true') {
+              console.log('DEBUG: projectContext:', JSON.stringify(projectContext, null, 2));
+              console.log('DEBUG: message:', message);
+              console.log('DEBUG: process.env.OPENROUTER_STREAM:', process.env.OPENROUTER_STREAM || 'not set');
             }
-            } else {
-              // If it's not a fallback error, just return the error message
-              response = `Error: ${error.message}`;
+
+            // Force disable streaming for testing
+            process.env.OPENROUTER_STREAM = 'false';
+
+            // Call the OpenRouter API
+            response = await callOpenRouterAPI(message, projectContext, apiKey, model);
+            console.log('OpenRouter API call completed successfully.');
+
+            // Check if the response contains a command that we should execute
+            try {
+              // Parse the response to see if it contains a command
+              const commandMatch = response.match(/^\s*\/([a-zA-Z0-9_-]+)\s+(.*)$/m);
+              if (commandMatch) {
+                const command = commandMatch[1];
+                const args = commandMatch[2];
+                console.log(`Detected command in AI response: /${command} ${args}`);
+
+                // Try to execute the command
+                try {
+                  const commandResponse = await chatHandler.handleCommand(command, args);
+                  console.log('Command executed successfully:', commandResponse);
+                  // Append the command response to the AI response
+                  response += `\n\n*Command executed: ${commandResponse}*`;
+                } catch (commandError) {
+                  console.error('Error executing command:', commandError.message);
+                  // Append the error to the AI response
+                  response += `\n\n*Command error: ${commandError.message}*`;
+                }
+              }
+            } catch (parseError) {
+              console.error('Error parsing AI response for commands:', parseError.message);
+            }
+          } catch (apiError) {
+            console.error('Error calling OpenRouter API, falling back to command handler:', apiError.message);
+
+            // Fall back to command handler if API call fails
+            try {
+              console.log('Attempting to handle message with chat handler...');
+              response = await chatHandler.handleMessage(message);
+            } catch (handlerError) {
+              console.error('Chat handler also failed:', handlerError.message);
+              response = `I'm having trouble with the project assistant. API error: ${apiError.message}, Handler error: ${handlerError.message}`;
             }
           }
         }

@@ -214,6 +214,23 @@ class ChatHandler {
     // This error will be caught by the chat controller, which will then call the OpenRouter API
     throw new Error('No command matched, falling back to AI chat');
   }
+
+  /**
+   * Handle a specific command directly
+   * @param {string} command Command name
+   * @param {string} args Command arguments
+   * @return {Promise<string>} Response message
+   */
+  async handleCommand(command, args) {
+    // Check if we have a handler for this command
+    const handlerName = `handle${command.charAt(0).toUpperCase() + command.slice(1)}`;
+
+    if (typeof this[handlerName] === 'function') {
+      return await this[handlerName](args);
+    } else {
+      throw new Error(`Unknown command: ${command}`);
+    }
+  }
 }
 
 module.exports = ChatHandler;
