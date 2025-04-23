@@ -221,12 +221,18 @@ function filterTasks(index, tasks, filters) {
       result = false;
     }
 
-    if ("tag" in filters && !filterUtils.stringFilter(filters.tag, task.metadata.tags.join("\n"))) {
-      result = false;
+    if ("tag" in filters) {
+      const tags = task.metadata && task.metadata.tags ? task.metadata.tags.join("\n") : "";
+      if (!filterUtils.stringFilter(filters.tag, tags)) {
+        result = false;
+      }
     }
 
-    if ("count-tags" in filters && !filterUtils.numberFilter(filters["count-tags"], task.tags.length)) {
-      result = false;
+    if ("count-tags" in filters) {
+      const tagsLength = task.metadata && task.metadata.tags ? task.metadata.tags.length : 0;
+      if (!filterUtils.numberFilter(filters["count-tags"], tagsLength)) {
+        result = false;
+      }
     }
 
     if (
@@ -849,7 +855,7 @@ async function moveTask(
 ) {
   const fileUtils = require('./file-utils');
   const taskUtils = require('./task-utils');
-  
+
   // Check if this folder has been initialised
   if (!(await initialised())) {
     throw new Error("Not initialised in this folder");
@@ -914,7 +920,7 @@ async function deleteTask(
   const fs = require('fs');
   const fileUtils = require('./file-utils');
   const taskUtils = require('./task-utils');
-  
+
   // Check if this folder has been initialised
   if (!(await initialised())) {
     throw new Error("Not initialised in this folder");
@@ -930,7 +936,7 @@ async function deleteTask(
   if (removeFile && (await fileUtils.exists(fileUtils.getTaskPath(await getTaskFolderPath(), taskId)))) {
     await fs.promises.unlink(fileUtils.getTaskPath(await getTaskFolderPath(), taskId));
   }
-  
+
   await saveIndex(index);
   return taskId;
 }
@@ -954,7 +960,7 @@ async function search(
   hydrateTask
 ) {
   const utility = require('../utility');
-  
+
   // Check if this folder has been initialised
   if (!(await initialised())) {
     throw new Error("Not initialised in this folder");
