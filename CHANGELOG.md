@@ -2,7 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
-## [0.11.0] - 2025-05-01
+## [0.11.1] - 2023-06-20
+
+### Fixed
+- Fixed circular dependency issue with eventBus in chat module
+- Fixed "Cannot read properties of undefined (reading 'join')" error in tag filtering
+- Added comprehensive event communication tests
+- Improved test coverage for event emission and handling
+
+## [0.11.0] - 2023-06-15
 
 ### Added
 - Added task references feature to store URLs and external resources
