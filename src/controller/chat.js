@@ -434,6 +434,9 @@ const chatController = async args => {
             // Fall back to AI chat if command fails
             console.log('Chat handler failed, falling back to OpenRouter API:', error.message);
 
+            // Only proceed with OpenRouter API if the error is about falling back
+            if (error.message === 'No command matched, falling back to AI chat') {
+
             try {
               console.log('Attempting to call OpenRouter API...');
 
@@ -452,6 +455,10 @@ const chatController = async args => {
             } catch (apiError) {
               console.error('Error calling OpenRouter API:', apiError);
               response = `I'm having trouble with the project assistant. ${apiError.message}`;
+            }
+            } else {
+              // If it's not a fallback error, just return the error message
+              response = `Error: ${error.message}`;
             }
           }
         }

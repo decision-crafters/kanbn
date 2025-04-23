@@ -211,6 +211,7 @@ class ChatHandler {
     }
 
     // In production, throw an error to trigger the fallback to OpenRouter API
+    // This error will be caught by the chat controller, which will then call the OpenRouter API
     throw new Error('No command matched, falling back to AI chat');
   }
 }
