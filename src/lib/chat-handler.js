@@ -2,18 +2,36 @@ const chatParser = require('./chat-parser');
 const ChatContext = require('./chat-context');
 const utility = require('../utility');
 const eventBus = require('./event-bus');
+const PromptLoader = require('./prompt-loader');
+const MemoryManager = require('./memory-manager');
 
 class ChatHandler {
-  constructor(kanbn) {
+  /**
+   * Create a new ChatHandler
+   * @param {Object} kanbn The Kanbn instance
+   * @param {MemoryManager} memoryManager Optional memory manager instance
+   * @param {PromptLoader} promptLoader Optional prompt loader instance
+   */
+  constructor(kanbn, memoryManager = null, promptLoader = null) {
     this.kanbn = kanbn;
     this.context = new ChatContext();
+    this.memoryManager = memoryManager;
+    this.promptLoader = promptLoader;
+    this.initMode = false;
     this.initializeContext();
   }
 
   async initializeContext() {
     try {
-      const index = await this.kanbn.getIndex();
-      this.context.setColumns(index);
+      // Check if Kanbn is initialized before trying to get the index
+      const initialized = await this.kanbn.initialised();
+      if (initialized) {
+        const index = await this.kanbn.getIndex();
+        this.context.setColumns(index);
+      } else {
+        // If not initialized, just set up an empty context
+        console.log('Kanbn not initialized yet, using empty context');
+      }
     } catch (error) {
       console.error('Error initializing chat context:', error);
     }
@@ -210,6 +228,11 @@ class ChatHandler {
       return `Test mode response to: ${message}`;
     }
 
+    // If we're in init mode, handle differently
+    if (this.initMode) {
+      return await this.handleInitChat(message);
+    }
+
     // In production, throw an error to trigger the fallback to OpenRouter API
     // This error will be caught by the chat controller, which will then call the OpenRouter API
     throw new Error('No command matched, falling back to AI chat');
@@ -230,6 +253,132 @@ class ChatHandler {
     } else {
       throw new Error(`Unknown command: ${command}`);
     }
+  }
+
+  /**
+   * Initialize for AI-powered init
+   * @param {string} kanbnFolder The path to the .kanbn folder
+   * @return {Promise<void>}
+   */
+  async initializeForInit(kanbnFolder) {
+    this.initMode = true;
+
+    // Create memory manager and prompt loader if not provided
+    if (!this.memoryManager) {
+      this.memoryManager = new MemoryManager(kanbnFolder);
+      await this.memoryManager.loadMemory();
+      await this.memoryManager.startNewConversation('init');
+    }
+
+    if (!this.promptLoader) {
+      this.promptLoader = new PromptLoader(kanbnFolder);
+    }
+  }
+
+  /**
+   * Handle chat messages during initialization
+   * @param {string} message The user's message
+   * @return {Promise<string>} The response message
+   */
+  async handleInitChat(message) {
+    // In test mode, just echo the message
+    if (process.env.KANBN_ENV === 'test') {
+      return `Init mode test response to: ${message}`;
+    }
+
+    // In production, throw an error to trigger the fallback to OpenRouter API
+    throw new Error('No init command matched, falling back to AI chat');
+  }
+
+  /**
+   * Detect project context from user input
+   * @param {string} projectName The project name
+   * @param {string} projectDescription The project description
+   * @return {Promise<Object>} The detected project context
+   */
+  async detectProjectContext(projectName, projectDescription) {
+    // In test mode, return a mock context
+    if (process.env.KANBN_ENV === 'test') {
+      return {
+        projectType: 'Software Development',
+        recommendedColumns: ['Backlog', 'To Do', 'In Progress', 'Review', 'Done'],
+        explanation: 'This is a mock project context for testing.'
+      };
+    }
+
+    // In production, throw an error to trigger the fallback to OpenRouter API
+    throw new Error('Detecting project context requires AI, falling back to OpenRouter API');
+  }
+
+  /**
+   * Calculate Cost of Delay for a task
+   * @param {string} taskName The task name
+   * @param {string} taskDescription The task description
+   * @param {string} classOfService The class of service
+   * @return {Promise<Object>} The calculated Cost of Delay
+   */
+  async calculateCostOfDelay(taskName, taskDescription, classOfService) {
+    // In test mode, return a mock calculation
+    if (process.env.KANBN_ENV === 'test') {
+      return {
+        value: 5,
+        explanation: 'This is a mock Cost of Delay calculation for testing.'
+      };
+    }
+
+    // In production, throw an error to trigger the fallback to OpenRouter API
+    throw new Error('Calculating Cost of Delay requires AI, falling back to OpenRouter API');
+  }
+
+  /**
+   * Calculate WSJF (Weighted Shortest Job First) for a task
+   * @param {string} taskName The task name
+   * @param {string} taskDescription The task description
+   * @param {number} costOfDelay The cost of delay
+   * @param {number} jobSize The job size
+   * @return {Promise<Object>} The calculated WSJF
+   */
+  async calculateWSJF(taskName, taskDescription, costOfDelay, jobSize) {
+    // In test mode, return a mock calculation
+    if (process.env.KANBN_ENV === 'test') {
+      return {
+        value: costOfDelay / jobSize,
+        explanation: 'This is a mock WSJF calculation for testing.'
+      };
+    }
+
+    // In production, throw an error to trigger the fallback to OpenRouter API
+    throw new Error('Calculating WSJF requires AI, falling back to OpenRouter API');
+  }
+
+  /**
+   * Suggest initial tasks for a project
+   * @param {string} projectName The project name
+   * @param {string} projectDescription The project description
+   * @param {string[]} columns The project columns
+   * @return {Promise<Array>} The suggested initial tasks
+   */
+  async suggestInitialTasks(projectName, projectDescription, columns) {
+    // In test mode, return mock tasks
+    if (process.env.KANBN_ENV === 'test') {
+      return [
+        {
+          name: 'Set up project structure',
+          description: 'Create initial project structure and documentation',
+          column: columns[0] || 'Backlog',
+          tags: ['setup', 'documentation']
+        },
+        {
+          name: 'Define project scope',
+          description: 'Define the scope and boundaries of the project',
+          column: columns[0] || 'Backlog',
+          tags: ['planning']
+        }
+      ];
+    }
+
+    // In production, throw an error to trigger the fallback to OpenRouter API
+    throw new Error('Suggesting initial tasks requires AI, falling back to OpenRouter API');
   }
 }
 

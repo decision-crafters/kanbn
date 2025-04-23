@@ -8,16 +8,26 @@
     "string": [
       "name",
       "description",
-      "column"
+      "column",
+      "api-key",
+      "model",
+      "message"
     ],
     "boolean": [
-      "interactive"
+      "interactive",
+      "ai",
+      "help"
     ],
     "alias": {
       "name": ["n"],
       "description": ["d"],
       "column": ["c"],
-      "interactive": ["i"]
+      "interactive": ["i"],
+      "ai": ["a"],
+      "api-key": ["key", "k"],
+      "model": ["mod"],
+      "help": ["h"],
+      "message": ["m", "msg"]
     }
   },
   "controller": "./src/controller/init",

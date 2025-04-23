@@ -3,7 +3,7 @@
 
 Initialise a kanbn board in the current working directory.
 
-Options:
+Basic Options:
   {b}kanbn init --interactive{b}
   {b}kanbn init -i{b}
     Initialise a kanbn board interactively.
@@ -19,3 +19,28 @@ Options:
   {b}kanbn init --column "column"{b}
   {b}kanbn init -c "column"{b}
     Initialise a kanbn board and add the specified column. This option can be repeated to add multiple columns.
+
+AI-Powered Initialization:
+  {b}kanbn init --ai{b}
+  {b}kanbn init -a{b}
+    Initialise a kanbn board with AI assistance. The AI will suggest columns and initial tasks based on your project description.
+
+  {b}kanbn init --ai --name "name" --description "description"{b}
+    Initialise a kanbn board with AI assistance using the specified name and description.
+
+  {b}kanbn init --api-key "key"{b}
+  {b}kanbn init -k "key"{b}
+    Use the specified OpenRouter API key for AI-powered initialization. If not provided, the OPENROUTER_API_KEY environment variable will be used.
+
+  {b}kanbn init --model "model"{b}
+  {b}kanbn init --mod "model"{b}
+    Use the specified AI model for AI-powered initialization. If not provided, the OPENROUTER_MODEL environment variable or the default model will be used.
+
+  {b}kanbn init --ai --message "Create a blog website with user authentication"{b}
+  {b}kanbn init --ai -m "Create a blog website with user authentication"{b}
+    Use a custom message to guide the AI in creating the project. This allows you to specify exactly what kind of project you want to create.
+
+Help:
+  {b}kanbn init --help{b}
+  {b}kanbn init -h{b}
+    Show detailed help for the init command, including available prompts and examples.
