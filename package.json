@@ -8,6 +8,7 @@
     "test:real": "KANBN_ENV=test qunit ./test/integration/burndown-controller-real.test.js",
     "test:remove": "KANBN_ENV=test qunit ./test/integration/remove-controller.test.js",
     "test:references": "KANBN_ENV=test qunit ./test/references.test.js",
+    "test:events": "KANBN_ENV=test qunit ./test/unit/event-bus.test.js ./test/unit/chat-events.test.js ./test/integration/chat-event-integration.test.js",
     "test:all": "npm run test && npm run test:real",
     "lint": "echo 'No linting configured'",
     "docs": "./scripts/serve-docs.sh",

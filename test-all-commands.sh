@@ -222,6 +222,21 @@ run_command "$KANBN_BIN edit references-task --add-ref 'https://example.com/adde
 run_command "$KANBN_BIN edit references-task --remove-ref 'https://example.com/reference1'" 0 "Remove a reference from a task"
 run_command "$KANBN_BIN edit references-task --refs 'https://example.com/new-reference'" 0 "Replace all references in a task"
 
+# Test event communication
+if [ -n "$OPENROUTER_API_KEY" ]; then
+  # Test that chat creates an AI interaction task (which emits events)
+  run_command "$KANBN_BIN chat --message 'Test event communication'" 0 "Chat with event emission"
+
+  # Test that we can find the AI interaction task (verifying the event had its effect)
+  run_command "$KANBN_BIN find --tag ai-interaction --created 'today'" 0 "Find task created by event"
+
+  # Test that decompose creates subtasks (which emits events)
+  run_command "$KANBN_BIN decompose --task task-3" 0 "Decompose task with event emission"
+
+  # Verify the subtasks were created (event side effect)
+  run_command "$KANBN_BIN task task-3" 0 "Verify subtasks created by event"
+fi
+
 # Test task view with different options
 run_command "$KANBN_BIN task progress-task --json" 0 "View task in JSON format"
 run_command "$KANBN_BIN task due-task --quiet" 0 "View task in quiet mode"
