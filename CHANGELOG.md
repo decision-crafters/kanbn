@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 
 ## [0.11.1] - 2023-06-20
 
+### Added
+- Added `--api-key` option to chat command for specifying OpenRouter API key directly
+
 ### Fixed
 - Fixed circular dependency issue with eventBus in chat module
 - Fixed "Cannot read properties of undefined (reading 'join')" error in tag filtering
