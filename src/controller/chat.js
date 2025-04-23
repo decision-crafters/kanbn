@@ -57,10 +57,10 @@ async function callOpenRouterAPI(message, projectContext) {
     // Check if we're in a test environment or CI environment
     if (process.env.KANBN_ENV === 'test' || process.env.CI === 'true') {
       console.log('Skipping actual API call for testing or CI environment...');
-      
+
       // Load conversation history
       const history = global.chatHistory || [];
-      
+
       // Create mock response
       const mockResponse = {
         role: 'assistant',
@@ -105,6 +105,9 @@ How can I help you manage your project today?`
         Number of tasks: ${safeContext.taskCount}
         Columns: ${safeContext.columns.length > 0 ? safeContext.columns.join(', ') : 'None'}
         Tags used: ${safeContext.tags && safeContext.tags.length > 0 ? safeContext.tags.join(', ') : 'None'}
+        ${safeContext.references ? `
+References by task:
+${Object.entries(safeContext.references).map(([taskId, refs]) => `- ${taskId}: ${refs.join(', ')}`).join('\n')}` : ''}
 
         Provide helpful, concise responses to help the user manage their project.`
       },
@@ -185,13 +188,13 @@ async function logAIInteraction(type, input, output) {
     try {
       // Get the index to check if it has columns
       const index = await kanbn.getIndex();
-      
+
       // Initialize index.columns if null or undefined
       if (!index) {
         console.log('Skipping AI interaction logging: Invalid index structure');
         return taskId;
       }
-      
+
       if (!index.columns) {
         index.columns = { 'Backlog': [] };
         console.log('No columns defined, creating default Backlog column');
@@ -223,15 +226,16 @@ async function logAIInteraction(type, input, output) {
 
 /**
  * Get project context for AI
+ * @param {boolean} includeReferences Whether to include task references in the context
  * @return {Promise<Object>} Project context
  */
-async function getProjectContext() {
+async function getProjectContext(includeReferences = false) {
   try {
     const kanbn = typeof kanbnModule === 'function' ? kanbnModule() : kanbnModule;
     const index = await kanbn.getIndex();
     const tasks = await kanbn.loadAllTrackedTasks();
     const status = await kanbn.status(false, false, false, null, null);
-    
+
     const findTaskColumn = (index, taskId) => {
       for (const [column, tasks] of Object.entries(index.columns)) {
         if (tasks.includes(taskId)) {
@@ -276,6 +280,17 @@ async function getProjectContext() {
       ))] : [],
       statistics: status || {}
     };
+
+    // Include references if requested
+    if (includeReferences && tasks && tasks.length > 0) {
+      const referencesMap = {};
+      for (const task of tasks) {
+        if (task.metadata && task.metadata.references && task.metadata.references.length > 0) {
+          referencesMap[task.id] = task.metadata.references;
+        }
+      }
+      projectContext.references = referencesMap;
+    }
 
     eventBus.emit('contextQueried', { context: projectContext });
     return projectContext;
@@ -359,12 +374,12 @@ module.exports = async args => {
     }
 
     try {
-      const projectContext = await getProjectContext();
+      const projectContext = await getProjectContext(args['with-refs']);
       const chatHandler = new ChatHandler(kanbn);
 
       if (args.message) {
         const message = utility.strArg(args.message);
-        
+
         let response;
         if (process.env.KANBN_ENV === 'test' || process.env.CI === 'true') {
           response = await chatHandler.handleMessage(message);
@@ -377,7 +392,7 @@ module.exports = async args => {
             response = await callOpenRouterAPI(message, projectContext);
           }
         }
-        
+
         console.log(chalk.yellow('Project Assistant: ') + response);
         return response;
       } else {

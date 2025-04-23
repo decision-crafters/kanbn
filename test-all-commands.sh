@@ -139,8 +139,12 @@ run_command "$KANBN_BIN validate" 0 "Validate index and task files"
 
 if [ -n "$OPENROUTER_API_KEY" ]; then
   run_command "$KANBN_BIN decompose --task task-3" 0 "Decompose a task using AI"
-  run_command "$KANBN_BIN chat --prompt 'What tasks are in progress?'" 0 "Use chat to query tasks"
+  run_command "$KANBN_BIN chat --message 'What tasks are in progress?'" 0 "Use chat to query tasks"
   run_command "$KANBN_BIN find --tag ai-interaction" 0 "Find AI-generated tasks"
+
+  # Test AI features with references
+  run_command "$KANBN_BIN decompose --task references-task --with-refs" 0 "Decompose a task with references"
+  run_command "$KANBN_BIN chat --message 'What references do my tasks have?' --with-refs" 0 "Use chat with references included"
 fi
 
 run_command "$KANBN_BIN board" 0 "Show the updated kanbn board"
@@ -178,6 +182,7 @@ run_command "$KANBN_BIN s" 0 "Show status using 's' alias"
 run_command "$KANBN_BIN add --name 'Progress Task' --description 'Task with progress' --column 'Todo' --progress 50" 0 "Add task with progress"
 run_command "$KANBN_BIN add --name 'Assigned Task' --description 'Task with assignment' --column 'Todo' --assigned 'user1'" 0 "Add task with assignment"
 run_command "$KANBN_BIN add --name 'Workload Task' --description 'Task with workload' --column 'Todo' --workload 5" 0 "Add task with custom workload"
+run_command "$KANBN_BIN add --name 'References Task' --description 'Task with references' --column 'Todo' --refs 'https://example.com/reference1' --refs 'https://github.com/decision-crafters/kanbn/issues/123'" 0 "Add task with references"
 
 # Test status command flags
 run_command "$KANBN_BIN status --quiet" 0 "Show status in quiet mode"
@@ -205,10 +210,17 @@ run_command "$KANBN_BIN find --description 'progress'" 0 "Find tasks by descript
 run_command "$KANBN_BIN find --due 'tomorrow'" 0 "Find tasks by due date"
 run_command "$KANBN_BIN find --created 'today'" 0 "Find tasks by creation date"
 run_command "$KANBN_BIN find --workload 5" 0 "Find tasks by workload"
+run_command "$KANBN_BIN find --metadata 'references' 'example.com'" 0 "Find tasks by reference URL"
 
 # Test edit with multiple options
 run_command "$KANBN_BIN edit progress-task --workload 3 --progress 75 --description 'Updated progress task'" 0 "Edit task with multiple options"
 run_command "$KANBN_BIN edit due-task --due 'next week' --tag 'important'" 0 "Edit task due date and tags"
+
+# Test references functionality
+run_command "$KANBN_BIN task references-task" 0 "View task with references"
+run_command "$KANBN_BIN edit references-task --add-ref 'https://example.com/added-reference'" 0 "Add a reference to a task"
+run_command "$KANBN_BIN edit references-task --remove-ref 'https://example.com/reference1'" 0 "Remove a reference from a task"
+run_command "$KANBN_BIN edit references-task --refs 'https://example.com/new-reference'" 0 "Replace all references in a task"
 
 # Test task view with different options
 run_command "$KANBN_BIN task progress-task --json" 0 "View task in JSON format"

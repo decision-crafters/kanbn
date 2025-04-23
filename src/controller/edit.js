@@ -255,6 +255,46 @@ async function interactive(taskData, taskIds, columnName, columnNames) {
     },
     {
       type: 'recursive',
+      name: 'addReferences',
+      initialMessage: 'Add a reference?',
+      message: 'Add another reference?',
+      default: false,
+      prompts: [
+        {
+          type: 'input',
+          name: 'url',
+          message: 'Reference URL:',
+          validate: value => {
+            if (!value) {
+              return 'Reference URL cannot be empty';
+            }
+            return true;
+          }
+        }
+      ]
+    },
+    {
+      type: 'recursive',
+      name: 'removeReferences',
+      initialMessage: 'Remove a reference?',
+      message: 'Remove another reference?',
+      default: false,
+      when: answers => (
+        'metadata' in taskData &&
+        'references' in taskData.metadata &&
+        taskData.metadata.references.length > 0
+      ),
+      prompts: [
+        {
+          type: 'list',
+          name: 'selectReference',
+          message: 'Which reference do you want to remove?',
+          choices: taskData.metadata.references
+        }
+      ]
+    },
+    {
+      type: 'recursive',
       name: 'addRelations',
       initialMessage: 'Add a relation?',
       message: 'Add another relation?',
@@ -540,6 +580,46 @@ module.exports = async args => {
     taskData.metadata.tags = [...new Set([...taskData.metadata.tags || [], ...newTags])];
   }
 
+  // Add references
+  if (args.refs) {
+    if (!('metadata' in taskData)) {
+      taskData.metadata = {};
+    }
+    taskData.metadata.references = utility.arrayArg(args.refs);
+  }
+
+  // Add a single reference
+  if (args['add-ref']) {
+    if (!('metadata' in taskData)) {
+      taskData.metadata = {};
+    }
+    if (!('references' in taskData.metadata)) {
+      taskData.metadata.references = [];
+    }
+    const newRefs = utility.arrayArg(args['add-ref']);
+    taskData.metadata.references = [...new Set([...taskData.metadata.references || [], ...newRefs])];
+  }
+
+  // Remove references
+  if (args['remove-ref']) {
+    const removedRefs = utility.arrayArg(args['remove-ref']);
+
+    // Check that the task has metadata
+    if (!('metadata' in taskData) || !('references' in taskData.metadata) || !Array.isArray(taskData.metadata.references)) {
+      utility.error('Task has no references to remove');
+      return;
+    }
+
+    // Check that the references being removed currently exist
+    for (let removedRef of removedRefs) {
+      if (taskData.metadata.references.indexOf(removedRef) === -1) {
+        utility.error(`Reference "${removedRef}" doesn't exist`);
+        return;
+      }
+    }
+    taskData.metadata.references = taskData.metadata.references.filter(ref => removedRefs.indexOf(ref) === -1);
+  }
+
   // Remove relations
   if (args['remove-relation']) {
     const removedRelations = utility.arrayArg(args['remove-relation']);
@@ -721,6 +801,27 @@ module.exports = async args => {
       // Add tags
       if ('addTags' in answers && 'metadata' in taskData && 'tags' in taskData.metadata) {
         taskData.metadata.tags.push(...answers.addTags.map(tag => tag.name));
+      }
+
+      // Remove references
+      if ('removeReferences' in answers && 'metadata' in taskData && 'references' in taskData.metadata) {
+        for (removeReference of answers.removeReferences) {
+          const i = taskData.metadata.references.indexOf(removeReference.selectReference);
+          if (i !== -1) {
+            taskData.metadata.references.splice(i, 1);
+          }
+        }
+      }
+
+      // Add references
+      if ('addReferences' in answers) {
+        if (!('metadata' in taskData)) {
+          taskData.metadata = {};
+        }
+        if (!('references' in taskData.metadata)) {
+          taskData.metadata.references = [];
+        }
+        taskData.metadata.references.push(...answers.addReferences.map(ref => ref.url));
       }
 
       // Edit or remove relations

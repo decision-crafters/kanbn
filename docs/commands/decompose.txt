@@ -10,12 +10,16 @@ Options:
   -i, --interactive  Decompose a task interactively
   -t, --task         Specify the task ID to decompose
   -d, --description  Provide a custom description for decomposition (optional)
+  --with-refs        Include task references in the decomposition context
+  --include-refs     Same as --with-refs
+  --references       Same as --with-refs
   -h, --help         Show help
 
 Examples:
   kanbn decompose --task my-task
   kanbn d -i
   kanbn d -t my-task -d "Custom description for AI decomposition"
+  kanbn d -t my-task --with-refs
 
 Notes:
   - Requires an OpenRouter API key set as OPENROUTER_API_KEY environment variable
