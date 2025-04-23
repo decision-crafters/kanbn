@@ -346,7 +346,8 @@ async function interactiveChat(projectContext, chatHandler) {
   }
 }
 
-module.exports = async args => {
+// Main export function
+const chatController = async args => {
   try {
     // Create a Kanbn instance - handle both function and object shapes
     const kanbn = typeof kanbnModule === 'function' ? kanbnModule() : kanbnModule;
@@ -404,3 +405,14 @@ module.exports = async args => {
     return errorMessage;
   }
 };
+
+// Export the main controller function
+module.exports = chatController;
+
+// Export internal functions for testing
+if (process.env.KANBN_ENV === 'test') {
+  module.exports.__callOpenRouterAPI = callOpenRouterAPI;
+  module.exports.__logAIInteraction = logAIInteraction;
+  module.exports.__getProjectContext = getProjectContext;
+  module.exports.__interactiveChat = interactiveChat;
+}
