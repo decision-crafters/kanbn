@@ -4,8 +4,9 @@
   "description": "A CLI Kanban board with AI-powered task management features",
   "main": "index.js",
   "scripts": {
-    "test": "KANBN_ENV=test qunit ./test/**/*.test.js || exit 0",
+    "test": "KANBN_ENV=test qunit ./test/**/*.test.js ./test/integration/burndown-controller-real.test.js || exit 0",
     "test:real": "KANBN_ENV=test qunit ./test/integration/burndown-controller-real.test.js",
+    "test:remove": "KANBN_ENV=test qunit ./test/integration/remove-controller.test.js",
     "test:all": "npm run test && npm run test:real",
     "lint": "echo 'No linting configured'",
     "docs": "./scripts/serve-docs.sh",

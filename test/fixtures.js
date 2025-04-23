@@ -179,8 +179,69 @@ const createFixtures = (options = {}) => {
   return index;
 };
 
+// Create a mock kanbn instance
+const mockKanbn = {
+  getIndex: async function() {
+    return require('../src/parse-index').md2json(
+      fs.readFileSync(path.join(process.cwd(), '.kanbn', 'index.md'), 'utf8')
+    );
+  },
+  getTask: async function(taskId) {
+    const taskPath = path.join(process.cwd(), '.kanbn', 'tasks', `${taskId}.md`);
+    if (!fs.existsSync(taskPath)) {
+      throw new Error(`No task file found for task "${taskId}"`);
+    }
+    return require('../src/parse-task').md2json(
+      fs.readFileSync(taskPath, 'utf8')
+    );
+  },
+  deleteTask: async function(taskId, removeFile) {
+    const index = await this.getIndex();
+
+    // Remove task from index
+    for (const column in index.columns) {
+      const taskIndex = index.columns[column].indexOf(taskId);
+      if (taskIndex !== -1) {
+        index.columns[column].splice(taskIndex, 1);
+        break;
+      }
+    }
+
+    // Write updated index
+    fs.writeFileSync(
+      path.join(process.cwd(), '.kanbn', 'index.md'),
+      require('../src/parse-index').json2md(index)
+    );
+
+    // Remove task file if requested
+    if (removeFile) {
+      const taskPath = path.join(process.cwd(), '.kanbn', 'tasks', `${taskId}.md`);
+      if (fs.existsSync(taskPath)) {
+        fs.unlinkSync(taskPath);
+      }
+    }
+
+    return taskId;
+  },
+  taskExists: async function(taskId) {
+    const index = await this.getIndex();
+    for (const column in index.columns) {
+      if (index.columns[column].includes(taskId)) {
+        return true;
+      }
+    }
+    throw new Error(`Task "${taskId}" not found in index`);
+  },
+  initialised: async function() {
+    return fs.existsSync(path.join(process.cwd(), '.kanbn'));
+  }
+};
+
 // Export the main function
 module.exports = createFixtures;
+
+// Add the mock kanbn instance
+module.exports.kanbn = mockKanbn;
 
 // Add a cleanup function to restore the filesystem
 module.exports.cleanup = () => {
