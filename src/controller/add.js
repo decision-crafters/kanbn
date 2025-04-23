@@ -1,4 +1,4 @@
-const { Kanbn } = require('../main');
+const Kanbn = require('../main');
 const utility = require('../utility');
 const inquirer = require('inquirer');
 const fuzzy = require('fuzzy');
@@ -138,6 +138,26 @@ async function interactiveCreateTask(taskData, taskIds, columnName, columnNames)
     },
     {
       type: 'recursive',
+      name: 'references',
+      initialMessage: 'Add a reference?',
+      message: 'Add another reference?',
+      default: false,
+      prompts: [
+        {
+          type: 'input',
+          name: 'url',
+          message: 'Reference URL:',
+          validate: value => {
+            if (!value) {
+              return 'Reference URL cannot be empty';
+            }
+            return true;
+          }
+        }
+      ]
+    },
+    {
+      type: 'recursive',
       name: 'relations',
       initialMessage: 'Add a relation?',
       message: 'Add another relation?',
@@ -197,7 +217,7 @@ async function interactiveAddUntrackedTasks(untrackedTasks, columnName, columnNa
  */
 function createTask(taskData, columnName) {
   // Create a Kanbn instance
-  const kanbn = new Kanbn();
+  const kanbn = Kanbn();
 
   kanbn
   .createTask(taskData, columnName)
@@ -216,7 +236,7 @@ function createTask(taskData, columnName) {
  */
 async function addUntrackedTasks(untrackedTasks, columnName) {
   // Create a Kanbn instance
-  const kanbn = new Kanbn();
+  const kanbn = Kanbn();
 
   for (let untrackedTask of untrackedTasks) {
     try {
@@ -233,7 +253,7 @@ async function addUntrackedTasks(untrackedTasks, columnName) {
 
 module.exports = async args => {
   // Create a Kanbn instance
-  const kanbn = new Kanbn();
+  const kanbn = Kanbn();
 
   // Make sure kanbn has been initialised
   try {
@@ -381,6 +401,11 @@ module.exports = async args => {
     taskData.metadata.tags = utility.arrayArg(args.tag);
   }
 
+  // References
+  if (args.refs) {
+    taskData.metadata.references = utility.arrayArg(args.refs);
+  }
+
   // Relations
   if (args.relation) {
     const relations = utility.arrayArg(args.relation).map(relation => {
@@ -476,6 +501,9 @@ module.exports = async args => {
       }
       if ('tags' in answers && answers.tags.length > 0) {
         taskData.metadata.tags = answers.tags.map(tag => tag.name);
+      }
+      if ('references' in answers && answers.references.length > 0) {
+        taskData.metadata.references = answers.references.map(ref => ref.url);
       }
       if ('relations' in answers) {
         taskData.relations = answers.relations.map(relation => ({

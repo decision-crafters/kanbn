@@ -225,33 +225,45 @@ module.exports = {
       // Parse options
       // Options will be serialized back to front-matter, this check remains here for backwards-compatibility
       if ('Options' in index) {
+        try {
+          // Get embedded options and make sure it's an object
+          const embeddedOptions = yaml.parse(index['Options'].content.trim().replace(/```(yaml|yml)?/g, ''));
+          if (typeof embeddedOptions !== 'object') {
+            throw new Error('invalid options content');
+          }
 
-        // Get embedded options and make sure it's an object
-        const embeddedOptions = yaml.parse(index['Options'].content.trim().replace(/```(yaml|yml)?/g, ''));
-        if (typeof embeddedOptions !== 'object') {
-          throw new Error('invalid options content');
+          // Merge with front matter options
+          options = Object.assign(options, embeddedOptions);
+        } catch (error) {
+          throw new Error(`invalid options: ${error.message}`);
         }
-
-        // Merge with front matter options
-        options = Object.assign(options, embeddedOptions);
       }
-      validateOptions(options);
+      
+      try {
+        validateOptions(options);
+      } catch (error) {
+        throw new Error(`invalid options: ${error.message}`);
+      }
 
       // Parse columns
       const columnNames = Object.keys(index).filter(column => ['raw', 'Options', name].indexOf(column) === -1);
       if (columnNames.length) {
-        columns = Object.fromEntries(columnNames.map(columnName => {
-          try {
-            return [
-              columnName,
-              index[columnName].content
-                ? marked.lexer(index[columnName].content)[0].items.map(item => item.tokens[0].tokens[0].text)
-                : []
-            ];
-          } catch (error) {
-            throw new Error(`column "${columnName}" must contain a list`);
-          }
-        }));
+        try {
+          columns = Object.fromEntries(columnNames.map(columnName => {
+            try {
+              return [
+                columnName,
+                index[columnName].content
+                  ? marked.lexer(index[columnName].content)[0].items.map(item => item.tokens[0].tokens[0].text)
+                  : []
+              ];
+            } catch (error) {
+              throw new Error(`column "${columnName}" must contain a list`);
+            }
+          }));
+        } catch (error) {
+          throw new Error(`invalid columns: ${error.message}`);
+        }
       }
     } catch (error) {
       throw new Error(`Unable to parse index: ${error.message}`);

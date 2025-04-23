@@ -1,4 +1,4 @@
-const { Kanbn } = require('../main');
+const Kanbn = require('../main');
 const utility = require('../utility');
 const inquirer = require('inquirer');
 const fuzzy = require('fuzzy');
@@ -10,9 +10,11 @@ inquirer.registerPrompt('autocomplete', require('inquirer-autocomplete-prompt'))
 /**
  * Call OpenRouter API to decompose a task
  * @param {string} description Task description to decompose
+ * @param {Object} task The task object
+ * @param {boolean} includeReferences Whether to include references in the context
  * @return {Promise<Array>} Array of subtasks
  */
-async function callOpenRouterAPI(description) {
+async function callOpenRouterAPI(description, task, includeReferences = false) {
   try {
     // Check if we're in a test environment or CI environment
     if (process.env.KANBN_ENV === 'test' || process.env.CI === 'true') {
@@ -43,7 +45,9 @@ async function callOpenRouterAPI(description) {
         messages: [
           {
             role: 'system',
-            content: 'You are a task decomposition assistant. Given a task description, break it down into smaller, actionable subtasks.'
+            content: `You are a task decomposition assistant. Given a task description, break it down into smaller, actionable subtasks.
+            ${includeReferences && task.metadata && task.metadata.references && task.metadata.references.length > 0 ?
+              `\nHere are references that might be helpful:\n${task.metadata.references.map(ref => `- ${ref}`).join('\n')}` : ''}`
           },
           {
             role: 'user',
@@ -223,8 +227,8 @@ async function createChildTasks(parentTaskId, subtasks) {
 
 module.exports = async args => {
     // Create a Kanbn instance
-    const kanbn = new Kanbn();
-  
+    const kanbn = Kanbn();
+
     // Make sure kanbn has been initialised
     try {
       if (!await kanbn.initialised()) {
@@ -235,10 +239,6 @@ module.exports = async args => {
       utility.warning('Kanbn has not been initialised in this folder\nTry running: {b}kanbn init{b}');
       return;
     }
-  if (!await kanbn.initialised()) {
-    utility.error('Kanbn has not been initialised in this folder\nTry running: {b}kanbn init{b}');
-    return;
-  }
 
   let taskId = args.task ? utility.strArg(args.task) : null;
 
@@ -268,9 +268,19 @@ module.exports = async args => {
   }
 
   try {
-    if (!await kanbn.taskExists(taskId)) {
-      utility.error(`Task "${taskId}" doesn't exist`);
-      return;
+    // Check if task exists by looking for the task file
+    const taskExists = await kanbn.taskExists(taskId);
+    if (!taskExists) {
+      const taskIdWithExt = taskId.endsWith('.md') ? taskId : `${taskId}.md`;
+      const taskExistsWithExt = await kanbn.taskExists(taskIdWithExt);
+
+      if (!taskExistsWithExt) {
+        utility.error(`Task "${taskId}" doesn't exist`);
+        return;
+      }
+
+      // Use the task ID with extension
+      taskId = taskId.endsWith('.md') ? taskId : `${taskId}.md`;
     }
   } catch (error) {
     utility.error(error);
@@ -288,7 +298,7 @@ module.exports = async args => {
   const description = customDescription || task.description;
 
   console.log(`Decomposing task "${task.name}"...`);
-  const subtasks = await callOpenRouterAPI(description);
+  const subtasks = await callOpenRouterAPI(description, task, args['with-refs']);
 
   if (subtasks.length === 0) {
     utility.error('Failed to decompose task. No subtasks generated.');

@@ -71,6 +71,10 @@ function validateMetadataFromMarkdown(metadata) {
       'tags': {
         type: 'array',
         items: { type: 'string' }
+      },
+      'references': {
+        type: 'array',
+        items: { type: 'string' }
       }
     }
   });
@@ -97,7 +101,11 @@ function validateMetadataFromJSON(metadata) {
         type: 'array',
         items: { type: 'string' }
       },
-      'assigned': { type: 'string' }
+      'assigned': { type: 'string' },
+      'references': {
+        type: 'array',
+        items: { type: 'string' }
+      }
     }
   });
   if (result.errors.length) {
@@ -311,6 +319,22 @@ module.exports = {
         delete task['Relations'];
       }
 
+      // Parse references
+      if ('References' in task) {
+        try {
+          const referenceItems = marked.lexer(task['References'].content)[0].items;
+          if (!('references' in metadata)) {
+            metadata.references = [];
+          }
+          for (let referenceItem of referenceItems) {
+            metadata.references.push(referenceItem.text.trim());
+          }
+        } catch (error) {
+          throw new Error('references must contain a list');
+        }
+        delete task['References'];
+      }
+
       // Parse comments
       if ('Comments' in task) {
         try {
@@ -419,6 +443,16 @@ module.exports = {
             data.relations.map(
               relation => `- [${relation.type ? `${relation.type} ` : ''}${relation.task}](${relation.task}.md)`
             ).join('\n')
+          );
+        }
+      }
+
+      // Add references if present
+      if ('metadata' in data && data.metadata !== null && 'references' in data.metadata && data.metadata.references !== null) {
+        if (data.metadata.references.length > 0) {
+          result.push(
+            '## References',
+            data.metadata.references.map(reference => `- ${reference}`).join('\n')
           );
         }
       }

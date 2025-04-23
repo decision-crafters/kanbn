@@ -5,6 +5,7 @@
 * Documentation
   * [Index Structure](index-structure.md)
   * [Task Structure](task-structure.md)
+  * [Task References](references.md)
   * [AI Features](ai-features.md)
 
 * Demos

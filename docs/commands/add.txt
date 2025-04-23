@@ -36,6 +36,11 @@ Options:
   {b}kanbn add -t "tag"{b}
     Create a new task with a tag.
 
+  {b}kanbn add --refs "reference"{b}
+  {b}kanbn add --ref "reference"{b}
+  {b}kanbn add --references "reference"{b}
+    Create a new task with a reference URL or external resource link.
+
   {b}kanbn add --relation "relation"{b}
   {b}kanbn add -r "relation"{b}
     Create a new task with a relation. The relation should be an existing task id, optionally prefixed with a relation type.
@@ -55,8 +60,8 @@ Options:
     Add untracked tasks in the specified file(s) to the the index. This option can be repeated to add multiple files.
 
 Examples:
-  {b}kanbn a -n "My Task #1" -c "Todo" -s "[x] My sub-task" -t "Tag 1" -t "Tag 2" -r "duplicates my-task-2"{b}
-    Creates a task with id "my-task-1" in column "Todo" with a completed sub-task, 2 tags, and a "duplicates" relation to "my-task-2".
+  {b}kanbn a -n "My Task #1" -c "Todo" -s "[x] My sub-task" -t "Tag 1" -t "Tag 2" -r "duplicates my-task-2" --refs "https://example.com/reference"{b}
+    Creates a task with id "my-task-1" in column "Todo" with a completed sub-task, 2 tags, a "duplicates" relation to "my-task-2", and a reference URL.
 
   {b}kanbn a -ui -f "my-task-3" -f "my-task-4" -c "Done"{b}
     Interactively adds untracked tasks "my-task-3.md" and "my-task-4.md" to the "Done" column.

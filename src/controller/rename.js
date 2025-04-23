@@ -1,4 +1,4 @@
-const { Kanbn } = require('../main');
+const kanbnModule = require('../main');
 const utility = require('../utility');
 const inquirer = require('inquirer');
 
@@ -29,8 +29,9 @@ async function interactive(taskData) {
  * @param {string} taskId
  * @param {string} newTaskName
  * @param {string} currentTaskName
+ * @param {object} kanbn The kanbn instance
  */
-function renameTask(taskId, newTaskName, currentTaskName) {
+function renameTask(taskId, newTaskName, currentTaskName, kanbn) {
 
   // Check if the new name is the same as the current name
   if (newTaskName === currentTaskName) {
@@ -50,6 +51,7 @@ function renameTask(taskId, newTaskName, currentTaskName) {
 }
 
 module.exports = async args => {
+  const kanbn = kanbnModule();
 
   // Make sure kanbn has been initialised
   if (!await kanbn.initialised()) {
@@ -91,7 +93,7 @@ module.exports = async args => {
   if (args.interactive) {
     interactive(taskData)
     .then(answers => {
-      renameTask(taskId, answers.name, currentTaskName);
+      renameTask(taskId, answers.name, currentTaskName, kanbn);
     })
     .catch(error => {
       utility.error(error);
@@ -99,6 +101,6 @@ module.exports = async args => {
 
   // Otherwise rename task non-interactively
   } else {
-    renameTask(taskId, taskData.name, currentTaskName);
+    renameTask(taskId, taskData.name, currentTaskName, kanbn);
   }
 };

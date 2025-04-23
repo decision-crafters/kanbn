@@ -10,6 +10,7 @@ Kanbn combines the simplicity of markdown-based task management with the power o
 - **Git-Friendly**: Tasks are stored as markdown files, making them easy to version control and review
 - **Command-Line Speed**: Manage everything through an intuitive CLI interface
 - **Visual Progress**: Track project progress with burndown charts and sprint metrics
+- **External References**: Link tasks to external resources, documentation, and issues
 - **Flexible & Extensible**: Customize your workflow with advanced configuration options
 
 ## 🚀 Getting Started
@@ -60,6 +61,7 @@ kanbn chat
 - [Quick Start Guide](quick-start.md)
 - [Index Structure](index-structure.md)
 - [Task Structure](task-structure.md)
+- [Task References](references.md)
 - [Advanced Configuration](advanced-configuration.md)
 - [AI Features](ai-features.md)
 - [Command Reference](commands.md)

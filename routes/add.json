@@ -16,7 +16,8 @@
       "tag",
       "relation",
       "due",
-      "progress"
+      "progress",
+      "refs"
     ],
     "alias": {
       "interactive": ["i"],
@@ -28,7 +29,8 @@
       "relation": ["r"],
       "due": ["e"],
       "assigned": ["a"],
-      "untracked": ["u"]
+      "untracked": ["u"],
+      "refs": ["ref", "references"]
     }
   },
   "controller": "./src/controller/add",

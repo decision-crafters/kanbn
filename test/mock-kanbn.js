@@ -110,6 +110,22 @@ class Kanbn {
       }
     };
   }
+
+  async burndown(sprints = null, dates = null, assigned = null, columns = null, normalise = null) {
+    const now = new Date();
+    const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    return {
+      series: [{
+        total: 3,
+        from: yesterday,
+        to: now,
+        dataPoints: [
+          { x: yesterday, y: 3 },
+          { x: now, y: 2 }
+        ]
+      }]
+    };
+  }
 }
 
 // For backward compatibility
@@ -130,8 +146,19 @@ const kanbn = {
   listArchivedTasks: async () => await new Kanbn().listArchivedTasks(),
   archiveTask: async (taskId) => await new Kanbn().archiveTask(taskId),
   restoreTask: async (taskId, columnName) => await new Kanbn().restoreTask(taskId, columnName),
-  status: async () => await new Kanbn().status()
+  status: async () => await new Kanbn().status(),
+  burndown: async (sprints, dates, assigned, columns, normalise) => 
+    await new Kanbn().burndown(sprints, dates, assigned, columns, normalise)
 };
 
-module.exports = { config, kanbn, Kanbn };
-module.exports.Kanbn = Kanbn;
+const kanbnInstance = new Kanbn();
+
+const KanbnConstructor = function() {
+  return kanbnInstance;
+};
+
+// Export both the Kanbn constructor and the kanbn object for backward compatibility
+module.exports = KanbnConstructor;
+module.exports.Kanbn = Kanbn; // Export the Kanbn class directly
+module.exports.config = config;
+module.exports.kanbn = kanbn;

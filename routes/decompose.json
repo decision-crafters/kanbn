@@ -6,7 +6,8 @@
   ],
   "args": {
     "boolean": [
-      "interactive"
+      "interactive",
+      "with-refs"
     ],
     "string": [
       "task",
@@ -15,7 +16,8 @@
     "alias": {
       "interactive": ["i"],
       "task": ["t"],
-      "description": ["d"]
+      "description": ["d"],
+      "with-refs": ["include-refs", "references"]
     }
   },
   "controller": "./src/controller/decompose",

@@ -1,13 +1,14 @@
-const { Kanbn } = require('../main');
+const Kanbn = require('../main');
 const utility = require('../utility');
 
 /**
  * Restore a task from the archive
  * @param {string} taskId
  * @param {string|null} columnName
+ * @param {object} kanbnInstance The Kanbn instance to use
  */
-function restoreTask(taskId, columnName) {
-  kanbn
+function restoreTask(taskId, columnName, kanbnInstance) {
+  kanbnInstance
   .restoreTask(taskId, columnName)
   .then(taskId => {
     console.log(`Restored task "${taskId}" from the archive`);
@@ -19,6 +20,8 @@ function restoreTask(taskId, columnName) {
 
 module.exports = async args => {
 
+  const kanbn = Kanbn();
+  
   // Make sure kanbn has been initialised
   if (!await kanbn.initialised()) {
     utility.error('Kanbn has not been initialised in this folder\nTry running: {b}kanbn init{b}');
@@ -56,6 +59,5 @@ module.exports = async args => {
     }
   }
 
-  // Archive task
-  restoreTask(taskId, columnName);
+  restoreTask(taskId, columnName, kanbn);
 };

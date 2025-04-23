@@ -1,4 +1,5 @@
-const { Kanbn, findTaskColumn } = require('./main');
+const Kanbn = require('./main');
+const { findTaskColumn } = require('./main');
 const term = require('terminal-kit').terminal;
 const formatDate = require('dateformat');
 const utility = require('./utility');
@@ -13,12 +14,17 @@ module.exports = (() => {
    * @return {string} The selected task fields
    */
   function getTaskString(index, task) {
-    const kanbn = new Kanbn();
+    const kanbn = Kanbn();
     const taskTemplate = kanbn.getTaskTemplate(index);
     const dateFormat = kanbn.getDateFormat(index);
 
     // Make sure the task has the correct column
-    task.column = findTaskColumn(index, task.id);
+    if (typeof task.id === 'string') {
+      task.column = findTaskColumn(index, task.id);
+    } else {
+      console.error(`Invalid task id: expected string but got ${typeof task.id}`);
+      task.column = null;
+    }
 
     // Get an object containing custom fields from the task
     let customFields = {};
@@ -128,7 +134,7 @@ module.exports = (() => {
 
       // If a root-level filter is defined, apply it to the tasks
       if ('filters' in viewSettings) {
-        const kanbn = new Kanbn();
+        const kanbn = Kanbn();
         tasks = kanbn.filterAndSortTasks(index, tasks, viewSettings.filters, []);
       }
 
@@ -143,7 +149,7 @@ module.exports = (() => {
       for (let lane of viewSettings.lanes) {
         const columns = [];
         for (let column of viewSettings.columns) {
-          const kanbn = new Kanbn();
+          const kanbn = Kanbn();
           const cellTasks = kanbn.filterAndSortTasks(
             index,
             tasks,

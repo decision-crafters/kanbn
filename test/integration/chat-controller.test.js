@@ -116,10 +116,14 @@ QUnit.module('Chat controller tests', {
 
     // Set up our mocks
     mockRequire('axios', mockAxios);
-    mockRequire('../../src/main', {
-      Kanbn: MockKanbnValidColumns,
-      findTaskColumn: () => 'Backlog'
-    });
+    
+    // Create a function that returns our mock instance
+    const mockMainModule = function() {
+      return new MockKanbnValidColumns();
+    };
+    mockMainModule.Kanbn = MockKanbnValidColumns;
+    mockMainModule.findTaskColumn = () => 'Backlog';
+    mockRequire('../../src/main', mockMainModule);
   },
 
   after: function() {
@@ -158,9 +162,12 @@ QUnit.module('Chat controller tests', {
 
 QUnit.test('should handle null columns gracefully', async function(assert) {
     // Mock the main module with null columns
-    mockRequire('../../src/main', {
-      Kanbn: MockKanbnNoColumns
-    });
+    const mockMainFunction = function() {
+      return new MockKanbnNoColumns();
+    };
+    mockMainFunction.Kanbn = MockKanbnNoColumns;
+    mockMainFunction.findTaskColumn = () => 'Backlog';
+    mockRequire('../../src/main', mockMainFunction);
 
     // Load the chat module with our mocks
     const chat = require('../../src/controller/chat');
@@ -176,9 +183,12 @@ QUnit.test('should handle null columns gracefully', async function(assert) {
 
 QUnit.test('should handle empty columns object gracefully', async function(assert) {
     // Mock the main module with empty columns
-    mockRequire('../../src/main', {
-      Kanbn: MockKanbnEmptyColumns
-    });
+    const mockMainFunction = function() {
+      return new MockKanbnEmptyColumns();
+    };
+    mockMainFunction.Kanbn = MockKanbnEmptyColumns;
+    mockMainFunction.findTaskColumn = () => 'Backlog';
+    mockRequire('../../src/main', mockMainFunction);
 
     // Load the chat module with our mocks
     const chat = require('../../src/controller/chat');
@@ -225,9 +235,12 @@ QUnit.test('should log AI interaction with valid columns', async function(assert
     process.env.OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY || 'test-api-key';
 
     // Mock the main module with valid columns
-    mockRequire('../../src/main', {
-      Kanbn: MockKanbnValidColumns
-    });
+    const mockMainFunction = function() {
+      return new MockKanbnValidColumns();
+    };
+    mockMainFunction.Kanbn = MockKanbnValidColumns;
+    mockMainFunction.findTaskColumn = () => 'Backlog';
+    mockRequire('../../src/main', mockMainFunction);
 
     // Load the chat module with our mocks
     const chat = require('../../src/controller/chat');

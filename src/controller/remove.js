@@ -1,4 +1,4 @@
-const { Kanbn } = require('../main');
+const kanbnModule = require('../main');
 const utility = require('../utility');
 const inquirer = require('inquirer');
 
@@ -6,19 +6,22 @@ const inquirer = require('inquirer');
  * Remove a task
  * @param {string} taskId
  * @param {boolean} removeFile
+ * @param {object} kanbnInstance The Kanbn instance to use
+ * @returns {Promise<string>} A promise that resolves with the task ID
  */
-function removeTask(taskId, removeFile) {
-  kanbn
-  .deleteTask(taskId, removeFile)
-  .then(taskId => {
-    console.log(`Removed task "${taskId}"${removeFile ? ' from the index' : ' file and index entry'}`);
-  })
-  .catch(error => {
+async function removeTask(taskId, removeFile, kanbnInstance) {
+  try {
+    const result = await kanbnInstance.deleteTask(taskId, removeFile);
+    console.log(`Removed task "${taskId}"${removeFile ? ' file and index entry' : ' from the index'}`);
+    return result;
+  } catch (error) {
     utility.error(error);
-  });
+    throw error;
+  }
 }
 
 module.exports = async args => {
+  const kanbn = kanbnModule();
 
   // Make sure kanbn has been initialised
   if (!await kanbn.initialised()) {
@@ -52,23 +55,31 @@ module.exports = async args => {
 
   // If the force flag is specified, remove the task without asking
   if (args.force) {
-    removeTask(taskId, args.index);
+    try {
+      await removeTask(taskId, !args.index, kanbn);
+    } catch (error) {
+      // Error already logged in removeTask
+      throw error;
+    }
 
   // Otherwise, prompt for confirmation first
   } else {
-    inquirer.prompt([
-      {
-        type: 'confirm',
-        message: 'Are you sure you want to remove this task?',
-        name: 'sure',
-        default: false
-      }
-    ]).then(async answers => {
+    try {
+      const answers = await inquirer.prompt([
+        {
+          type: 'confirm',
+          message: 'Are you sure you want to remove this task?',
+          name: 'sure',
+          default: false
+        }
+      ]);
+
       if (answers.sure) {
-        removeTask(taskId, args.index);
+        await removeTask(taskId, !args.index, kanbn);
       }
-    }).catch(error => {
+    } catch (error) {
       utility.error(error);
-    })
+      throw error;
+    }
   }
 };

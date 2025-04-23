@@ -109,14 +109,20 @@ QUnit.module('Chat Domain Events', {
       }
     };
 
-    mockRequire('../../src/main', {
-      Kanbn: MockKanbnWithEvents,
-      findTaskColumn: () => 'Backlog',
-      getProjectContext: async () => {
-        const kanbn = new MockKanbnWithEvents(eventBus);
-        return kanbn.getProjectContext();
-      }
-    });
+    // Create a function that returns our mock instance
+    const mockKanbnFunction = function() {
+      return new MockKanbnWithEvents(eventBus);
+    };
+    
+    mockKanbnFunction.Kanbn = MockKanbnWithEvents;
+    
+    mockKanbnFunction.findTaskColumn = () => 'Backlog';
+    mockKanbnFunction.getProjectContext = async () => {
+      const kanbn = new MockKanbnWithEvents(eventBus);
+      return kanbn.getProjectContext();
+    };
+    
+    mockRequire('../../src/main', mockKanbnFunction);
 
     // Reset cache for chat controller
     delete require.cache[require.resolve('../../src/controller/chat')];
@@ -136,6 +142,35 @@ QUnit.module('Chat Domain Events', {
             fs.mkdirSync(testFolder, { recursive: true });
         }
         process.chdir(testFolder);
+        
+        const eventBus = this.eventBus;
+        
+        // Set up mocks
+        const MockKanbnWithEvents = class extends DomainMockKanbn {
+          constructor() {
+            super(eventBus);
+          }
+        };
+
+        // Create a function that returns our mock instance
+        const mockKanbnFunction = function() {
+          return new MockKanbnWithEvents(eventBus);
+        };
+        
+        mockKanbnFunction.Kanbn = function() {
+            return new MockKanbnWithEvents(eventBus);
+        };
+        
+        mockKanbnFunction.findTaskColumn = () => 'Backlog';
+        mockKanbnFunction.getProjectContext = async () => {
+          const kanbn = new MockKanbnWithEvents(eventBus);
+          return kanbn.getProjectContext();
+        };
+        
+        mockRequire('../../src/main', mockKanbnFunction);
+        
+        // Reset cache for chat controller
+        delete require.cache[require.resolve('../../src/controller/chat')];
     },
 
     afterEach: function() {

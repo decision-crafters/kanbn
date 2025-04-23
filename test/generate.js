@@ -34,7 +34,7 @@ const names = [
   ...new Set([
     ...new Array(N * 2)
       .fill(null)
-      .map((i) => capitalise(faker.lorem.sentence(faker.random.number(4)).slice(0, -1)))
+      .map((i) => capitalise(faker.lorem.sentence(faker.datatype.number(4)).slice(0, -1)))
       .filter((i) => i),
   ]),
 ];
@@ -51,7 +51,7 @@ function generateTask(i) {
   };
 
   // tags
-  const COUNT_TAGS = 1 + faker.random.number(4);
+  const COUNT_TAGS = 1 + faker.datatype.number(4);
   if (Math.random() > 0.3) {
     metadata.tags = [
       ...new Set(new Array(COUNT_TAGS).fill(null).map((i) => tags[Math.floor(Math.random() * tags.length)])),
@@ -68,13 +68,13 @@ function generateTask(i) {
     const started = new Date(metadata.created);
     started.setTime(
       metadata.created.getTime() +
-        (faker.random.number({
+        (faker.datatype.number({
           min: 0,
           max: 10,
           precision: 1,
         }) *
           DAY +
-          faker.random.number(DAY))
+          faker.datatype.number(DAY))
     );
     if (started < NOW) {
       metadata.started = started;
@@ -87,13 +87,13 @@ function generateTask(i) {
     const completed = new Date(start);
     completed.setTime(
       start.getTime() +
-        (faker.random.number({
+        (faker.datatype.number({
           min: 0,
           max: 10,
           precision: 1,
         }) *
           DAY +
-          faker.random.number(DAY))
+          faker.datatype.number(DAY))
     );
     if (completed < NOW) {
       metadata.completed = completed;
@@ -105,13 +105,13 @@ function generateTask(i) {
     metadata.due = new Date(metadata.created);
     metadata.due.setTime(
       metadata.created.getTime() +
-        (faker.random.number({
+        (faker.datatype.number({
           min: 0,
           max: 10,
           precision: 1,
         }) *
           DAY +
-          faker.random.number(DAY))
+          faker.datatype.number(DAY))
     );
   }
 
@@ -135,11 +135,11 @@ function generateSubTasks() {
   if (Math.random() >= 0.5) {
     return [];
   }
-  const COUNT_SUB_TASKS = faker.random.number(10);
+  const COUNT_SUB_TASKS = faker.datatype.number(10);
 
   return new Array(COUNT_SUB_TASKS).fill(null).map((i) => ({
     text: faker.lorem.sentence(),
-    completed: faker.random.boolean(),
+    completed: faker.datatype.boolean(),
   }));
 }
 
@@ -147,7 +147,7 @@ function generateRelations(id) {
   if (Math.random() >= 0.75) {
     return [];
   }
-  const COUNT_RELATIONS = faker.random.number(4);
+  const COUNT_RELATIONS = faker.datatype.number(4);
   const relationTypes = ["", "blocks ", "duplicates ", "requires ", "obsoletes "];
   return new Array(COUNT_RELATIONS)
     .fill(null)
@@ -162,7 +162,7 @@ function generateComments() {
   if (Math.random() >= 0.5) {
     return [];
   }
-  const COUNT_COMMENTS = faker.random.number(5);
+  const COUNT_COMMENTS = faker.datatype.number(5);
 
   return new Array(COUNT_COMMENTS).fill(null).map((i) => ({
     date: faker.date.recent(30, NOW),

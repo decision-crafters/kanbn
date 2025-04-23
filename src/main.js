@@ -8,6 +8,12 @@ const yaml = require("yamljs");
 const humanizeDuration = require("humanize-duration");
 const rimraf = require("rimraf");
 
+const fileUtils = require("./lib/file-utils");
+const taskUtils = require("./lib/task-utils");
+const filterUtils = require("./lib/filter-utils");
+const indexUtils = require("./lib/index-utils");
+const statusUtils = require("./lib/status-utils");
+
 const DEFAULT_FOLDER_NAME = ".kanbn";
 const DEFAULT_INDEX_FILE_NAME = "index.md";
 const DEFAULT_TASKS_FOLDER_NAME = "tasks";
@@ -46,38 +52,13 @@ const defaultInitialiseOptions = {
 };
 
 /**
- * Check if a file or folder exists
- * @param {string} path
- * @return {Promise<boolean>} True if the file or folder exists
- */
-async function exists(path) {
-  try {
-    await fs.promises.access(path, fs.constants.R_OK | fs.constants.W_OK);
-  } catch (error) {
-    return false;
-  }
-  return true;
-}
-
-/**
  * Get a list of all tracked task ids
  * @param {object} index The index object
  * @param {?string} [columnName=null] The optional column name to filter tasks by
  * @return {Set} A set of task ids appearing in the index
  */
 function getTrackedTaskIds(index, columnName = null) {
-  // Ensure index.columns exists
-  if (!index || !index.columns) {
-    return new Set();
-  }
-
-  return new Set(
-    columnName
-      ? (index.columns[columnName] || [])
-      : Object.keys(index.columns)
-          .map((columnName) => index.columns[columnName])
-          .flat()
-  );
+  return indexUtils.getTrackedTaskIds(index, columnName);
 }
 
 /**
@@ -87,153 +68,47 @@ function getTrackedTaskIds(index, columnName = null) {
    * @return {string} The task path
    */
 function getTaskPath(tasksPath, taskId) {
-  return path.join(tasksPath, addFileExtension(taskId));
+  return fileUtils.getTaskPath(tasksPath, taskId);
 }
 
-/**
- * Add the file extension to an id if it doesn't already have one
- * @param {string} taskId The task id
- * @return {string} The task id with .md extension
- */
 function addFileExtension(taskId) {
-  if (!/\.md$/.test(taskId)) {
-    return `${taskId}.md`;
-  }
-  return taskId;
+  return fileUtils.addFileExtension(taskId);
 }
 
-/**
- * Remove the file extension from an id if it has one
- * @param {string} taskId The task id
- * @return {string} The task id without .md extension
- */
 function removeFileExtension(taskId) {
-  if (/\.md$/.test(taskId)) {
-    return taskId.slice(0, taskId.length - ".md".length);
-  }
-  return taskId;
+  return fileUtils.removeFileExtension(taskId);
 }
 
-
-/**
- * Check if a task exists in the index
- * @param {object} index The index object
- * @param {string} taskId The task id to search for
- * @return {boolean} True if the task exists in the index
- */
 function taskInIndex(index, taskId) {
-  for (let columnName in index.columns) {
-    if (index.columns[columnName].indexOf(taskId) !== -1) {
-      return true;
-    }
-  }
-  return false;
+  return taskUtils.taskInIndex(index, taskId);
 }
 
-/**
- * Find a task in the index and returns the column that it's in
- * @param {object} index The index data
- * @param {string} taskId The task id to search for
- * @return {?string} The column name for the specified task, or null if it wasn't found
- */
 function findTaskColumn(index, taskId) {
-  for (let columnName in index.columns) {
-    if (index.columns[columnName].indexOf(taskId) !== -1) {
-      return columnName;
-    }
-  }
-  return null;
+  return taskUtils.findTaskColumn(index, taskId);
 }
 
-/**
- * Add a task id to the specified column in the index
- * @param {object} index The index object
- * @param {string} taskId The task id to add
- * @param {string} columnName The column to add the task to
- * @param {?number} [position=null] The position in the column to move the task to, or last position if null
- * @return {object} The modified index object
- */
 function addTaskToIndex(index, taskId, columnName, position = null) {
-  if (position === null) {
-    index.columns[columnName].push(taskId);
-  } else {
-    index.columns[columnName].splice(position, 0, taskId);
-  }
-  return index;
+  return taskUtils.addTaskToIndex(index, taskId, columnName, position);
 }
 
-/**
- * Remove all instances of a task id from the index
- * @param {object} index The index object
- * @param {string} taskId The task id to remove
- * @return {object} The modified index object
- */
 function removeTaskFromIndex(index, taskId) {
-  for (let columnName in index.columns) {
-    index.columns[columnName] = index.columns[columnName].filter((t) => t !== taskId);
-  }
-  return index;
+  return taskUtils.removeTaskFromIndex(index, taskId);
 }
 
-/**
- * Rename all instances of a task id in the index
- * @param {object} index The index object
- * @param {string} taskId The task id to rename
- * @param {string} newTaskId The new task id
- * @return {object} The modified index object
- */
 function renameTaskInIndex(index, taskId, newTaskId) {
-  for (let columnName in index.columns) {
-    index.columns[columnName] = index.columns[columnName].map((t) => (t === taskId ? newTaskId : t));
-  }
-  return index;
+  return taskUtils.renameTaskInIndex(index, taskId, newTaskId);
 }
 
-/**
- * Get a metadata property from a task, or undefined if the metadata property doesn't exist or
- * if the task has no metadata
- * @param {object} taskData The task object
- * @param {string} property The metadata property to check
- * @return {any} The metadata property value
- */
 function getTaskMetadata(taskData, property) {
-  if ("metadata" in taskData && property in taskData.metadata) {
-    return taskData.metadata[property];
-  }
-  return undefined;
+  return taskUtils.getTaskMetadata(taskData, property);
 }
 
-/**
- * Set a metadata value in a task. If the value is undefined, remove the metadata property instead
- * @param {object} taskData The task object
- * @param {string} property The metadata property to update
- * @param {string} value The value to set
- * @return {object} The modified task object
- */
 function setTaskMetadata(taskData, property, value) {
-  if (!("metadata" in taskData)) {
-    taskData.metadata = {};
-  }
-  if (property in taskData.metadata && value === undefined) {
-    delete taskData.metadata[property];
-  } else {
-    taskData.metadata[property] = value;
-  }
-  return taskData;
+  return taskUtils.setTaskMetadata(taskData, property, value);
 }
 
-/**
- * Check if a task is completed
- * @param {object} index
- * @param {object} task
- * @return {boolean} True if the task is in a completed column or has a completed date
- */
 function taskCompleted(index, task) {
-  return (
-    "completed" in task.metadata ||
-    ("completedColumns" in index.options &&
-      index.options.completedColumns.indexOf(findTaskColumn(index, task.id)) !== -1)
-  );
+  return taskUtils.taskCompleted(index, task);
 }
 
 /**
@@ -245,34 +120,7 @@ function taskCompleted(index, task) {
  * @return {object} The modified index object
  */
 function sortColumnInIndex(index, tasks, columnName, sorters) {
-  // Get a list of tasks in the target column and add computed fields
-  tasks = tasks.map((task) => ({
-    ...task,
-    ...task.metadata,
-    created: "created" in task.metadata ? task.metadata.created : "",
-    updated: "updated" in task.metadata ? task.metadata.updated : "",
-    started: "started" in task.metadata ? task.metadata.started : "",
-    completed: "completed" in task.metadata ? task.metadata.completed : "",
-    due: "due" in task.metadata ? task.metadata.due : "",
-    assigned: "assigned" in task.metadata ? task.metadata.assigned : "",
-    countSubTasks: task.subTasks.length,
-    subTasks: task.subTasks.map((subTask) => `[${subTask.completed ? "x" : ""}] ${subTask.text}`).join("\n"),
-    countTags: "tags" in task.metadata ? task.metadata.tags.length : 0,
-    tags: "tags" in task.metadata ? task.metadata.tags.join("\n") : "",
-    countRelations: task.relations.length,
-    relations: task.relations.map((relation) => `${relation.type} ${relation.task}`).join("\n"),
-    countComments: task.comments.length,
-    comments: task.comments.map((comment) => `${comment.author} ${comment.text}`).join("\n"),
-    workload: taskWorkload(index, task),
-    progress: taskProgress(index, task),
-  }));
-
-  // Sort the list of tasks
-  tasks = sortTasks(tasks, sorters);
-
-  // Save the list of tasks back to the index
-  index.columns[columnName] = tasks.map((task) => task.id);
-  return index;
+  return indexUtils.sortColumnInIndex(index, tasks, columnName, sorters);
 }
 
 /**
@@ -282,23 +130,7 @@ function sortColumnInIndex(index, tasks, columnName, sorters) {
  * @return {object[]} The sorted tasks
  */
 function sortTasks(tasks, sorters) {
-  tasks.sort((a, b) => {
-    let compareA, compareB;
-    for (let sorter of sorters) {
-      compareA = a[sorter.field];
-      compareB = b[sorter.field];
-      if (sorter.filter) {
-        compareA = sortFilter(compareA, sorter.filter);
-        compareB = sortFilter(compareB, sorter.filter);
-      }
-      if (compareA === compareB) {
-        continue;
-      }
-      return sorter.order === "descending" ? compareValues(compareB, compareA) : compareValues(compareA, compareB);
-    }
-    return 0;
-  });
-  return tasks;
+  return indexUtils.sortTasks(tasks, sorters);
 }
 
 /**
@@ -308,23 +140,7 @@ function sortTasks(tasks, sorters) {
  * @return {string} The transformed value
  */
 function sortFilter(value, filter) {
-  // Filter regex is global and case-insensitive
-  const matches = [...value.matchAll(new RegExp(filter, "gi"))];
-  const result = matches.map((match) => {
-    // If the matched string has named capturing groups, concatenate their contents
-    if (match.groups) {
-      return Object.values(match.groups).join("");
-    }
-
-    // If the matched string has non-named capturing groups, use the contents of the first group
-    if (match[1]) {
-      return match[1];
-    }
-
-    // Otherwise use the matched string
-    return match[0];
-  });
-  return result.join("");
+  return indexUtils.sortFilter(value, filter);
 }
 
 /**
@@ -334,15 +150,7 @@ function sortFilter(value, filter) {
  * @return {number} A positive value if a > b, negative if a < b, otherwise 0
  */
 function compareValues(a, b) {
-  if (a === undefined && b === undefined) {
-    return 0;
-  }
-  a = utility.coerceUndefined(a, typeof b);
-  b = utility.coerceUndefined(b, typeof a);
-  if (typeof a === "string" && typeof b === "string") {
-    return a.localeCompare(b, undefined, { sensitivity: "accent" });
-  }
-  return a - b;
+  return indexUtils.compareValues(a, b);
 }
 
 /**
@@ -352,186 +160,7 @@ function compareValues(a, b) {
  * @param {object} filters
  */
 function filterTasks(index, tasks, filters) {
-  return tasks.filter((task) => {
-    // Get task id and column
-    const taskId = utility.getTaskId(task.name);
-    const column = findTaskColumn(index, taskId);
-
-    // If no filters are defined, return all tasks
-    if (Object.keys(filters).length === 0) {
-      return true;
-    }
-
-    // Apply filters
-    let result = true;
-
-    // Id
-    if ("id" in filters && !stringFilter(filters.id, task.id)) {
-      result = false;
-    }
-
-    // Name
-    if ("name" in filters && !stringFilter(filters.name, task.name)) {
-      result = false;
-    }
-
-    // Description
-    if ("description" in filters && !stringFilter(filters.description, task.description)) {
-      result = false;
-    }
-
-    // Column
-    if ("column" in filters && !stringFilter(filters.column, column)) {
-      result = false;
-    }
-
-    // Created date
-    if (
-      "created" in filters &&
-      (!("created" in task.metadata) || !dateFilter(filters.created, task.metadata.created))
-    ) {
-      result = false;
-    }
-
-    // Updated date
-    if (
-      "updated" in filters &&
-      (!("updated" in task.metadata) || !dateFilter(filters.updated, task.metadata.updated))
-    ) {
-      result = false;
-    }
-
-    // Started date
-    if (
-      "started" in filters &&
-      (!("started" in task.metadata) || !dateFilter(filters.started, task.metadata.started))
-    ) {
-      result = false;
-    }
-
-    // Completed date
-    if (
-      "completed" in filters &&
-      (!("completed" in task.metadata) || !dateFilter(filters.completed, task.metadata.completed))
-    ) {
-      result = false;
-    }
-
-    // Due
-    if ("due" in filters && (!("due" in task.metadata) || !dateFilter(filters.due, task.metadata.due))) {
-      result = false;
-    }
-
-    // Workload
-    if ("workload" in filters && !numberFilter(filters.workload, taskWorkload(index, task))) {
-      result = false;
-    }
-
-    // Progress
-    if ("progress" in filters && !numberFilter(filters.progress, taskProgress(index, task))) {
-      result = false;
-    }
-
-    // Assigned
-    if (
-      "assigned" in filters &&
-      !stringFilter(filters.assigned, "assigned" in task.metadata ? task.metadata.assigned : "")
-    ) {
-      result = false;
-    }
-
-    // Sub-tasks
-    if (
-      "sub-task" in filters &&
-      !stringFilter(
-        filters["sub-task"],
-        task.subTasks.map((subTask) => `[${subTask.completed ? "x" : " "}] ${subTask.text}`).join("\n")
-      )
-    ) {
-      result = false;
-    }
-
-    // Count sub-tasks
-    if ("count-sub-tasks" in filters && !numberFilter(filters["count-sub-tasks"], task.subTasks.length)) {
-      result = false;
-    }
-
-    // Tag
-    if ("tag" in filters && !stringFilter(filters.tag, task.metadata.tags.join("\n"))) {
-      result = false;
-    }
-
-    // Count tags
-    if ("count-tags" in filters && !numberFilter(filters["count-tags"], task.tags.length)) {
-      result = false;
-    }
-
-    // Relation
-    if (
-      "relation" in filters &&
-      !stringFilter(
-        filters.relation,
-        task.relations.map((relation) => `${relation.type} ${relation.task}`).join("\n")
-      )
-    ) {
-      result = false;
-    }
-
-    // Count relations
-    if ("count-relations" in filters && !numberFilter(filters["count-relations"], task.relations.length)) {
-      result = false;
-    }
-
-    // Comments
-    if (
-      "comment" in filters &&
-      !stringFilter(filters.comment, task.comments.map((comment) => `${comment.author} ${comment.text}`).join("\n"))
-    ) {
-      result = false;
-    }
-
-    // Count comments
-    if ("count-comments" in filters && !numberFilter(filters["count-comments"], task.comments.length)) {
-      result = false;
-    }
-
-    // Custom metadata properties
-    if ("customFields" in index.options) {
-      for (let customField of index.options.customFields) {
-        if (customField.name in filters) {
-          if (!(customField.name in task.metadata)) {
-            result = false;
-          } else {
-            switch (customField.type) {
-              case "boolean":
-                if (task.metadata[customField.name] !== filters[customField.name]) {
-                  result = false;
-                }
-                break;
-              case "number":
-                if (!numberFilter(filters[customField.name], task.metadata[customField.name])) {
-                  result = false;
-                }
-                break;
-              case "string":
-                if (!stringFilter(filters[customField.name], task.metadata[customField.name])) {
-                  result = false;
-                }
-                break;
-              case "date":
-                if (!dateFilter(filters[customField.name], task.metadata[customField.name])) {
-                  result = false;
-                }
-                break;
-              default:
-                break;
-            }
-          }
-        }
-      }
-    }
-    return result;
-  });
+  return indexUtils.filterTasks(index, tasks, filters);
 }
 
 /**
@@ -541,10 +170,7 @@ function filterTasks(index, tasks, filters) {
  * @return {boolean} True if the input matches the string filter
  */
 function stringFilter(filter, input) {
-  if (Array.isArray(filter)) {
-    filter = filter.join("|");
-  }
-  return new RegExp(filter, "i").test(input);
+  return filterUtils.stringFilter(filter, input);
 }
 
 /**
@@ -555,13 +181,7 @@ function stringFilter(filter, input) {
  * @return {boolean} True if the input matches the date filter
  */
 function dateFilter(dates, input) {
-  dates = utility.arrayArg(dates);
-  if (dates.length === 1) {
-    return utility.compareDates(input, dates[0]);
-  }
-  const earliest = Math.min(...dates);
-  const latest = Math.max(...dates);
-  return input >= earliest && input <= latest;
+  return filterUtils.dateFilter(dates, input);
 }
 
 /**
@@ -572,8 +192,7 @@ function dateFilter(dates, input) {
  * @return {boolean} True if the input matches the number filter
  */
 function numberFilter(filter, input) {
-  filter = utility.arrayArg(filter);
-  return input >= Math.min(...filter) && input <= Math.max(...filter);
+  return filterUtils.numberFilter(filter, input);
 }
 
 /**
@@ -583,24 +202,7 @@ function numberFilter(filter, input) {
  * @return {number} The task workload
  */
 function taskWorkload(index, task) {
-  const defaultTaskWorkload =
-    "defaultTaskWorkload" in index.options ? index.options.defaultTaskWorkload : DEFAULT_TASK_WORKLOAD;
-  const taskWorkloadTags =
-    "taskWorkloadTags" in index.options ? index.options.taskWorkloadTags : DEFAULT_TASK_WORKLOAD_TAGS;
-  let workload = 0;
-  let hasWorkloadTags = false;
-  if ("tags" in task.metadata) {
-    for (let workloadTag of Object.keys(taskWorkloadTags)) {
-      if (task.metadata.tags.indexOf(workloadTag) !== -1) {
-        workload += taskWorkloadTags[workloadTag];
-        hasWorkloadTags = true;
-      }
-    }
-  }
-  if (!hasWorkloadTags) {
-    workload = defaultTaskWorkload;
-  }
-  return workload;
+  return indexUtils.taskWorkload(index, task, DEFAULT_TASK_WORKLOAD, DEFAULT_TASK_WORKLOAD_TAGS);
 }
 
 /**
@@ -610,10 +212,7 @@ function taskWorkload(index, task) {
  * @return {number} Task progress
  */
 function taskProgress(index, task) {
-  if (taskCompleted(index, task)) {
-    return 1;
-  }
-  return "progress" in task.metadata ? task.metadata.progress : 0;
+  return indexUtils.taskProgress(index, task);
 }
 
 /**
@@ -625,20 +224,7 @@ function taskProgress(index, task) {
  * @return {object} A statistics object
  */
 function taskWorkloadInPeriod(tasks, metadataProperty, start, end) {
-  const filteredTasks = tasks.filter(
-    (task) =>
-      metadataProperty in task.metadata &&
-      task.metadata[metadataProperty] >= start &&
-      task.metadata[metadataProperty] <= end
-  );
-  return {
-    tasks: filteredTasks.map((task) => ({
-      id: task.id,
-      column: task.column,
-      workload: task.workload,
-    })),
-    workload: filteredTasks.reduce((a, task) => a + task.workload, 0),
-  };
+  return indexUtils.taskWorkloadInPeriod(tasks, metadataProperty, start, end);
 }
 
 /**
@@ -648,10 +234,7 @@ function taskWorkloadInPeriod(tasks, metadataProperty, start, end) {
  * @return {object[]} A filtered list of tasks
  */
 function getActiveTasksAtDate(tasks, date) {
-  return tasks.filter((task) => (
-    (task.started !== false && task.started <= date) &&
-    (task.completed === false || task.completed > date)
-  ));
+  return indexUtils.getActiveTasksAtDate(tasks, date);
 }
 
 /**
@@ -661,7 +244,7 @@ function getActiveTasksAtDate(tasks, date) {
  * @return {number} The total workload at the specified date
  */
 function getWorkloadAtDate(tasks, date) {
-  return getActiveTasksAtDate(tasks, date).reduce((a, task) => (a += task.workload), 0);
+  return indexUtils.getWorkloadAtDate(tasks, date);
 }
 
 /**
@@ -671,7 +254,7 @@ function getWorkloadAtDate(tasks, date) {
  * @return {number} The total number of active tasks at the specified date
  */
 function countActiveTasksAtDate(tasks, date) {
-  return getActiveTasksAtDate(tasks, date).length;
+  return indexUtils.countActiveTasksAtDate(tasks, date);
 }
 
 /**
@@ -681,26 +264,7 @@ function countActiveTasksAtDate(tasks, date) {
  * @return {object[]} A list of event objects, with event type and task id
  */
 function getTaskEventsAtDate(tasks, date) {
-  return [
-    ...tasks
-      .filter((task) => (task.created ? task.created.getTime() : 0) === date.getTime())
-      .map((task) => ({
-        eventType: "created",
-        task
-      })),
-    ...tasks
-      .filter((task) => (task.started ? task.started.getTime() : 0) === date.getTime())
-      .map((task) => ({
-        eventType: "started",
-        task
-      })),
-    ...tasks
-      .filter((task) => (task.completed ? task.completed.getTime() : 0) === date.getTime())
-      .map((task) => ({
-        eventType: "completed",
-        task
-      })),
-  ];
+  return indexUtils.getTaskEventsAtDate(tasks, date);
 }
 
 /**
@@ -710,20 +274,7 @@ function getTaskEventsAtDate(tasks, date) {
  * @return {Date} The quantized dates
  */
 function normaliseDate(date, resolution = 'minutes') {
-  const result = new Date(date.getTime());
-  switch (resolution) {
-    case 'days':
-      result.setHours(0);
-    case 'hours':
-      result.setMinutes(0);
-    case 'minutes':
-      result.setSeconds(0);
-    case 'seconds':
-      result.setMilliseconds(0);
-    default:
-      break;
-  }
-  return result;
+  return indexUtils.normaliseDate(date, resolution);
 }
 
 /**
@@ -735,25 +286,7 @@ function normaliseDate(date, resolution = 'minutes') {
  * @return {object} The updated task data
  */
 function updateColumnLinkedCustomFields(index, taskData, columnName) {
-  // Update built-in column-linked metadata properties first (started and completed dates)
-  taskData = updateColumnLinkedCustomField(index, taskData, columnName, "completed", "once");
-  taskData = updateColumnLinkedCustomField(index, taskData, columnName, "started", "once");
-
-  // Update column-linked custom fields
-  if ("customFields" in index.options) {
-    for (let customField of index.options.customFields) {
-      if (customField.type === "date") {
-        taskData = updateColumnLinkedCustomField(
-          index,
-          taskData,
-          columnName,
-          customField.name,
-          customField.updateDate || "none"
-        );
-      }
-    }
-  }
-  return taskData;
+  return indexUtils.updateColumnLinkedCustomFields(index, taskData, columnName);
 }
 
 /**
@@ -769,22 +302,7 @@ function updateColumnLinkedCustomFields(index, taskData, columnName) {
  * @param {string} [updateCriteria='none']
  */
 function updateColumnLinkedCustomField(index, taskData, columnName, fieldName, updateCriteria = "none") {
-  const columnList = `${fieldName}Columns`;
-  if (columnList in index.options && index.options[columnList].indexOf(columnName) !== -1) {
-    switch (updateCriteria) {
-      case "always":
-        taskData = setTaskMetadata(taskData, fieldName, new Date());
-        break;
-      case "once":
-        if (!(fieldName in taskData.metadata && taskData.metadata[fieldName])) {
-          taskData = setTaskMetadata(taskData, fieldName, new Date());
-        }
-        break;
-      default:
-        break;
-    }
-  }
-  return taskData;
+  return indexUtils.updateColumnLinkedCustomField(index, taskData, columnName, fieldName, updateCriteria);
 }
 
 class Kanbn {
@@ -808,14 +326,14 @@ class Kanbn {
    * @returns {Promise<boolean>} True if a config file exists
    */
   async configExists() {
-    return await exists(this.CONFIG_YAML) || await exists(this.CONFIG_JSON);
+    return await fileUtils.exists(this.CONFIG_YAML) || await fileUtils.exists(this.CONFIG_JSON);
   }
 
   /**
    * Save configuration data to a separate config file
    */
   async saveConfig(config) {
-    if (await exists(this.CONFIG_YAML)) {
+    if (await fileUtils.exists(this.CONFIG_YAML)) {
       await fs.promises.writeFile(this.CONFIG_YAML, yaml.stringify(config, 4, 2));
     } else {
       await fs.promises.writeFile(this.CONFIG_JSON, JSON.stringify(config, null, 4));
@@ -829,13 +347,13 @@ class Kanbn {
   async getConfig() {
     if (this.configMemo === null) {
       let config = null;
-      if (await exists(this.CONFIG_YAML)) {
+      if (await fileUtils.exists(this.CONFIG_YAML)) {
         try {
           config = yaml.load(this.CONFIG_YAML);
         } catch (error) {
           throw new Error(`Couldn't load config file: ${error.message}`);
         }
-      } else if (await exists(this.CONFIG_JSON)) {
+      } else if (await fileUtils.exists(this.CONFIG_JSON)) {
         try {
           config = JSON.parse(await fs.promises.readFile(this.CONFIG_JSON, { encoding: "utf-8" }));
         } catch (error) {
@@ -1028,27 +546,13 @@ class Kanbn {
    * @param {object} indexData Index data to save
    */
   async saveIndex(indexData) {
-    // Apply column sorting if any sorters are defined in options
-    if ("columnSorting" in indexData.options && Object.keys(indexData.options.columnSorting).length) {
-      for (let columnName in indexData.options.columnSorting) {
-        indexData = sortColumnInIndex(
-          indexData,
-          await this.loadAllTrackedTasks(indexData, columnName),
-          columnName,
-          indexData.options.columnSorting[columnName]
-        );
-      }
-    }
-
-    // If there is a separate config file, save options to this file
-    let ignoreOptions = false;
-    if (await this.configExists()) {
-      await this.saveConfig(indexData.options);
-      ignoreOptions = true;
-    }
-
-    // Save index
-    await fs.promises.writeFile(await this.getIndexPath(), parseIndex.json2md(indexData, ignoreOptions));
+    return indexUtils.saveIndex(
+      indexData,
+      this.loadAllTrackedTasks.bind(this),
+      this.configExists.bind(this),
+      this.saveConfig.bind(this),
+      this.getIndexPath.bind(this)
+    );
   }
 
   /**
@@ -1056,20 +560,10 @@ class Kanbn {
    * @return {Promise<object>} The index object
    */
   async loadIndex() {
-    let indexData = "";
-    try {
-      indexData = await fs.promises.readFile(await this.getIndexPath(), { encoding: "utf-8" });
-    } catch (error) {
-      throw new Error(`Couldn't access index file: ${error.message}`);
-    }
-    const index = parseIndex.md2json(indexData);
-
-    // If configuration settings exist in a separate config file, merge them with index options
-    const config = await this.getConfig();
-    if (config !== null) {
-      index.options = { ...index.options, ...config };
-    }
-    return index;
+    return indexUtils.loadIndex(
+      this.getIndexPath.bind(this),
+      this.getConfig.bind(this)
+    );
   }
 
   /**
@@ -1151,7 +645,7 @@ class Kanbn {
    * @return {Promise<boolean>} True if the current working directory has been initialised, otherwise false
    */
   async initialised() {
-    return await exists(await this.getIndexPath());
+    return await fileUtils.exists(await this.getIndexPath());
   }
 
   /**
@@ -1163,19 +657,19 @@ class Kanbn {
     const mainFolder = await this.getMainFolder();
 
     // Create main folder if it doesn't already exist
-    if (!(await exists(mainFolder))) {
+    if (!(await fileUtils.exists(mainFolder))) {
       await fs.promises.mkdir(mainFolder, { recursive: true });
     }
 
     // Create tasks folder if it doesn't already exist
     const taskFolder = await this.getTaskFolderPath();
-    if (!(await exists(taskFolder))) {
+    if (!(await fileUtils.exists(taskFolder))) {
       await fs.promises.mkdir(taskFolder, { recursive: true });
     }
 
     // Create index if one doesn't already exist
     let index;
-    if (!(await exists(await this.getIndexPath()))) {
+    if (!(await fileUtils.exists(await this.getIndexPath()))) {
 
       // If config already exists in a separate file, merge it into the options
       const config = await this.getConfig();
@@ -1220,7 +714,7 @@ class Kanbn {
     }
 
     // Check if the task file exists
-    if (!(await exists(getTaskPath(await this.getTaskFolderPath(), taskId)))) {
+    if (!(await fileUtils.exists(getTaskPath(await this.getTaskFolderPath(), taskId)))) {
       throw new Error(`No task file found with id "${taskId}"`);
     }
 
@@ -1241,9 +735,14 @@ class Kanbn {
     if (!(await this.initialised())) {
       throw new Error("Not initialised in this folder");
     }
+    
+    // Check if taskId is a string
+    if (typeof taskId !== 'string') {
+      throw new Error(`Invalid task id: expected string but got ${typeof taskId}`);
+    }
 
     // Check if the task file exists
-    if (!(await exists(getTaskPath(await this.getTaskFolderPath(), taskId)))) {
+    if (!(await fileUtils.exists(getTaskPath(await this.getTaskFolderPath(), taskId)))) {
       throw new Error(`No task file found with id "${taskId}"`);
     }
 
@@ -1277,7 +776,7 @@ class Kanbn {
     // Make sure a task doesn't already exist with the same name
     const taskId = utility.getTaskId(taskData.name);
     const taskPath = getTaskPath(await this.getTaskFolderPath(), taskId);
-    if (await exists(taskPath)) {
+    if (await fileUtils.exists(taskPath)) {
       throw new Error(`A task with id "${taskId}" already exists`);
     }
 
@@ -1312,40 +811,17 @@ class Kanbn {
    * @return {Promise<string>} The id of the task that was added
    */
   async addUntrackedTaskToIndex(taskId, columnName) {
-    // Check if this folder has been initialised
-    if (!(await this.initialised())) {
-      throw new Error("Not initialised in this folder");
-    }
-    taskId = removeFileExtension(taskId);
-
-    // Make sure the task file exists
-    if (!(await exists(getTaskPath(await this.getTaskFolderPath(), taskId)))) {
-      throw new Error(`No task file found with id "${taskId}"`);
-    }
-
-    // Get index and make sure the column exists
-    let index = await this.loadIndex();
-    if (!(columnName in index.columns)) {
-      throw new Error(`Column "${columnName}" doesn't exist`);
-    }
-
-    // Check that the task isn't already indexed
-    if (taskInIndex(index, taskId)) {
-      throw new Error(`Task "${taskId}" is already in the index`);
-    }
-
-    // Load task data
-    let taskData = await this.loadTask(taskId);
-    const taskPath = getTaskPath(await this.getTaskFolderPath(), taskId);
-
-    // Update task metadata dates
-    taskData = updateColumnLinkedCustomFields(index, taskData, columnName);
-    await this.saveTask(taskPath, taskData);
-
-    // Add the task to the column and save the index
-    index = addTaskToIndex(index, taskId, columnName);
-    await this.saveIndex(index);
-    return taskId;
+    const index = await this.loadIndex();
+    return indexUtils.addUntrackedTaskToIndex(
+      index,
+      taskId,
+      columnName,
+      this.initialised.bind(this),
+      this.getTaskFolderPath.bind(this),
+      this.loadTask.bind(this),
+      this.saveTask.bind(this),
+      this.saveIndex.bind(this)
+    );
   }
 
   /**
@@ -1354,14 +830,12 @@ class Kanbn {
    * @return {Promise<Set>} A set of task ids
    */
   async findTrackedTasks(columnName = null) {
-    // Check if this folder has been initialised
-    if (!(await this.initialised())) {
-      throw new Error("Not initialised in this folder");
-    }
-
-    // Get all tasks currently in index
     const index = await this.loadIndex();
-    return getTrackedTaskIds(index, columnName);
+    return indexUtils.findTrackedTasks(
+      index,
+      this.initialised.bind(this),
+      columnName
+    );
   }
 
   /**
@@ -1369,21 +843,12 @@ class Kanbn {
    * @return {Promise<Set>} A set of untracked task ids
    */
   async findUntrackedTasks() {
-    // Check if this folder has been initialised
-    if (!(await this.initialised())) {
-      throw new Error("Not initialised in this folder");
-    }
-
-    // Get all tasks currently in index
     const index = await this.loadIndex();
-    const trackedTasks = getTrackedTaskIds(index);
-
-    // Get all tasks in the tasks folder
-    const files = await glob(`${await this.getTaskFolderPath()}/*.md`);
-    const untrackedTasks = new Set(files.map((task) => path.parse(task).name));
-
-    // Return the set difference
-    return new Set([...untrackedTasks].filter((x) => !trackedTasks.has(x)));
+    return indexUtils.findUntrackedTasks(
+      index,
+      this.initialised.bind(this),
+      this.getTaskFolderPath.bind(this)
+    );
   }
 
   /**
@@ -1394,57 +859,20 @@ class Kanbn {
    * @return {Promise<string>} The id of the task that was updated
    */
   async updateTask(taskId, taskData, columnName = null) {
-    // Check if this folder has been initialised
-    if (!(await this.initialised())) {
-      throw new Error("Not initialised in this folder");
-    }
-    taskId = removeFileExtension(taskId);
-
-    // Make sure the task file exists
-    if (!(await exists(getTaskPath(await this.getTaskFolderPath(), taskId)))) {
-      throw new Error(`No task file found with id "${taskId}"`);
-    }
-
-    // Get index and make sure the task is indexed
-    let index = await this.loadIndex();
-    if (!taskInIndex(index, taskId)) {
-      throw new Error(`Task "${taskId}" is not in the index`);
-    }
-
-    // Make sure the updated task data has a name
-    if (!taskData.name) {
-      throw new Error("Task name cannot be blank");
-    }
-
-    // Rename the task if we're updating the name
-    const originalTaskData = await this.loadTask(taskId);
-    if (originalTaskData.name !== taskData.name) {
-      taskId = await this.renameTask(taskId, taskData.name);
-
-      // Re-load the index
-      index = await this.loadIndex();
-    }
-
-    // Get index and make sure the column exists
-    if (columnName && !(columnName in index.columns)) {
-      throw new Error(`Column "${columnName}" doesn't exist`);
-    }
-
-    // Set the updated date
-    taskData = setTaskMetadata(taskData, "updated", new Date());
-
-    // Save task
-    await this.saveTask(getTaskPath(await this.getTaskFolderPath(), taskId), taskData);
-
-    // Move the task if we're updating the column
-    if (columnName) {
-      await this.moveTask(taskId, columnName);
-
-      // Otherwise save the index
-    } else {
-      await this.saveIndex(index);
-    }
-    return taskId;
+    const index = await this.loadIndex();
+    return indexUtils.updateTask(
+      index,
+      taskId,
+      taskData,
+      columnName,
+      this.initialised.bind(this),
+      this.getTaskFolderPath.bind(this),
+      this.loadTask.bind(this),
+      this.saveTask.bind(this),
+      this.renameTask.bind(this),
+      this.moveTask.bind(this),
+      this.saveIndex.bind(this)
+    );
   }
 
   /**
@@ -1454,48 +882,17 @@ class Kanbn {
    * @return {Promise<string>} The new id of the task that was renamed
    */
   async renameTask(taskId, newTaskName) {
-    // Check if this folder has been initialised
-    if (!(await this.initialised())) {
-      throw new Error("Not initialised in this folder");
-    }
-    taskId = removeFileExtension(taskId);
-
-    // Make sure the task file exists
-    if (!(await exists(getTaskPath(await this.getTaskFolderPath(), taskId)))) {
-      throw new Error(`No task file found with id "${taskId}"`);
-    }
-
-    // Get index and make sure the task is indexed
-    let index = await this.loadIndex();
-    if (!taskInIndex(index, taskId)) {
-      throw new Error(`Task "${taskId}" is not in the index`);
-    }
-
-    // Make sure there isn't already a task with the new task id
-    const newTaskId = utility.getTaskId(newTaskName);
-    const newTaskPath = getTaskPath(await this.getTaskFolderPath(), newTaskId);
-    if (await exists(newTaskPath)) {
-      throw new Error(`A task with id "${newTaskId}" already exists`);
-    }
-
-    // Check that a task with the new id isn't already indexed
-    if (taskInIndex(index, newTaskId)) {
-      throw new Error(`A task with id "${newTaskId}" is already in the index`);
-    }
-
-    // Update the task name and updated date
-    let taskData = await this.loadTask(taskId);
-    taskData.name = newTaskName;
-    taskData = setTaskMetadata(taskData, "updated", new Date());
-    await this.saveTask(getTaskPath(await this.getTaskFolderPath(), taskId), taskData);
-
-    // Rename the task file
-    await fs.promises.rename(getTaskPath(await this.getTaskFolderPath(), taskId), newTaskPath);
-
-    // Update the task id in the index
-    index = renameTaskInIndex(index, taskId, newTaskId);
-    await this.saveIndex(index);
-    return newTaskId;
+    const index = await this.loadIndex();
+    return indexUtils.renameTask(
+      index,
+      taskId,
+      newTaskName,
+      this.initialised.bind(this),
+      this.getTaskFolderPath.bind(this),
+      this.loadTask.bind(this),
+      this.saveTask.bind(this),
+      this.saveIndex.bind(this)
+    );
   }
 
   /**
@@ -1507,53 +904,19 @@ class Kanbn {
    * @return {Promise<string>} The id of the task that was moved
    */
   async moveTask(taskId, columnName, position = null, relative = false) {
-    // Check if this folder has been initialised
-    if (!(await this.initialised())) {
-      throw new Error("Not initialised in this folder");
-    }
-    taskId = removeFileExtension(taskId);
-
-    // Make sure the task file exists
-    if (!(await exists(getTaskPath(await this.getTaskFolderPath(), taskId)))) {
-      throw new Error(`No task file found with id "${taskId}"`);
-    }
-
-    // Get index and make sure the task is indexed
-    let index = await this.loadIndex();
-    if (!taskInIndex(index, taskId)) {
-      throw new Error(`Task "${taskId}" is not in the index`);
-    }
-
-    // Make sure the target column exists
-    if (!(columnName in index.columns)) {
-      throw new Error(`Column "${columnName}" doesn't exist`);
-    }
-
-    // Update the task's updated date
-    let taskData = await this.loadTask(taskId);
-    taskData = setTaskMetadata(taskData, "updated", new Date());
-
-    // Update task metadata dates
-    taskData = updateColumnLinkedCustomFields(index, taskData, columnName);
-    await this.saveTask(getTaskPath(await this.getTaskFolderPath(), taskId), taskData);
-
-    // If we're moving the task to a new position, calculate the absolute position
-    const currentColumnName = findTaskColumn(index, taskId);
-    const currentPosition = index.columns[currentColumnName].indexOf(taskId);
-
-    // If we're moving to the same column, calculate the position
-    if (columnName === currentColumnName && position) {
-      if (relative) {
-        position = currentPosition + position;
-      }
-      position = Math.max(Math.min(position, index.columns[currentColumnName].length), 0);
-    }
-
-    // Remove the task from its current column and add it to the new column
-    index = removeTaskFromIndex(index, taskId);
-    index = addTaskToIndex(index, taskId, columnName, position);
-    await this.saveIndex(index);
-    return taskId;
+    const index = await this.loadIndex();
+    return indexUtils.moveTask(
+      index,
+      taskId,
+      columnName,
+      position,
+      relative,
+      this.initialised.bind(this),
+      this.getTaskFolderPath.bind(this),
+      this.loadTask.bind(this),
+      this.saveTask.bind(this),
+      this.saveIndex.bind(this)
+    );
   }
 
   /**
@@ -1563,27 +926,15 @@ class Kanbn {
    * @return {Promise<string>} The id of the task that was deleted
    */
   async deleteTask(taskId, removeFile = false) {
-    // Check if this folder has been initialised
-    if (!(await this.initialised())) {
-      throw new Error("Not initialised in this folder");
-    }
-    taskId = removeFileExtension(taskId);
-
-    // Get index and make sure the task is indexed
-    let index = await this.loadIndex();
-    if (!taskInIndex(index, taskId)) {
-      throw new Error(`Task "${taskId}" is not in the index`);
-    }
-
-    // Remove the task from whichever column it's in
-    index = removeTaskFromIndex(index, taskId);
-
-    // Optionally remove the task file as well
-    if (removeFile && (await exists(getTaskPath(await this.getTaskFolderPath(), taskId)))) {
-      await fs.promises.unlink(getTaskPath(await this.getTaskFolderPath(), taskId));
-    }
-    await this.saveIndex(index);
-    return taskId;
+    const index = await this.loadIndex();
+    return indexUtils.deleteTask(
+      index,
+      taskId,
+      removeFile,
+      this.initialised.bind(this),
+      this.getTaskFolderPath.bind(this),
+      this.saveIndex.bind(this)
+    );
   }
 
   /**
@@ -1593,19 +944,15 @@ class Kanbn {
    * @return {Promise<object[]>} A list of tasks that match the filters
    */
   async search(filters = {}, quiet = false) {
-    // Check if this folder has been initialised
-    if (!(await this.initialised())) {
-      throw new Error("Not initialised in this folder");
-    }
-
-    // Load all tracked tasks and filter the results
     const index = await this.loadIndex();
-    let tasks = filterTasks(index, await this.loadAllTrackedTasks(index), filters);
-
-    // Return resulting task ids or the full tasks
-    return tasks.map((task) => {
-      return quiet ? utility.getTaskId(task.name) : this.hydrateTask(index, task);
-    });
+    return indexUtils.search(
+      index,
+      filters,
+      quiet,
+      this.initialised.bind(this),
+      this.loadAllTrackedTasks.bind(this),
+      this.hydrateTask.bind(this)
+    );
   }
 
   /**
@@ -1665,222 +1012,44 @@ class Kanbn {
 
       // If showing due information, calculate time remaining or overdue time for each task
       if (due) {
-        result.dueTasks = [];
-        tasks.forEach((task) => {
-          if ("dueData" in task) {
-            result.dueTasks.push({
-              task: task.id,
-              workload: task.workload,
-              progress: task.progress,
-              remainingWorkload: task.remainingWorkload,
-              ...task.dueData,
-            });
-          }
-        });
+        result.dueTasks = statusUtils.calculateDueTasks(tasks);
       }
 
       // Calculate total and per-column workload
-      let totalWorkload = 0,
-        totalRemainingWorkload = 0;
-      const columnWorkloads = tasks.reduce(
-        (a, task) => {
-          totalWorkload += task.workload;
-          totalRemainingWorkload += task.remainingWorkload;
-          a[task.column].workload += task.workload;
-          a[task.column].remainingWorkload += task.remainingWorkload;
-          return a;
-        },
-        Object.fromEntries(
-          columnNames.map((columnName) => [
-            columnName,
-            {
-              workload: 0,
-              remainingWorkload: 0,
-            },
-          ])
-        )
-      );
-      result.totalWorkload = totalWorkload;
-      result.totalRemainingWorkload = totalRemainingWorkload;
-      result.columnWorkloads = columnWorkloads;
-      result.taskWorkloads = Object.fromEntries(
-        tasks.map((task) => [
-          task.id,
-          {
-            workload: task.workload,
-            progress: task.progress,
-            remainingWorkload: task.remainingWorkload,
-            completed: taskCompleted(index, task),
-          },
-        ])
-      );
+      const workloadStats = statusUtils.calculateColumnWorkloads(tasks, columnNames);
+      result.totalWorkload = workloadStats.totalWorkload;
+      result.totalRemainingWorkload = workloadStats.totalRemainingWorkload;
+      result.columnWorkloads = workloadStats.columnWorkloads;
+      result.taskWorkloads = statusUtils.calculateTaskWorkloads(index, tasks);
 
       // Calculate assigned task totals and workloads
-      const assignedTasks = tasks.reduce((a, task) => {
-        if ("assigned" in task.metadata) {
-          if (!(task.metadata.assigned in a)) {
-            a[task.metadata.assigned] = {
-              total: 0,
-              workload: 0,
-              remainingWorkload: 0,
-            };
-          }
-          a[task.metadata.assigned].total++;
-          a[task.metadata.assigned].workload += task.workload;
-          a[task.metadata.assigned].remainingWorkload += task.remainingWorkload;
-        }
-        return a;
-      }, {});
+      const assignedTasks = statusUtils.calculateAssignedTaskStats(tasks);
       if (Object.keys(assignedTasks).length > 0) {
         result.assigned = assignedTasks;
       }
 
       // Calculate AI interaction metrics
-      const aiInteractions = tasks.filter(task =>
-        task.metadata.tags &&
-        task.metadata.tags.includes('ai-interaction')
-      );
-
-      if (aiInteractions.length > 0) {
-        result.aiMetrics = {
-          total: aiInteractions.length,
-          byType: {}
-        };
-
-        for (let interaction of aiInteractions) {
-          if (interaction.metadata.tags) {
-            for (let tag of interaction.metadata.tags) {
-              if (tag !== 'ai-interaction') {
-                if (!(tag in result.aiMetrics.byType)) {
-                  result.aiMetrics.byType[tag] = 0;
-                }
-                result.aiMetrics.byType[tag]++;
-              }
-            }
-          }
-        }
+      const aiMetrics = statusUtils.calculateAIMetrics(tasks);
+      if (aiMetrics) {
+        result.aiMetrics = aiMetrics;
       }
 
       // Calculate parent-child relationship metrics
-      const parentTasks = tasks.filter(task =>
-        task.relations &&
-        task.relations.some(relation => relation.type === 'parent-of')
-      );
-
-      const childTasks = tasks.filter(task =>
-        task.relations &&
-        task.relations.some(relation => relation.type === 'child-of')
-      );
-
-      if (parentTasks.length > 0 || childTasks.length > 0) {
-        result.relationMetrics = {
-          parentTasks: parentTasks.length,
-          childTasks: childTasks.length
-        };
+      const relationMetrics = statusUtils.calculateRelationMetrics(tasks);
+      if (relationMetrics) {
+        result.relationMetrics = relationMetrics;
       }
 
-      // If any sprints are defined in index options, calculate sprint statistics
-      if ("sprints" in index.options && index.options.sprints.length) {
-        const sprints = index.options.sprints;
-
-        // Default to current sprint
-        const currentSprint = index.options.sprints.length;
-        let sprintIndex = currentSprint - 1;
-
-        // Check if we're requesting stats for a specific sprint
-        if (sprint !== null) {
-          // Select sprint by number (1-based index)
-          if (typeof sprint === "number") {
-            if (sprint < 1 || sprint > sprints.length) {
-              throw new Error(`Sprint ${sprint} does not exist`);
-            } else {
-              sprintIndex = sprint - 1;
-            }
-
-            // Or select sprint by name
-          } else if (typeof sprint === "string") {
-            sprintIndex = sprints.findIndex((s) => s.name === sprint);
-            if (sprintIndex === -1) {
-              throw new Error(`No sprint found with name "${sprint}"`);
-            }
-          }
-        }
-
-        // Add sprint information
-        result.sprint = {
-          number: sprintIndex + 1,
-          name: sprints[sprintIndex].name,
-          start: sprints[sprintIndex].start,
-        };
-        if (currentSprint - 1 !== sprintIndex) {
-          if (sprintIndex === sprints.length - 1) {
-            result.sprint.end = sprints[sprintIndex + 1].start;
-          }
-          result.sprint.current = currentSprint;
-        }
-        if (sprints[sprintIndex].description) {
-          result.sprint.description = sprints[sprintIndex].description;
-        }
-        const sprintStartDate = sprints[sprintIndex].start;
-        const sprintEndDate = sprintIndex === sprints.length - 1 ? new Date() : sprints[sprintIndex + 1].start;
-
-        // Calculate sprint duration
-        const duration = sprintEndDate - sprintStartDate;
-        result.sprint.durationDelta = duration;
-        result.sprint.durationMessage = humanizeDuration(duration, {
-          largest: 3,
-          round: true,
-        });
-
-        // Add task workload information for the sprint
-        result.sprint.created = taskWorkloadInPeriod(tasks, "created", sprintStartDate, sprintEndDate);
-        result.sprint.started = taskWorkloadInPeriod(tasks, "started", sprintStartDate, sprintEndDate);
-        result.sprint.completed = taskWorkloadInPeriod(tasks, "completed", sprintStartDate, sprintEndDate);
-        result.sprint.due = taskWorkloadInPeriod(tasks, "due", sprintStartDate, sprintEndDate);
-
-        // Add custom date property workload information for the sprint
-        if ("customFields" in index.options) {
-          for (let customField of index.options.customFields) {
-            if (customField.type === "date") {
-              result.sprint[customField.name] = taskWorkloadInPeriod(
-                tasks,
-                customField.name,
-                sprintStartDate,
-                sprintEndDate
-              );
-            }
-          }
-        }
+      // Calculate sprint statistics
+      const sprintStats = statusUtils.calculateSprintStats(index, tasks, sprint);
+      if (sprintStats) {
+        result.sprint = sprintStats;
       }
 
-      // If any dates were specified, calculate task statistics for these dates
-      if (dates !== null && dates.length > 0) {
-        let periodStart, periodEnd;
-        result.period = {};
-        if (dates.length === 1) {
-          periodStart = new Date(+dates[0]);
-          periodStart.setHours(0, 0, 0, 0);
-          periodEnd = new Date(+dates[0]);
-          periodEnd.setHours(23, 59, 59, 999);
-          result.period.start = periodStart;
-          result.period.end = periodEnd;
-        } else {
-          result.period.start = periodStart = new Date(Math.min(...dates));
-          result.period.end = periodEnd = new Date(Math.max(...dates));
-        }
-        result.period.created = taskWorkloadInPeriod(tasks, "created", periodStart, periodEnd);
-        result.period.started = taskWorkloadInPeriod(tasks, "started", periodStart, periodEnd);
-        result.period.completed = taskWorkloadInPeriod(tasks, "completed", periodStart, periodEnd);
-        result.period.due = taskWorkloadInPeriod(tasks, "due", periodStart, periodEnd);
-
-        // Add custom date property workload information for the selected date range
-        if ("customFields" in index.options) {
-          for (let customField of index.options.customFields) {
-            if (customField.type === "date") {
-              result.sprint[customField.name] = taskWorkloadInPeriod(tasks, customField.name, periodStart, periodEnd);
-            }
-          }
-        }
+      // Calculate period statistics for specified dates
+      const periodStats = statusUtils.calculatePeriodStats(index, tasks, dates);
+      if (periodStats) {
+        result.period = periodStats;
       }
     }
     return result;
@@ -1889,7 +1058,7 @@ class Kanbn {
   /**
    * Validate the index and task files
    * @param {boolean} [save=false] Re-save all files
-   * @return {Promise<boolean>} True if everything validated, otherwise an array of parsing errors
+   * @return {Promise<Array>} Empty array if everything validated, otherwise an array of parsing errors
    */
   async validate(save = false) {
     // Check if this folder has been initialised
@@ -1908,14 +1077,15 @@ class Kanbn {
         await this.saveIndex(index);
       }
     } catch (error) {
+      // Add the index error to the errors array
       errors.push({
         task: null,
-        errors: error.message,
+        errors: error.message.includes('Unable to parse index') 
+          ? error.message 
+          : `Unable to parse index: ${error.message}`
       });
-    }
-
-    // Exit early if any errors were found in the index
-    if (errors.length) {
+      
+      // Exit early if any errors were found in the index
       return errors;
     }
 
@@ -1937,11 +1107,8 @@ class Kanbn {
       }
     }
 
-    // Return a list of errors or true if there were no errors
-    if (errors.length) {
-      return errors;
-    }
-    return true;
+    // Return a list of errors or empty array if there were no errors
+    return errors;
   }
 
   /**
@@ -2106,7 +1273,7 @@ class Kanbn {
         if (indexSprints === null) {
           throw new Error(`No sprints defined`);
         } else {
-          for (sprint of sprints) {
+          for (const sprint of sprints) {
             let sprintIndex = null;
 
             // Select sprint by number (1-based index)
@@ -2244,7 +1411,7 @@ class Kanbn {
     taskId = removeFileExtension(taskId);
 
     // Make sure the task file exists
-    if (!(await exists(getTaskPath(await this.getTaskFolderPath(), taskId)))) {
+    if (!(await fileUtils.exists(getTaskPath(await this.getTaskFolderPath(), taskId)))) {
       throw new Error(`No task file found with id "${taskId}"`);
     }
 
@@ -2285,7 +1452,7 @@ class Kanbn {
 
     // Make sure the archive folder exists
     const archiveFolder = await this.getArchiveFolderPath();
-    if (!(await exists(archiveFolder))) {
+    if (!(await fileUtils.exists(archiveFolder))) {
       throw new Error("Archive folder doesn't exist");
     }
 
@@ -2307,7 +1474,7 @@ class Kanbn {
     taskId = removeFileExtension(taskId);
 
     // Make sure the task file exists
-    if (!(await exists(getTaskPath(await this.getTaskFolderPath(), taskId)))) {
+    if (!(await fileUtils.exists(getTaskPath(await this.getTaskFolderPath(), taskId)))) {
       throw new Error(`No task file found with id "${taskId}"`);
     }
 
@@ -2320,12 +1487,12 @@ class Kanbn {
     // Make sure there isn't already an archived task with the same id
     const archiveFolder = await this.getArchiveFolderPath();
     const archivedTaskPath = getTaskPath(archiveFolder, taskId);
-    if (await exists(archivedTaskPath)) {
+    if (await fileUtils.exists(archivedTaskPath)) {
       throw new Error(`An archived task with id "${taskId}" already exists`);
     }
 
     // Create archive folder if it doesn't already exist
-    if (!(await exists(archiveFolder))) {
+    if (!(await fileUtils.exists(archiveFolder))) {
       await fs.promises.mkdir(archiveFolder, { recursive: true });
     }
 
@@ -2360,12 +1527,12 @@ class Kanbn {
     const taskPath = getTaskPath(await this.getTaskFolderPath(), taskId);
 
     // Make sure the archive folder exists
-    if (!(await exists(archiveFolder))) {
+    if (!(await fileUtils.exists(archiveFolder))) {
       throw new Error("Archive folder doesn't exist");
     }
 
     // Make sure the task file exists in the archive
-    if (!(await exists(archivedTaskPath))) {
+    if (!(await fileUtils.exists(archivedTaskPath))) {
       throw new Error(`No archived task found with id "${taskId}"`);
     }
 
@@ -2376,7 +1543,7 @@ class Kanbn {
     }
 
     // Check if there is already a task with the same id
-    if (await exists(taskPath)) {
+    if (await fileUtils.exists(taskPath)) {
       throw new Error(`There is already an untracked task with id "${taskId}"`);
     }
 
@@ -2417,5 +1584,26 @@ class Kanbn {
   }
 };
 
+/**
+ * Factory function that creates and returns a new Kanbn instance
+ * @returns {Kanbn} A new Kanbn instance
+ */
+function createKanbn() {
+  return new Kanbn();
+}
+
+module.exports = createKanbn;
+
+// Add utility functions and the Kanbn class as properties
 module.exports.Kanbn = Kanbn;
 module.exports.findTaskColumn = findTaskColumn;
+module.exports.getTaskPath = getTaskPath;
+module.exports.addFileExtension = addFileExtension;
+module.exports.removeFileExtension = removeFileExtension;
+module.exports.taskInIndex = taskInIndex;
+module.exports.addTaskToIndex = addTaskToIndex;
+module.exports.removeTaskFromIndex = removeTaskFromIndex;
+module.exports.renameTaskInIndex = renameTaskInIndex;
+module.exports.getTaskMetadata = getTaskMetadata;
+module.exports.setTaskMetadata = setTaskMetadata;
+module.exports.taskCompleted = taskCompleted;

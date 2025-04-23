@@ -1,8 +1,9 @@
-const { Kanbn } = require('../main');
+const kanbnModule = require('../main');
 const utility = require('../utility');
 const yaml = require('yamljs');
 
 module.exports = async args => {
+  const kanbn = kanbnModule();
 
   // Make sure kanbn has been initialised
   if (!await kanbn.initialised()) {
@@ -13,7 +14,7 @@ module.exports = async args => {
   // Validate kanbn files
   kanbn.validate(args.save)
   .then(result => {
-    if (result === true) {
+    if (result.length === 0) {
       console.log('Everything OK');
     } else {
       utility.error(
