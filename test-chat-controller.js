@@ -43,7 +43,11 @@ async function testChatController() {
     // Initialize a Kanbn board
     console.log('Initializing Kanbn board...');
     const kanbn = kanbnModule();
-    await kanbn.initialise('Test Project', 'A test project for the chat controller');
+    await kanbn.initialise({
+      name: 'Test Project',
+      description: 'A test project for the chat controller',
+      columns: ['Backlog', 'Todo', 'In Progress', 'Done']
+    });
 
     // Add a test task
     console.log('Adding a test task...');
