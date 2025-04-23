@@ -8,12 +8,12 @@ const openRouterConfig = require('../config/openrouter');
 
 // Use a simple color function since chalk v5+ is ESM-only
 const chalk = {
-  yellow: (text) => `[33m${text}[0m`,
-  blue: (text) => `[34m${text}[0m`,
-  green: (text) => `[32m${text}[0m`,
-  gray: (text) => `[90m${text}[0m`
+  yellow: (text) => `\u001b[33m${text}\u001b[0m`,
+  blue: (text) => `\u001b[34m${text}\u001b[0m`,
+  green: (text) => `\u001b[32m${text}\u001b[0m`,
+  gray: (text) => `\u001b[90m${text}\u001b[0m`
 };
-chalk.blue.bold = (text) => `[1;34m${text}[0m`;
+chalk.blue.bold = (text) => `\u001b[1;34m${text}\u001b[0m`;
 const getGitUsername = require('git-user-name');
 
 /**
@@ -311,7 +311,7 @@ async function interactiveChat(projectContext, chatHandler, args) {
 
   // Show model information if available
   const model = openRouterConfig.getModel(args['model']);
-  console.log(chalk.gray(`Using model: ${model}`));
+  console.log(`\u001b[90mUsing model: ${model}\u001b[0m`);
 
   console.log(chalk.gray('Type "exit" or "quit" to end the conversation\n'));
 
@@ -395,44 +395,44 @@ const chatController = async args => {
 
         // Show model information if available
         const model = openRouterConfig.getModel(args['model']);
-        console.log(chalk.gray(`Using model: ${model}`));
+        console.log(`\u001b[90mUsing model: ${model}\u001b[0m`);
 
         let response;
         if (process.env.KANBN_ENV === 'test' || process.env.CI === 'true') {
           response = await chatHandler.handleMessage(message);
         } else {
           // Try direct command first
+          // Get API key and model from args
+          // Use the API key directly from args if available, otherwise use the environment variable
+          const apiKey = args['api-key'] || process.env.OPENROUTER_API_KEY;
+          const model = args['model'] || process.env.OPENROUTER_MODEL || 'google/gemma-3-4b-it:free';
+
+          // Debug logging
+          console.log('DEBUG: API key from args:', args['api-key'] ? `${args['api-key'].substring(0, 5)}... (${args['api-key'].length} chars)` : 'not set');
+          console.log('DEBUG: API key being used:', apiKey ? `${apiKey.substring(0, 5)}... (${apiKey.length} chars)` : 'not set');
+          console.log('DEBUG: Model from args:', args['model'] || 'not set');
+          console.log('DEBUG: Model being used:', model);
+
+          // Verify that we have an API key
+          if (!apiKey) {
+            console.error('ERROR: No API key available. Please set OPENROUTER_API_KEY environment variable or use --api-key option.');
+            return 'Error: OpenRouter API key not found. Please set OPENROUTER_API_KEY environment variable or use --api-key option.';
+          }
+
+          // Set the API key in the environment for the OpenRouterClient to use
+          process.env.OPENROUTER_API_KEY = apiKey;
+          console.log('DEBUG: Set process.env.OPENROUTER_API_KEY to:', process.env.OPENROUTER_API_KEY.substring(0, 5) + '... (' + process.env.OPENROUTER_API_KEY.length + ' chars)');
+
+          // Set the model in the environment for the OpenRouterClient to use
+          process.env.OPENROUTER_MODEL = model;
+          console.log('DEBUG: Set process.env.OPENROUTER_MODEL to:', process.env.OPENROUTER_MODEL);
+
           try {
             console.log('Attempting to handle message with chat handler...');
             response = await chatHandler.handleMessage(message);
           } catch (error) {
             // Fall back to AI chat if command fails
             console.log('Chat handler failed, falling back to OpenRouter API:', error.message);
-
-            // Get API key and model from args
-            // Use the API key directly from args if available, otherwise use the environment variable
-            const apiKey = args['api-key'] || process.env.OPENROUTER_API_KEY;
-            const model = args['model'] || process.env.OPENROUTER_MODEL || 'google/gemma-3-4b-it:free';
-
-            // Debug logging
-            console.log('DEBUG: API key from args:', args['api-key'] ? `${args['api-key'].substring(0, 5)}... (${args['api-key'].length} chars)` : 'not set');
-            console.log('DEBUG: API key being used:', apiKey ? `${apiKey.substring(0, 5)}... (${apiKey.length} chars)` : 'not set');
-            console.log('DEBUG: Model from args:', args['model'] || 'not set');
-            console.log('DEBUG: Model being used:', model);
-
-            // Verify that we have an API key
-            if (!apiKey) {
-              console.error('ERROR: No API key available. Please set OPENROUTER_API_KEY environment variable or use --api-key option.');
-              return 'Error: OpenRouter API key not found. Please set OPENROUTER_API_KEY environment variable or use --api-key option.';
-            }
-
-            // Set the API key in the environment for the OpenRouterClient to use
-            process.env.OPENROUTER_API_KEY = apiKey;
-            console.log('DEBUG: Set process.env.OPENROUTER_API_KEY to:', process.env.OPENROUTER_API_KEY.substring(0, 5) + '... (' + process.env.OPENROUTER_API_KEY.length + ' chars)');
-
-            // Set the model in the environment for the OpenRouterClient to use
-            process.env.OPENROUTER_MODEL = model;
-            console.log('DEBUG: Set process.env.OPENROUTER_MODEL to:', process.env.OPENROUTER_MODEL);
 
             try {
               console.log('Attempting to call OpenRouter API...');
