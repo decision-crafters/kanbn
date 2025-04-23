@@ -330,9 +330,11 @@ async function interactiveChat(projectContext, chatHandler) {
       } else {
         // Try direct command first
         try {
+          console.log('Attempting to handle message with chat handler...');
           response = await chatHandler.handleMessage(message);
         } catch (error) {
           // Fall back to AI chat if command fails
+          console.log('Chat handler failed, falling back to OpenRouter API:', error.message);
           response = await callOpenRouterAPI(message, projectContext);
         }
       }
@@ -380,9 +382,11 @@ const chatController = async args => {
         } else {
           // Try direct command first
           try {
+            console.log('Attempting to handle message with chat handler...');
             response = await chatHandler.handleMessage(message);
           } catch (error) {
             // Fall back to AI chat if command fails
+            console.log('Chat handler failed, falling back to OpenRouter API:', error.message);
             response = await callOpenRouterAPI(message, projectContext);
           }
         }

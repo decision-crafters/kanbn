@@ -210,8 +210,8 @@ class ChatHandler {
       return `Test mode response to: ${message}`;
     }
 
-    // In production, this would call the AI chat function
-    return 'I understand you want to chat, but I work best with specific commands.';
+    // In production, throw an error to trigger the fallback to OpenRouter API
+    throw new Error('No command matched, falling back to AI chat');
   }
 }
 
