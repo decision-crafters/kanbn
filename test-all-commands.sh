@@ -223,6 +223,22 @@ run_command "$KANBN_BIN edit references-task --remove-ref 'https://example.com/r
 run_command "$KANBN_BIN edit references-task --refs 'https://example.com/new-reference'" 0 "Replace all references in a task"
 
 # Test event communication
+# First, test events that don't require the OpenRouter API
+
+# Test that moving a task triggers events and updates the index
+run_command "$KANBN_BIN add --name 'Event Test Task' --description 'Testing event communication' --column 'Todo'" 0 "Add task for event testing"
+run_command "$KANBN_BIN move event-test-task --column 'In Progress'" 0 "Move task (triggers events)"
+run_command "$KANBN_BIN find --column 'In Progress' --name 'Event Test'" 0 "Verify task moved by event"
+
+# Test that editing a task triggers events and updates the task
+run_command "$KANBN_BIN edit event-test-task --tag 'event-test'" 0 "Edit task (triggers events)"
+run_command "$KANBN_BIN find --tag event-test" 0 "Verify tag added by event"
+
+# Test that commenting triggers events and updates the task
+run_command "$KANBN_BIN comment event-test-task --text 'Comment added via event test'" 0 "Add comment (triggers events)"
+run_command "$KANBN_BIN task event-test-task" 0 "Verify comment added by event"
+
+# Test AI-specific event communication if OpenRouter API key is available
 if [ -n "$OPENROUTER_API_KEY" ]; then
   # Test that chat creates an AI interaction task (which emits events)
   run_command "$KANBN_BIN chat --message 'Test event communication'" 0 "Chat with event emission"
