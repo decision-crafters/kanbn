@@ -104,6 +104,13 @@ if [ "$USE_BUILT_PACKAGE" = true ]; then
 
   TEST_DIR=$(mktemp -d)
   echo "Testing in directory: $TEST_DIR"
+
+  # Copy the .env file to the test directory if it exists
+  if [ -f "$REPO_DIR/.env" ]; then
+    echo "Copying .env file to test directory"
+    cp "$REPO_DIR/.env" "$TEST_DIR/"
+  fi
+
   cd "$TEST_DIR"
 
   export OPENROUTER_API_KEY="${OPENROUTER_API_KEY}"
@@ -124,6 +131,12 @@ else
   cp -r "$REPO_DIR/routes" "$TEST_DIR/"
   cp -r "$REPO_DIR/docs" "$TEST_DIR/"
   ln -s "$REPO_DIR/node_modules" "$TEST_DIR/node_modules"
+
+  # Copy the .env file to the test directory if it exists
+  if [ -f "$REPO_DIR/.env" ]; then
+    echo "Copying .env file to test directory"
+    cp "$REPO_DIR/.env" "$TEST_DIR/"
+  fi
 
   cd "$TEST_DIR"
 
