@@ -29,6 +29,7 @@ async function callOpenRouterAPI(description, task, includeReferences = false) {
       return mockSubtasks;
     }
 
+    // Get API key from environment or command line arguments
     const apiKey = process.env.OPENROUTER_API_KEY;
     if (!apiKey) {
       throw new Error('OpenRouter API key not found. Please set the OPENROUTER_API_KEY environment variable.');
@@ -38,6 +39,7 @@ async function callOpenRouterAPI(description, task, includeReferences = false) {
     const model = process.env.OPENROUTER_MODEL || 'google/gemma-3-4b-it:free';
     console.log(`Using model: ${model}`);
 
+    console.log('Making API call to OpenRouter...');
     const response = await axios.post(
       'https://openrouter.ai/api/v1/chat/completions',
       {
@@ -66,6 +68,7 @@ async function callOpenRouterAPI(description, task, includeReferences = false) {
       }
     );
 
+    console.log('OpenRouter API call completed successfully.');
     const content = response.data.choices[0].message.content;
     const parsedContent = JSON.parse(content);
 

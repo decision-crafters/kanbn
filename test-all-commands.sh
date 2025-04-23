@@ -357,8 +357,13 @@ if "$REPO_DIR/scripts/check-openrouter-key.sh" > /dev/null 2>&1; then
     exit 1
   fi
 
-  # Note: Skipping decompose test due to issues with task ID handling
-  echo "\n⏩ Skipping decompose test due to issues with task ID handling"
+  # Test decompose command
+  echo "\n🧩 Testing decompose command..."
+  run_command "$KANBN_BIN decompose --task task-3 --with-refs" 0 "Decompose task with references"
+
+  # Verify that subtasks were created
+  echo "\n🔍 Verifying subtasks were created..."
+  run_command "$KANBN_BIN find --description 'Subtask'" 0 "Find subtasks created by decompose"
 else
   echo "⚠️ OpenRouter API key is invalid or not found. Skipping AI tests."
   echo "Please set OPENROUTER_API_KEY in your .env file or as an environment variable."
