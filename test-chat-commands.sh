@@ -109,6 +109,14 @@ run_chat_test() {
       return 1
     fi
 
+    # Check if the output shows that the OpenRouter API was called
+    if echo "$output" | grep -q "Making API call to OpenRouter"; then
+      echo "✅ PASSED: OpenRouter API was called"
+    else
+      echo "❌ FAILED: OpenRouter API was not called"
+      return 1
+    fi
+
     return 0
   else
     echo "❌ FAILED: No response from Project Assistant"
