@@ -821,6 +821,152 @@ async function renameTask(
   return newTaskId;
 }
 
+/**
+ * Move a task from one column to another
+ * @param {object} index The index object
+ * @param {string} taskId The task ID to move
+ * @param {string} columnName The column to move the task to
+ * @param {number|null} position The position to move the task to (null for end of column)
+ * @param {boolean} relative Whether the position is relative to the current position
+ * @param {Function} initialised Function to check if kanbn is initialised
+ * @param {Function} getTaskFolderPath Function to get task folder path
+ * @param {Function} loadTask Function to load a task
+ * @param {Function} saveTask Function to save a task
+ * @param {Function} saveIndex Function to save the index
+ * @return {Promise<string>} The task ID
+ */
+async function moveTask(
+  index,
+  taskId,
+  columnName,
+  position = null,
+  relative = false,
+  initialised,
+  getTaskFolderPath,
+  loadTask,
+  saveTask,
+  saveIndex
+) {
+  const fileUtils = require('./file-utils');
+  const taskUtils = require('./task-utils');
+  
+  // Check if this folder has been initialised
+  if (!(await initialised())) {
+    throw new Error("Not initialised in this folder");
+  }
+  taskId = fileUtils.removeFileExtension(taskId);
+
+  if (!(await fileUtils.exists(fileUtils.getTaskPath(await getTaskFolderPath(), taskId)))) {
+    throw new Error(`No task file found with id "${taskId}"`);
+  }
+
+  if (!taskUtils.taskInIndex(index, taskId)) {
+    throw new Error(`Task "${taskId}" is not in the index`);
+  }
+
+  if (!(columnName in index.columns)) {
+    throw new Error(`Column "${columnName}" doesn't exist`);
+  }
+
+  // Update the task's updated date
+  let taskData = await loadTask(taskId);
+  taskData = taskUtils.setTaskMetadata(taskData, "updated", new Date());
+
+  // Update task metadata dates
+  taskData = updateColumnLinkedCustomFields(index, taskData, columnName);
+  await saveTask(fileUtils.getTaskPath(await getTaskFolderPath(), taskId), taskData);
+
+  const currentColumnName = taskUtils.findTaskColumn(index, taskId);
+  const currentPosition = index.columns[currentColumnName].indexOf(taskId);
+
+  if (position !== null) {
+    if (relative) {
+      const startPosition = (columnName === currentColumnName) ? currentPosition : 0;
+      position = startPosition + position;
+    }
+    position = Math.max(Math.min(position, index.columns[columnName].length), 0);
+  }
+
+  index = taskUtils.removeTaskFromIndex(index, taskId);
+  index = taskUtils.addTaskToIndex(index, taskId, columnName, position);
+  await saveIndex(index);
+  return taskId;
+}
+
+/**
+ * Delete a task from the index
+ * @param {object} index The index object
+ * @param {string} taskId The task ID to delete
+ * @param {boolean} removeFile Whether to remove the task file
+ * @param {Function} initialised Function to check if kanbn is initialised
+ * @param {Function} getTaskFolderPath Function to get task folder path
+ * @param {Function} saveIndex Function to save the index
+ * @return {Promise<string>} The task ID
+ */
+async function deleteTask(
+  index,
+  taskId,
+  removeFile = false,
+  initialised,
+  getTaskFolderPath,
+  saveIndex
+) {
+  const fs = require('fs');
+  const fileUtils = require('./file-utils');
+  const taskUtils = require('./task-utils');
+  
+  // Check if this folder has been initialised
+  if (!(await initialised())) {
+    throw new Error("Not initialised in this folder");
+  }
+  taskId = fileUtils.removeFileExtension(taskId);
+
+  if (!taskUtils.taskInIndex(index, taskId)) {
+    throw new Error(`Task "${taskId}" is not in the index`);
+  }
+
+  index = taskUtils.removeTaskFromIndex(index, taskId);
+
+  if (removeFile && (await fileUtils.exists(fileUtils.getTaskPath(await getTaskFolderPath(), taskId)))) {
+    await fs.promises.unlink(fileUtils.getTaskPath(await getTaskFolderPath(), taskId));
+  }
+  
+  await saveIndex(index);
+  return taskId;
+}
+
+/**
+ * Search for tasks matching the given filters
+ * @param {object} index The index object
+ * @param {object} filters Filters to apply
+ * @param {boolean} quiet Whether to return only task IDs
+ * @param {Function} initialised Function to check if kanbn is initialised
+ * @param {Function} loadAllTrackedTasks Function to load all tracked tasks
+ * @param {Function} hydrateTask Function to hydrate a task
+ * @return {Promise<Array>} Array of tasks or task IDs
+ */
+async function search(
+  index,
+  filters = {},
+  quiet = false,
+  initialised,
+  loadAllTrackedTasks,
+  hydrateTask
+) {
+  const utility = require('../utility');
+  
+  // Check if this folder has been initialised
+  if (!(await initialised())) {
+    throw new Error("Not initialised in this folder");
+  }
+
+  let tasks = filterTasks(index, await loadAllTrackedTasks(index), filters);
+
+  return tasks.map((task) => {
+    return quiet ? utility.getTaskId(task.name) : hydrateTask(index, task);
+  });
+}
+
 module.exports = {
   getTrackedTaskIds,
   sortColumnInIndex,
@@ -844,5 +990,8 @@ module.exports = {
   findTrackedTasks,
   findUntrackedTasks,
   updateTask,
-  renameTask
+  renameTask,
+  moveTask,
+  deleteTask,
+  search
 };
