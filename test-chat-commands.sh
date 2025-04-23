@@ -97,6 +97,18 @@ run_chat_test() {
     # Extract a snippet of the response for verification
     response_snippet=$(echo "$output" | grep -A 2 "Project Assistant:" | head -3)
     echo "  Response snippet: $response_snippet"
+
+    # Check if the response contains any error messages about API key or connection
+    if echo "$output" | grep -q "API key not found"; then
+      echo "❌ FAILED: API key not found in environment"
+      return 1
+    fi
+
+    if echo "$output" | grep -q "trouble with the project assistant"; then
+      echo "❌ FAILED: Error connecting to OpenRouter API"
+      return 1
+    fi
+
     return 0
   else
     echo "❌ FAILED: No response from Project Assistant"
@@ -137,13 +149,67 @@ if echo "$model_output" | grep -q "Project Assistant:"; then
     echo "❌ FAILED: Not using the specified model"
     exit 1
   fi
+
+  # Check if the response contains any error messages about API key or connection
+  if echo "$model_output" | grep -q "API key not found"; then
+    echo "❌ FAILED: API key not found in environment"
+    exit 1
+  fi
+
+  if echo "$model_output" | grep -q "trouble with the project assistant"; then
+    echo "❌ FAILED: Error connecting to OpenRouter API"
+    exit 1
+  fi
 else
   echo "❌ FAILED: No response from Project Assistant"
   exit 1
 fi
 
-# Test chat with API key specification
-run_chat_test "$KANBN_BIN chat --message 'This is a test with API key specification' --api-key $OPENROUTER_API_KEY" "Chat with API key specification"
+# Test chat with API key specification and debug output to verify API call
+echo "\n===================================================="
+echo "TEST: Chat with API key specification and debug output"
+echo "COMMAND: DEBUG=true $KANBN_BIN chat --message 'This is a test with API key specification' --api-key $OPENROUTER_API_KEY"
+echo "===================================================="
+
+# Run the command with DEBUG=true to see API call details
+DEBUG=true api_output=$($KANBN_BIN chat --message 'This is a test with API key specification' --api-key $OPENROUTER_API_KEY 2>&1)
+api_status=$?
+
+# Display the output
+echo "$api_output"
+
+# Check if the command succeeded
+if [ $api_status -ne 0 ]; then
+  echo "❌ FAILED: Command returned non-zero status: $api_status"
+  exit 1
+fi
+
+# Validate that we got a response from the Project Assistant
+if echo "$api_output" | grep -q "Project Assistant:"; then
+  echo "✅ PASSED: Received response from Project Assistant"
+
+  # Check if the debug output shows API call details
+  if echo "$api_output" | grep -q "Making API call to OpenRouter"; then
+    echo "✅ PASSED: Debug output shows API call to OpenRouter"
+  else
+    echo "❌ FAILED: Debug output does not show API call to OpenRouter"
+    exit 1
+  fi
+
+  # Check if the response contains any error messages
+  if echo "$api_output" | grep -q "API key not found"; then
+    echo "❌ FAILED: API key not found in environment"
+    exit 1
+  fi
+
+  if echo "$api_output" | grep -q "trouble with the project assistant"; then
+    echo "❌ FAILED: Error connecting to OpenRouter API"
+    exit 1
+  fi
+else
+  echo "❌ FAILED: No response from Project Assistant"
+  exit 1
+fi
 
 # Test chat with project context
 run_chat_test "$KANBN_BIN chat --message 'Tell me about this project'" "Chat with project context"
