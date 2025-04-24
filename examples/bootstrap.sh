@@ -54,9 +54,9 @@ get_input() {
   local input
 
   if [ -n "$default" ]; then
-    echo -e "${YELLOW}$prompt [${default}]:${NC} "
+    printf "${YELLOW}%s [%s]:${NC} " "$prompt" "$default"
   else
-    echo -e "${YELLOW}$prompt:${NC} "
+    printf "${YELLOW}%s:${NC} " "$prompt"
   fi
 
   read input
