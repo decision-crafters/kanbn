@@ -324,35 +324,17 @@ get_additional_context() {
   fi
 }
 
-# Function to run kanbn init with model parameter if specified
-run_init() {
+# Function to print the kanbn init command
+print_kanbn_init_command() {
   local name="$1"
   local message="$2"
   local model="$3"
 
-  # Create a temporary file to capture the output
-  local output_file=$(mktemp)
-
-  # Clean up the name and message to remove any prompt text
-  # This ensures we only pass the actual values to kanbn init
-  clean_name=$(echo "$name" | sed -E 's/^Project name \[[^]]+\]: //')
-  clean_message=$(echo "$message" | sed -E 's/^Enter project description \[[^]]+\]: //')
-
   if [ -n "$model" ]; then
-    print_command "kanbn init --ai --name \"$clean_name\" --message \"$clean_message\" --model \"$model\""
-    # Run the command and capture the output
-    kanbn init --ai --name "$clean_name" --message "$clean_message" --model "$model" > "$output_file" 2>&1
+    print_command "kanbn init --ai --name \"$name\" --message \"$message\" --model \"$model\""
   else
-    print_command "kanbn init --ai --name \"$clean_name\" --message \"$clean_message\""
-    # Run the command and capture the output
-    kanbn init --ai --name "$clean_name" --message "$clean_message" > "$output_file" 2>&1
+    print_command "kanbn init --ai --name \"$name\" --message \"$message\""
   fi
-
-  # Filter out the "Falling back to test mode response" message and display the output
-  cat "$output_file" | grep -v "Falling back to test mode response" | grep -v "OpenRouter API call completed successfully"
-
-  # Clean up the temporary file
-  rm -f "$output_file"
 }
 
 # Get custom model if user wants to specify one
@@ -425,7 +407,10 @@ case $selection in
     fi
 
     print_info "Running AI initialization..."
-    run_init "$project_name" "$prompt" "$CUSTOM_MODEL"
+    # Pass just the clean values, not the full prompt
+    clean_name="$project_name"
+    clean_prompt="$prompt"
+    kanbn init --ai --name "$clean_name" --message "$clean_prompt" ${CUSTOM_MODEL:+--model "$CUSTOM_MODEL"}
     ;;
   2)
     print_info "Initializing Mobile App Project: $project_name"
@@ -441,7 +426,10 @@ case $selection in
     fi
 
     print_info "Running AI initialization..."
-    run_init "$project_name" "$prompt" "$CUSTOM_MODEL"
+    # Print the command
+    print_kanbn_init_command "$project_name" "$prompt" "$CUSTOM_MODEL"
+    # Run the command
+    kanbn init --ai --name "$project_name" --message "$prompt" ${CUSTOM_MODEL:+--model "$CUSTOM_MODEL"}
     ;;
   3)
     print_info "Initializing Data Science Project: $project_name"
@@ -457,7 +445,10 @@ case $selection in
     fi
 
     print_info "Running AI initialization..."
-    run_init "$project_name" "$prompt" "$CUSTOM_MODEL"
+    # Print the command
+    print_kanbn_init_command "$project_name" "$prompt" "$CUSTOM_MODEL"
+    # Run the command
+    kanbn init --ai --name "$project_name" --message "$prompt" ${CUSTOM_MODEL:+--model "$CUSTOM_MODEL"}
     ;;
   4)
     print_info "Initializing DevOps Project: $project_name"
@@ -473,7 +464,10 @@ case $selection in
     fi
 
     print_info "Running AI initialization..."
-    run_init "$project_name" "$prompt" "$CUSTOM_MODEL"
+    # Print the command
+    print_kanbn_init_command "$project_name" "$prompt" "$CUSTOM_MODEL"
+    # Run the command
+    kanbn init --ai --name "$project_name" --message "$prompt" ${CUSTOM_MODEL:+--model "$CUSTOM_MODEL"}
     ;;
   5)
     print_info "Initializing API Development Project: $project_name"
@@ -489,7 +483,10 @@ case $selection in
     fi
 
     print_info "Running AI initialization..."
-    run_init "$project_name" "$prompt" "$CUSTOM_MODEL"
+    # Print the command
+    print_kanbn_init_command "$project_name" "$prompt" "$CUSTOM_MODEL"
+    # Run the command
+    kanbn init --ai --name "$project_name" --message "$prompt" ${CUSTOM_MODEL:+--model "$CUSTOM_MODEL"}
     ;;
   6)
     print_info "Initializing Game Development Project: $project_name"
@@ -505,7 +502,10 @@ case $selection in
     fi
 
     print_info "Running AI initialization..."
-    run_init "$project_name" "$prompt" "$CUSTOM_MODEL"
+    # Print the command
+    print_kanbn_init_command "$project_name" "$prompt" "$CUSTOM_MODEL"
+    # Run the command
+    kanbn init --ai --name "$project_name" --message "$prompt" ${CUSTOM_MODEL:+--model "$CUSTOM_MODEL"}
     ;;
   7)
     print_info "Initializing Custom Project: $project_name"
@@ -514,7 +514,10 @@ case $selection in
     echo ""
     project_description=$(get_input "Enter project description" "A custom project with specific requirements")
     print_info "Running AI initialization..."
-    run_init "$project_name" "$project_description" "$CUSTOM_MODEL"
+    # Print the command
+    print_kanbn_init_command "$project_name" "$project_description" "$CUSTOM_MODEL"
+    # Run the command
+    kanbn init --ai --name "$project_name" --message "$project_description" ${CUSTOM_MODEL:+--model "$CUSTOM_MODEL"}
     ;;
   8)
     print_info "Initializing Documentation Project with GitHub Pages: $project_name"
@@ -548,7 +551,10 @@ case $selection in
     fi
 
     print_info "Running AI initialization..."
-    run_init "$project_name" "$prompt" "$CUSTOM_MODEL"
+    # Print the command
+    print_kanbn_init_command "$project_name" "$prompt" "$CUSTOM_MODEL"
+    # Run the command
+    kanbn init --ai --name "$project_name" --message "$prompt" ${CUSTOM_MODEL:+--model "$CUSTOM_MODEL"}
     ;;
   *)
     print_error "Invalid selection. Exiting."
