@@ -341,8 +341,8 @@ get_additional_context() {
   fi
 }
 
-# Function to print the kanbn init command
-print_kanbn_init_command() {
+# Function to display the kanbn init command (for debugging)
+print_kanbn_debug_info() {
   local name="$1"
   local message="$2"
   local model="$3"
@@ -429,8 +429,8 @@ case $selection in
     fi
 
     print_info "Running AI initialization..."
-    # Print the command
-    print_kanbn_init_command "$project_name" "$message" "$CUSTOM_MODEL"
+    # Print debug info
+    print_kanbn_debug_info "$project_name" "$message" "$CUSTOM_MODEL"
     # Run the command
     kanbn init --ai --name "$project_name" --message "$message" ${CUSTOM_MODEL:+--model "$CUSTOM_MODEL"}
     ;;
@@ -448,8 +448,8 @@ case $selection in
     fi
 
     print_info "Running AI initialization..."
-    # Print the command
-    print_kanbn_init_command "$project_name" "$message" "$CUSTOM_MODEL"
+    # Print debug info
+    print_kanbn_debug_info "$project_name" "$message" "$CUSTOM_MODEL"
     # Run the command
     kanbn init --ai --name "$project_name" --message "$message" ${CUSTOM_MODEL:+--model "$CUSTOM_MODEL"}
     ;;
@@ -467,8 +467,8 @@ case $selection in
     fi
 
     print_info "Running AI initialization..."
-    # Print the command
-    print_kanbn_init_command "$project_name" "$message" "$CUSTOM_MODEL"
+    # Print debug info
+    print_kanbn_debug_info "$project_name" "$message" "$CUSTOM_MODEL"
     # Run the command
     kanbn init --ai --name "$project_name" --message "$message" ${CUSTOM_MODEL:+--model "$CUSTOM_MODEL"}
     ;;
@@ -486,8 +486,8 @@ case $selection in
     fi
 
     print_info "Running AI initialization..."
-    # Print the command
-    print_kanbn_init_command "$project_name" "$prompt" "$CUSTOM_MODEL"
+    # Print debug info
+    print_kanbn_debug_info "$project_name" "$prompt" "$CUSTOM_MODEL"
     # Run the command
     kanbn init --ai --name "$project_name" --message "$prompt" ${CUSTOM_MODEL:+--model "$CUSTOM_MODEL"}
     ;;
@@ -505,8 +505,8 @@ case $selection in
     fi
 
     print_info "Running AI initialization..."
-    # Print the command
-    print_kanbn_init_command "$project_name" "$prompt" "$CUSTOM_MODEL"
+    # Print debug info
+    print_kanbn_debug_info "$project_name" "$prompt" "$CUSTOM_MODEL"
     # Run the command
     kanbn init --ai --name "$project_name" --message "$prompt" ${CUSTOM_MODEL:+--model "$CUSTOM_MODEL"}
     ;;
@@ -524,8 +524,8 @@ case $selection in
     fi
 
     print_info "Running AI initialization..."
-    # Print the command
-    print_kanbn_init_command "$project_name" "$prompt" "$CUSTOM_MODEL"
+    # Print debug info
+    print_kanbn_debug_info "$project_name" "$prompt" "$CUSTOM_MODEL"
     # Run the command
     kanbn init --ai --name "$project_name" --message "$prompt" ${CUSTOM_MODEL:+--model "$CUSTOM_MODEL"}
     ;;
@@ -539,9 +539,20 @@ case $selection in
     # Use a simple prompt that lets the default prompts handle the task generation
     message="$project_description"
 
+    # Clean up the project name to remove any prompt text
+    clean_project_name="$project_name"
+
     print_info "Running AI initialization..."
     # Print the command with debug info
-    print_kanbn_init_command "$project_name" "$message" "$CUSTOM_MODEL"
+    print_info "Debug: Clean project name = \"$clean_project_name\""
+    print_info "Debug: Clean message = \"$message\""
+    if [ -n "$CUSTOM_MODEL" ]; then
+      print_info "Debug: Model = \"$CUSTOM_MODEL\""
+      print_command "kanbn init --ai --name \"$clean_project_name\" --message \"$message\" --model \"$CUSTOM_MODEL\""
+    else
+      print_info "Debug: Using default model from environment"
+      print_command "kanbn init --ai --name \"$clean_project_name\" --message \"$message\""
+    fi
 
     # Add more debug info
     print_info "Debug: Environment variables:"
@@ -550,7 +561,7 @@ case $selection in
 
     # Run the command with explicit parameters
     print_info "Debug: Running kanbn init with explicit parameters"
-    kanbn init --ai --name "$project_name" --message "$message" ${CUSTOM_MODEL:+--model "$CUSTOM_MODEL"}
+    kanbn init --ai --name "$clean_project_name" --message "$message" ${CUSTOM_MODEL:+--model "$CUSTOM_MODEL"}
     ;;
   8)
     print_info "Initializing Documentation Project with GitHub Pages: $project_name"
@@ -587,8 +598,8 @@ case $selection in
     fi
 
     print_info "Running AI initialization..."
-    # Print the command
-    print_kanbn_init_command "$project_name" "$prompt" "$CUSTOM_MODEL"
+    # Print debug info
+    print_kanbn_debug_info "$project_name" "$prompt" "$CUSTOM_MODEL"
     # Run the command
     kanbn init --ai --name "$project_name" --message "$prompt" ${CUSTOM_MODEL:+--model "$CUSTOM_MODEL"}
     ;;
