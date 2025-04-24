@@ -291,10 +291,11 @@ print_option "q" "Quit"
 echo ""
 
 # Get user selection
-selection=$(get_input "Enter your choice" "1")
+user_input=$(get_input "Enter your choice" "1")
+selection=$(echo "$user_input" | grep -o '[0-9q]$')
 
 # Debug: Show the selection value
-echo "DEBUG: Selection value is '$selection'"
+echo "DEBUG: Raw input is '$user_input', extracted selection is '$selection'"
 
 if [ "$selection" = "q" ]; then
   print_info "Exiting without creating a project."
