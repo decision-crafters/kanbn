@@ -188,13 +188,17 @@ if [ -z "$OPENROUTER_API_KEY" ]; then
     print_command "OPENROUTER_API_KEY=your-api-key"
     exit 0
   elif [ "$api_choice" = "2" ]; then
-    OPENROUTER_API_KEY=$(get_input "Enter your OpenRouter API key" "")
-    if [ -z "$OPENROUTER_API_KEY" ]; then
+    print_header "Enter OpenRouter API Key"
+    print_info "Please enter your OpenRouter API key below:"
+    echo -e "${YELLOW}API Key:${NC} "
+    read api_key_input
+
+    if [ -z "$api_key_input" ]; then
       print_warning "No API key entered. Continuing in test mode."
       export KANBN_ENV="test"
     else
-      export OPENROUTER_API_KEY
-      print_success "API key set for this session"
+      export OPENROUTER_API_KEY="$api_key_input"
+      print_success "API key set for this session: ${OPENROUTER_API_KEY:0:5}... (${#OPENROUTER_API_KEY} chars)"
 
       # Ask if the user wants to save the API key
       echo -e "${YELLOW}Would you like to save this API key to a .env file? (y/n) [y]:${NC} "
