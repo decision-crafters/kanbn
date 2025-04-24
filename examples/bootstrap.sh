@@ -62,10 +62,10 @@ get_input() {
   read input
 
   if [ -z "$input" ] && [ -n "$default" ]; then
-    echo "$default"
-  else
-    echo "$input"
+    input="$default"
   fi
+
+  echo "$input"
 }
 
 # Function to check if kanbn is installed
