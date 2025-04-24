@@ -191,6 +191,24 @@ run_command "$KANBN_BIN sort 'Todo' --name" 0 "Sort a column by name"
 
 run_command "$KANBN_BIN validate" 0 "Validate index and task files"
 
+# Test validation failure
+VALIDATION_TEST_DIR=$(mktemp -d)
+cd $VALIDATION_TEST_DIR
+run_command "$KANBN_BIN init --name 'Validation Test'" 0 "Initialize a board for validation failure test"
+
+# Create an invalid task file
+mkdir -p .kanbn/tasks
+echo "This is an invalid task file" > .kanbn/tasks/invalid-task.md
+
+# Add the invalid task to the index
+sed -i.bak 's/# Todo/# Todo\n\n- invalid-task/' .kanbn/index.md
+
+# Test that validate fails with invalid files
+run_command "$KANBN_BIN validate" 1 "Validate should fail with invalid task files"
+
+# Clean up
+cd $TEST_DIR
+
 # These tests are now handled in the AI-specific event communication section below
 # We'll skip them here to avoid duplication and potential issues
 echo "AI tests will be run in the event communication section if API key is valid"

@@ -138,11 +138,12 @@ echo -e "${YELLOW}Testing prompt generation with error handling...${NC}"
 mkdir -p .kanbn/tasks
 cat > .kanbn/tasks/invalid-task.md << 'EOF'
 ---
-created: 2025-04-23T20:50:00.000Z
-updated: 2025-04-23T20:50:30.000Z
+created: invalid-date-format
+updated: also-invalid
+progress: not-a-number
 ---
 
-# Invalid Task
+#
 
 This task is intentionally invalid for testing error handling.
 EOF

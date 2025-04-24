@@ -701,6 +701,20 @@ case $selection in
     ;;
 esac
 
+# Validate the Kanbn board
+print_header "Validating Project Board"
+print_info "Running validation to ensure all files are correctly formatted..."
+print_command "kanbn validate"
+
+if kanbn validate; then
+  print_success "Validation successful! All files are correctly formatted."
+else
+  print_error "Validation failed! There are issues with the Kanbn board."
+  print_info "Please check the errors above and fix them manually."
+  print_info "You can run 'kanbn validate' again to check if the issues are resolved."
+  print_warning "Continuing with the bootstrap process despite validation errors..."
+fi
+
 # Show the board
 print_header "Project Board"
 print_command "kanbn board"
