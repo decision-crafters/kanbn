@@ -123,6 +123,10 @@ fi
 # Welcome message
 print_header "Kanbn Project Bootstrap"
 print_info "This script will help you set up a new Kanbn project board with AI assistance."
+print_info "Requirements:"
+echo "- Kanbn installed (will be checked)"
+echo "- Git repository (optional, will be checked)"
+echo "- OpenRouter API key (required, will be prompted if not found)"
 echo ""
 
 # Check if kanbn is installed
@@ -145,120 +149,115 @@ if [ -d ".kanbn" ]; then
   print_info "Reinitializing Kanbn..."
 fi
 
-# Load environment variables from .env file if it exists
-if [ -f ".env" ]; then
-  print_info "Loading environment variables from .env file"
-  # Use a safer way to load environment variables
-  while IFS='=' read -r key value; do
-    # Skip comments and empty lines
-    if [[ ! $key =~ ^# && -n $key ]]; then
-      # Remove leading/trailing whitespace and quotes
-      value=$(echo $value | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' -e 's/^"\(.*\)"$/\1/' -e "s/^'\(.*\)'$/\1/")
-      # Export the variable
-      export $key="$value"
-
-      # For OPENROUTER_API_KEY, show a prefix for verification
-      if [ "$key" = "OPENROUTER_API_KEY" ]; then
-        KEY_PREFIX="${value:0:5}..."
-        echo -e "  ${GREEN}✅ Loaded: $key = $KEY_PREFIX (${#value} chars)${NC}"
-      else
-        echo -e "  ${GREEN}✅ Loaded: $key = $value${NC}"
-      fi
-    fi
-  done < ".env"
-fi
-
-# Check if OpenRouter API key is set
-if [ -z "$OPENROUTER_API_KEY" ]; then
-  print_header "OpenRouter API Key Not Set"
-  print_warning "OPENROUTER_API_KEY environment variable is not set."
-  print_info "For the full AI experience, you need an OpenRouter API key."
+# Check for .env file
+if [ ! -f ".env" ]; then
+  print_header "Environment Configuration Required"
+  print_warning ".env file not found"
+  print_info "The bootstrap script requires a .env file with your OpenRouter API key."
   print_info "You can get a free API key at: https://openrouter.ai/"
   echo ""
-  print_info "Would you like to:"
-  print_option "1" "Continue in test mode (limited AI capabilities)"
-  print_option "2" "Enter an API key now"
-  print_option "q" "Quit and set up the API key later"
-  echo ""
 
-  api_choice=$(get_input "Enter your choice" "1")
+  print_info "Would you like to create a .env file now? (y/n) [y]:"
+  read create_env
 
-  if [ "$api_choice" = "q" ]; then
-    print_info "Exiting. To set up your API key, create a .env file with:"
-    print_command "OPENROUTER_API_KEY=your-api-key"
-    exit 0
-  elif [ "$api_choice" = "2" ]; then
-    print_header "Enter OpenRouter API Key"
-    print_info "Please enter your OpenRouter API key below:"
+  if [ "$create_env" != "n" ] && [ "$create_env" != "N" ]; then
+    print_header "Creating .env File"
+    print_info "Please enter your OpenRouter API key:"
     echo -e "${YELLOW}API Key:${NC} "
     read api_key_input
 
     if [ -z "$api_key_input" ]; then
-      print_warning "No API key entered. Continuing in test mode."
-      export KANBN_ENV="test"
+      print_error "No API key provided. Cannot continue without an API key."
+      print_info "Please get an API key from https://openrouter.ai/ and run this script again."
+      exit 1
     else
-      export OPENROUTER_API_KEY="$api_key_input"
-      # Unset test mode if it was previously set
-      unset KANBN_ENV
-      print_success "API key set for this session: ${OPENROUTER_API_KEY:0:5}... (${#OPENROUTER_API_KEY} chars)"
-
-      # Ask if the user wants to save the API key
-      echo -e "${YELLOW}Would you like to save this API key to a .env file? (y/n) [y]:${NC} "
-      read save_key
-
-      if [ "$save_key" != "n" ] && [ "$save_key" != "N" ]; then
-        echo "OPENROUTER_API_KEY=$OPENROUTER_API_KEY" > .env
-        print_success "API key saved to .env file"
-      fi
-
-      # Add a confirmation message
-      print_info "Using OpenRouter API for AI features"
-
-      # Verify the API key works (optional)
-      echo -e "${YELLOW}Would you like to verify the API key works? (y/n) [n]:${NC} "
-      read verify_key
-
-      if [ "$verify_key" = "y" ] || [ "$verify_key" = "Y" ]; then
-        print_info "Verifying OpenRouter API key..."
-
-        # Create a temporary file to store the API response
-        API_RESPONSE_FILE=$(mktemp)
-
-        # Test the API key with a simple request and save the response
-        echo -e "🌐 Sending test request to OpenRouter API..."
-        curl -s -X POST \
-          -H "Authorization: Bearer $OPENROUTER_API_KEY" \
-          -H "Content-Type: application/json" \
-          -d '{"model":"google/gemma-3-4b-it:free","messages":[{"role":"user","content":"Hello"}]}' \
-          https://openrouter.ai/api/v1/chat/completions > "$API_RESPONSE_FILE"
-
-        # Check if the response contains expected fields
-        if grep -q "choices" "$API_RESPONSE_FILE"; then
-          print_success "OpenRouter API key is valid!"
-
-          # Extract and validate the model name
-          MODEL_NAME=$(grep -o '"model":"[^"]*"' "$API_RESPONSE_FILE" | head -1 | cut -d '"' -f 4)
-          echo -e "📊 Model used: ${CYAN}$MODEL_NAME${NC}"
-
-          # Clean up temporary file
-          rm -f "$API_RESPONSE_FILE"
-        else
-          print_warning "API key verification failed. Response:"
-          cat "$API_RESPONSE_FILE"
-          echo ""
-          print_info "Continuing anyway, but AI features may not work correctly."
-
-          # Clean up temporary file
-          rm -f "$API_RESPONSE_FILE"
-        fi
-      fi
+      # Create .env file
+      echo "# OpenRouter API key for Kanbn" > .env
+      echo "OPENROUTER_API_KEY=$api_key_input" >> .env
+      echo "OPENROUTER_MODEL=google/gemma-3-4b-it:free" >> .env
+      print_success ".env file created successfully"
     fi
   else
-    print_info "Continuing in test mode."
-    export KANBN_ENV="test"
+    print_error "Cannot continue without a .env file."
+    print_info "Please create a .env file with your OpenRouter API key and run this script again."
+    print_info "Example .env file:"
+    echo "# OpenRouter API key for Kanbn"
+    echo "OPENROUTER_API_KEY=your-api-key"
+    echo "OPENROUTER_MODEL=google/gemma-3-4b-it:free"
+    exit 1
   fi
+fi
+
+# Load environment variables from .env file
+print_info "Loading environment variables from .env file"
+# Use a safer way to load environment variables
+while IFS='=' read -r key value; do
+  # Skip comments and empty lines
+  if [[ ! $key =~ ^# && -n $key ]]; then
+    # Remove leading/trailing whitespace and quotes
+    value=$(echo $value | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' -e 's/^"\(.*\)"$/\1/' -e "s/^'\(.*\)'$/\1/")
+    # Export the variable
+    export $key="$value"
+
+    # For OPENROUTER_API_KEY, show a prefix for verification
+    if [ "$key" = "OPENROUTER_API_KEY" ]; then
+      KEY_PREFIX="${value:0:5}..."
+      echo -e "  ${GREEN}✅ Loaded: $key = $KEY_PREFIX (${#value} chars)${NC}"
+    else
+      echo -e "  ${GREEN}✅ Loaded: $key = $value${NC}"
+    fi
+  fi
+done < ".env"
+
+# Check if OpenRouter API key is set
+if [ -z "$OPENROUTER_API_KEY" ]; then
+  print_header "OpenRouter API Key Not Set"
+  print_error "OPENROUTER_API_KEY environment variable is not set."
+  print_info "This is unexpected since we already checked for the .env file."
+  print_info "Please check your .env file and make sure it contains a valid OpenRouter API key."
+  print_info "Example .env file:"
+  echo "# OpenRouter API key for Kanbn"
+  echo "OPENROUTER_API_KEY=your-api-key"
+  echo "OPENROUTER_MODEL=google/gemma-3-4b-it:free"
+  exit 1
 else
   print_success "OpenRouter API key is set"
+
+  # Verify the API key works
+  print_info "Verifying OpenRouter API key..."
+
+  # Create a temporary file to store the API response
+  API_RESPONSE_FILE=$(mktemp)
+
+  # Test the API key with a simple request and save the response
+  echo -e "🌐 Sending test request to OpenRouter API..."
+  curl -s -X POST \
+    -H "Authorization: Bearer $OPENROUTER_API_KEY" \
+    -H "Content-Type: application/json" \
+    -d '{"model":"google/gemma-3-4b-it:free","messages":[{"role":"user","content":"Hello"}]}' \
+    https://openrouter.ai/api/v1/chat/completions > "$API_RESPONSE_FILE"
+
+  # Check if the response contains expected fields
+  if grep -q "choices" "$API_RESPONSE_FILE"; then
+    print_success "OpenRouter API key is valid!"
+
+    # Extract and validate the model name
+    MODEL_NAME=$(grep -o '"model":"[^"]*"' "$API_RESPONSE_FILE" | head -1 | cut -d '"' -f 4)
+    echo -e "📊 Model used: ${CYAN}$MODEL_NAME${NC}"
+
+    # Clean up temporary file
+    rm -f "$API_RESPONSE_FILE"
+  else
+    print_warning "API key verification failed. Response:"
+    cat "$API_RESPONSE_FILE"
+    echo ""
+    print_error "Cannot continue with an invalid API key."
+    print_info "Please check your OpenRouter API key and try again."
+
+    # Clean up temporary file
+    rm -f "$API_RESPONSE_FILE"
+    exit 1
+  fi
 
   # Check if OPENROUTER_MODEL is set, otherwise use default
   if [ -z "$OPENROUTER_MODEL" ]; then

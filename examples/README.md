@@ -22,11 +22,17 @@ To run the interactive demo:
 The `bootstrap.sh` script helps you quickly set up a new Kanbn project board with AI assistance:
 
 - Checks for Kanbn installation and Git repository
-- Helps set up OpenRouter API key for AI features
+- **Requires an OpenRouter API key** (will help you set it up if not found)
 - Creates a project board with AI-generated tasks based on project type
 - Offers options for Web Application, Mobile App, Data Science, DevOps, API Development, Game Development, and Custom projects
 - Provides guidance on next steps and available features
 - Integrates with Git for version control
+
+### Requirements
+
+- Kanbn installed (`npm install -g kanbn`)
+- An OpenRouter API key (get one for free at [openrouter.ai](https://openrouter.ai/))
+- Git repository (optional)
 
 To bootstrap a new Kanbn project:
 
