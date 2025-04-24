@@ -297,6 +297,10 @@ DEFAULT_PROJECT_NAME=$(basename $(pwd))
 print_info "Please enter a name for your project:"
 project_name=$(get_input "Project name" "$DEFAULT_PROJECT_NAME")
 
+# Extract just the project name without the prompt text
+# This removes the "Project name [xxx]: " prefix if present
+clean_project_name=$(echo "$project_name" | sed -E 's/^Project name \[[^]]+\]: //')
+
 # Project types menu
 print_header "Select a Project Type"
 print_info "Please select the type of project you want to create:"
@@ -430,9 +434,9 @@ case $selection in
 
     print_info "Running AI initialization..."
     # Print debug info
-    print_kanbn_debug_info "$project_name" "$message" "$CUSTOM_MODEL"
+    print_kanbn_debug_info "$clean_project_name" "$message" "$CUSTOM_MODEL"
     # Run the command
-    kanbn init --ai --name "$project_name" --message "$message" ${CUSTOM_MODEL:+--model "$CUSTOM_MODEL"}
+    kanbn init --ai --name "$clean_project_name" --message "$message" ${CUSTOM_MODEL:+--model "$CUSTOM_MODEL"}
     ;;
   2)
     print_info "Initializing Mobile App Project: $project_name"
@@ -449,9 +453,9 @@ case $selection in
 
     print_info "Running AI initialization..."
     # Print debug info
-    print_kanbn_debug_info "$project_name" "$message" "$CUSTOM_MODEL"
+    print_kanbn_debug_info "$clean_project_name" "$message" "$CUSTOM_MODEL"
     # Run the command
-    kanbn init --ai --name "$project_name" --message "$message" ${CUSTOM_MODEL:+--model "$CUSTOM_MODEL"}
+    kanbn init --ai --name "$clean_project_name" --message "$message" ${CUSTOM_MODEL:+--model "$CUSTOM_MODEL"}
     ;;
   3)
     print_info "Initializing Data Science Project: $project_name"
@@ -468,9 +472,9 @@ case $selection in
 
     print_info "Running AI initialization..."
     # Print debug info
-    print_kanbn_debug_info "$project_name" "$message" "$CUSTOM_MODEL"
+    print_kanbn_debug_info "$clean_project_name" "$message" "$CUSTOM_MODEL"
     # Run the command
-    kanbn init --ai --name "$project_name" --message "$message" ${CUSTOM_MODEL:+--model "$CUSTOM_MODEL"}
+    kanbn init --ai --name "$clean_project_name" --message "$message" ${CUSTOM_MODEL:+--model "$CUSTOM_MODEL"}
     ;;
   4)
     print_info "Initializing DevOps Project: $project_name"
@@ -487,9 +491,9 @@ case $selection in
 
     print_info "Running AI initialization..."
     # Print debug info
-    print_kanbn_debug_info "$project_name" "$prompt" "$CUSTOM_MODEL"
+    print_kanbn_debug_info "$clean_project_name" "$prompt" "$CUSTOM_MODEL"
     # Run the command
-    kanbn init --ai --name "$project_name" --message "$prompt" ${CUSTOM_MODEL:+--model "$CUSTOM_MODEL"}
+    kanbn init --ai --name "$clean_project_name" --message "$prompt" ${CUSTOM_MODEL:+--model "$CUSTOM_MODEL"}
     ;;
   5)
     print_info "Initializing API Development Project: $project_name"
@@ -506,9 +510,9 @@ case $selection in
 
     print_info "Running AI initialization..."
     # Print debug info
-    print_kanbn_debug_info "$project_name" "$prompt" "$CUSTOM_MODEL"
+    print_kanbn_debug_info "$clean_project_name" "$prompt" "$CUSTOM_MODEL"
     # Run the command
-    kanbn init --ai --name "$project_name" --message "$prompt" ${CUSTOM_MODEL:+--model "$CUSTOM_MODEL"}
+    kanbn init --ai --name "$clean_project_name" --message "$prompt" ${CUSTOM_MODEL:+--model "$CUSTOM_MODEL"}
     ;;
   6)
     print_info "Initializing Game Development Project: $project_name"
@@ -525,9 +529,9 @@ case $selection in
 
     print_info "Running AI initialization..."
     # Print debug info
-    print_kanbn_debug_info "$project_name" "$prompt" "$CUSTOM_MODEL"
+    print_kanbn_debug_info "$clean_project_name" "$prompt" "$CUSTOM_MODEL"
     # Run the command
-    kanbn init --ai --name "$project_name" --message "$prompt" ${CUSTOM_MODEL:+--model "$CUSTOM_MODEL"}
+    kanbn init --ai --name "$clean_project_name" --message "$prompt" ${CUSTOM_MODEL:+--model "$CUSTOM_MODEL"}
     ;;
   7)
     print_info "Initializing Custom Project: $project_name"
@@ -601,9 +605,9 @@ case $selection in
 
     print_info "Running AI initialization..."
     # Print debug info
-    print_kanbn_debug_info "$project_name" "$prompt" "$CUSTOM_MODEL"
+    print_kanbn_debug_info "$clean_project_name" "$prompt" "$CUSTOM_MODEL"
     # Run the command
-    kanbn init --ai --name "$project_name" --message "$prompt" ${CUSTOM_MODEL:+--model "$CUSTOM_MODEL"}
+    kanbn init --ai --name "$clean_project_name" --message "$prompt" ${CUSTOM_MODEL:+--model "$CUSTOM_MODEL"}
     ;;
   *)
     print_error "Invalid selection. Exiting."
