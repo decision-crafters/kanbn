@@ -1,4 +1,6 @@
 #!/bin/bash
+export PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
+set -x
 set -e
 
 # Bootstrap script for Kanbn
@@ -157,7 +159,7 @@ check_git_repo
 # Check if kanbn is already initialized
 if [ -d ".kanbn" ]; then
   print_warning "Kanbn is already initialized in this directory"
-  echo -e "${YELLOW}Would you like to reinitialize it? (y/n) [n]:${NC} "
+  print_info "Would you like to reinitialize it? (y/n) [n]:"
   read reinit
 
   if [ "$reinit" != "y" ] && [ "$reinit" != "Y" ]; then
@@ -165,7 +167,18 @@ if [ -d ".kanbn" ]; then
     exit 0
   fi
 
-  print_info "Reinitializing Kanbn..."
+  print_header "Reinitializing Kanbn"
+  print_info "Cleaning up existing Kanbn board..."
+
+  # Backup the existing board
+  backup_dir=".kanbn_backup_$(date +%Y%m%d_%H%M%S)"
+  mkdir -p "$backup_dir"
+  cp -r .kanbn/* "$backup_dir"
+  print_info "Existing board backed up to $backup_dir"
+
+  # Remove the existing board
+  rm -rf .kanbn
+  print_success "Existing board removed, ready for reinitialization"
 fi
 
 # Check for .env file
