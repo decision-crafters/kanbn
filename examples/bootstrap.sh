@@ -1,6 +1,23 @@
 #!/bin/bash
 set -e
 
+# Bootstrap script for Kanbn
+# This script helps new users create their initial Kanbn board with AI assistance
+#
+# How AI Prompts Work:
+# 1. This script passes simple project descriptions to the Kanbn AI initialization system
+# 2. The AI system uses default prompts from src/data/default-init-prompts/ to:
+#    - Determine project type and suggest columns (project-type.md)
+#    - Generate initial tasks (initial-tasks.md)
+#    - Suggest Classes of Service (class-of-service.md)
+#    - Suggest timebox strategies (timebox-strategy.md)
+#
+# Advanced Users:
+# - To customize prompts, create a .kanbn/init-prompts/ directory in your project
+# - Copy and modify the default prompts from src/data/default-init-prompts/
+# - The system will use your custom prompts instead of the defaults
+# - This allows you to tailor the AI's behavior to your specific needs
+
 # Colors for better output
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -395,77 +412,60 @@ print_header "Initializing Project"
 case $selection in
   1)
     print_info "Initializing Web Application Project: $project_name"
-    base_prompt="Create a web application with user authentication, database integration, and responsive UI"
 
     # Get additional context if the user wants to provide it
     additional_context=$(get_additional_context "Web Application")
 
+    # Create a simple message that describes the project type and any additional context
     if [ -n "$additional_context" ]; then
-      context_info="Additional context: $additional_context"
+      message="Create a web application with user authentication, database integration, and responsive UI. Additional context: $additional_context"
     else
-      context_info=""
+      message="Create a web application with user authentication, database integration, and responsive UI."
     fi
-
-    # Enhance the prompt to ensure we get actual tasks, not just column names
-    enhanced_prompt="Create a project board for a web application with user authentication, database integration, and responsive UI. $context_info
-
-Please generate specific, actionable tasks (not just column names) that would be needed to complete this project.
-Include tasks for planning, development, testing, and deployment phases.
-Each task should be concrete and descriptive enough that someone could start working on it.
-
-For example, tasks might include:
-- Set up project repository and basic structure
-- Design database schema for users and application data
-- Implement user authentication system
-- Create responsive UI components
-- Implement API endpoints for data access
-- Set up testing framework
-- Configure deployment pipeline
-- Set up monitoring and analytics"
 
     print_info "Running AI initialization..."
     # Print the command
-    print_kanbn_init_command "$project_name" "$enhanced_prompt" "$CUSTOM_MODEL"
+    print_kanbn_init_command "$project_name" "$message" "$CUSTOM_MODEL"
     # Run the command
-    kanbn init --ai --name "$project_name" --message "$enhanced_prompt" ${CUSTOM_MODEL:+--model "$CUSTOM_MODEL"}
+    kanbn init --ai --name "$project_name" --message "$message" ${CUSTOM_MODEL:+--model "$CUSTOM_MODEL"}
     ;;
   2)
     print_info "Initializing Mobile App Project: $project_name"
-    base_prompt="Create a mobile app with user profiles, push notifications, and offline support"
 
     # Get additional context if the user wants to provide it
     additional_context=$(get_additional_context "Mobile App")
 
+    # Create a simple message that describes the project type and any additional context
     if [ -n "$additional_context" ]; then
-      prompt="$base_prompt. Additional context: $additional_context"
+      message="Create a mobile app with user profiles, push notifications, and offline support. Additional context: $additional_context"
     else
-      prompt="$base_prompt"
+      message="Create a mobile app with user profiles, push notifications, and offline support."
     fi
 
     print_info "Running AI initialization..."
     # Print the command
-    print_kanbn_init_command "$project_name" "$prompt" "$CUSTOM_MODEL"
+    print_kanbn_init_command "$project_name" "$message" "$CUSTOM_MODEL"
     # Run the command
-    kanbn init --ai --name "$project_name" --message "$prompt" ${CUSTOM_MODEL:+--model "$CUSTOM_MODEL"}
+    kanbn init --ai --name "$project_name" --message "$message" ${CUSTOM_MODEL:+--model "$CUSTOM_MODEL"}
     ;;
   3)
     print_info "Initializing Data Science Project: $project_name"
-    base_prompt="Create a data science project with data collection, preprocessing, model training, and evaluation phases"
 
     # Get additional context if the user wants to provide it
     additional_context=$(get_additional_context "Data Science")
 
+    # Create a simple message that describes the project type and any additional context
     if [ -n "$additional_context" ]; then
-      prompt="$base_prompt. Additional context: $additional_context"
+      message="Create a data science project with data collection, preprocessing, model training, and evaluation phases. Additional context: $additional_context"
     else
-      prompt="$base_prompt"
+      message="Create a data science project with data collection, preprocessing, model training, and evaluation phases."
     fi
 
     print_info "Running AI initialization..."
     # Print the command
-    print_kanbn_init_command "$project_name" "$prompt" "$CUSTOM_MODEL"
+    print_kanbn_init_command "$project_name" "$message" "$CUSTOM_MODEL"
     # Run the command
-    kanbn init --ai --name "$project_name" --message "$prompt" ${CUSTOM_MODEL:+--model "$CUSTOM_MODEL"}
+    kanbn init --ai --name "$project_name" --message "$message" ${CUSTOM_MODEL:+--model "$CUSTOM_MODEL"}
     ;;
   4)
     print_info "Initializing DevOps Project: $project_name"
@@ -531,30 +531,14 @@ For example, tasks might include:
     echo ""
     project_description=$(get_input "Enter project description" "A custom project with specific requirements")
 
-    # Enhance the prompt to ensure we get actual tasks, not just column names
-    enhanced_prompt="Create a project board for: $project_description.
-
-Please generate specific, actionable tasks (not just column names) that would be needed to complete this project.
-Include tasks for planning, development, testing, and deployment phases.
-Each task should be concrete and descriptive enough that someone could start working on it.
-
-For example, for a blog website, tasks might include:
-- Set up project repository and basic structure
-- Design database schema for blog posts and users
-- Implement user authentication system
-- Create admin dashboard for content management
-- Design responsive UI for blog frontend
-- Implement comment system with moderation
-- Set up categories and tags functionality
-- Implement search feature
-- Configure deployment pipeline
-- Set up analytics and monitoring"
+    # Use a simple prompt that lets the default prompts handle the task generation
+    message="$project_description"
 
     print_info "Running AI initialization..."
     # Print the command
-    print_kanbn_init_command "$project_name" "$enhanced_prompt" "$CUSTOM_MODEL"
+    print_kanbn_init_command "$project_name" "$message" "$CUSTOM_MODEL"
     # Run the command
-    kanbn init --ai --name "$project_name" --message "$enhanced_prompt" ${CUSTOM_MODEL:+--model "$CUSTOM_MODEL"}
+    kanbn init --ai --name "$project_name" --message "$message" ${CUSTOM_MODEL:+--model "$CUSTOM_MODEL"}
     ;;
   8)
     print_info "Initializing Documentation Project with GitHub Pages: $project_name"
@@ -583,47 +567,11 @@ For example, for a blog website, tasks might include:
     if [ "$has_docs" = "y" ] || [ "$has_docs" = "Y" ]; then
       docs_location=$(get_input "Where is your existing documentation located?" "docs/")
 
-      # Enhance the prompt to ensure we get actual tasks, not just column names
-      prompt="Create a documentation project using GitHub Pages for the repository '$repo_name'.
-Repository description: $repo_description.
-The repository already has documentation in '$docs_location'.
-
-Please generate specific, actionable tasks (not just column names) that would be needed to complete this documentation project.
-Include tasks for reviewing existing documentation, improving and expanding it, setting up GitHub Pages, and maintaining documentation.
-Each task should be concrete and descriptive enough that someone could start working on it.
-
-For example, tasks might include:
-- Review existing documentation structure and content
-- Set up GitHub Pages configuration
-- Create documentation style guide
-- Improve API documentation with examples
-- Add installation and setup instructions
-- Create user guides with screenshots
-- Set up automated documentation deployment
-- Implement search functionality for documentation
-- Add version selector for different releases
-- Create contribution guidelines for documentation"
+      # Create a simple message that describes the documentation project
+      prompt="Create a documentation project using GitHub Pages for the repository '$repo_name'. Repository description: $repo_description. The repository already has documentation in '$docs_location'."
     else
-      # Enhance the prompt to ensure we get actual tasks, not just column names
-      prompt="Create a documentation project using GitHub Pages for the repository '$repo_name'.
-Repository description: $repo_description.
-The repository does not have any documentation yet.
-
-Please generate specific, actionable tasks (not just column names) that would be needed to create documentation from scratch.
-Include tasks for planning, creating, publishing, and maintaining documentation using GitHub Pages.
-Each task should be concrete and descriptive enough that someone could start working on it.
-
-For example, tasks might include:
-- Set up documentation repository structure
-- Choose documentation framework (e.g., Jekyll, MkDocs, Docusaurus)
-- Create initial documentation outline
-- Set up GitHub Pages configuration
-- Write installation and setup instructions
-- Create user guides with screenshots
-- Document API endpoints and usage
-- Set up automated documentation deployment
-- Implement search functionality
-- Create contribution guidelines for documentation"
+      # Create a simple message that describes the documentation project
+      prompt="Create a documentation project using GitHub Pages for the repository '$repo_name'. Repository description: $repo_description. The repository does not have any documentation yet."
     fi
 
     print_info "Running AI initialization..."
