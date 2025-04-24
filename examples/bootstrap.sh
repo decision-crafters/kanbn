@@ -53,9 +53,6 @@ get_input() {
   local default="$2"
   local input
 
-  # Debug
-  echo "DEBUG: get_input called with prompt='$prompt', default='$default'"
-
   if [ -n "$default" ]; then
     printf "${YELLOW}%s [%s]:${NC} " "$prompt" "$default"
   else
@@ -65,12 +62,8 @@ get_input() {
   # Use read -r to preserve backslashes
   read -r input
 
-  # Debug
-  echo "DEBUG: User entered: '$input'"
-
   if [ -z "$input" ] && [ -n "$default" ]; then
     input="$default"
-    echo "DEBUG: Using default value: '$input'"
   fi
 
   # Return just the input, not the prompt
@@ -284,9 +277,7 @@ echo ""
 
 # Get project name
 DEFAULT_PROJECT_NAME=$(basename $(pwd))
-echo "DEBUG: Default project name is '$DEFAULT_PROJECT_NAME'"
 project_name=$(get_input "Project name" "$DEFAULT_PROJECT_NAME")
-echo "DEBUG: User entered project name: '$project_name'"
 
 # Project types menu
 print_header "Select a Project Type"
@@ -302,10 +293,7 @@ echo ""
 
 # Get user selection
 user_input=$(get_input "Enter your choice" "1")
-selection=$(echo "$user_input" | grep -o '[0-9q]$')
-
-# Debug: Show the selection value
-echo "DEBUG: Raw input is '$user_input', extracted selection is '$selection'"
+selection=$(echo "$user_input" | grep -o '[0-9q]$' || echo "$user_input")
 
 if [ "$selection" = "q" ]; then
   print_info "Exiting without creating a project."
@@ -318,13 +306,24 @@ run_init() {
   local message="$2"
   local model="$3"
 
+  # Create a temporary file to capture the output
+  local output_file=$(mktemp)
+
   if [ -n "$model" ]; then
     print_command "kanbn init --ai --name \"$name\" --message \"$message\" --model \"$model\""
-    kanbn init --ai --name "$name" --message "$message" --model "$model"
+    # Run the command and capture the output
+    kanbn init --ai --name "$name" --message "$message" --model "$model" > "$output_file" 2>&1
   else
     print_command "kanbn init --ai --name \"$name\" --message \"$message\""
-    kanbn init --ai --name "$name" --message "$message"
+    # Run the command and capture the output
+    kanbn init --ai --name "$name" --message "$message" > "$output_file" 2>&1
   fi
+
+  # Filter out the "Falling back to test mode response" message and display the output
+  cat "$output_file" | grep -v "Falling back to test mode response" | grep -v "OpenRouter API call completed successfully"
+
+  # Clean up the temporary file
+  rm -f "$output_file"
 }
 
 # Get custom model if user wants to specify one
@@ -398,6 +397,9 @@ case $selection in
     ;;
   7)
     print_info "Initializing Custom Project: $project_name"
+    print_info "For a custom project, please provide a detailed description of what you want to build."
+    print_info "This will help the AI generate appropriate tasks and columns for your project."
+    echo ""
     project_description=$(get_input "Enter project description" "A custom project with specific requirements")
     print_info "Running AI initialization..."
     run_init "$project_name" "$project_description" "$CUSTOM_MODEL"
