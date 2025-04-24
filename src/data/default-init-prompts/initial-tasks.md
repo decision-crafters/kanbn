@@ -6,12 +6,13 @@ Based on the project type, description, and columns that have been set up, pleas
 
 IMPORTANT: Generate actual, specific tasks related to the project - NOT just column names or generic placeholders. Each task should be a concrete action item that someone could start working on immediately.
 
+IMPORTANT: Format your response as a numbered list with each task on a new line, starting with a number followed by a period and a space. For example:
+1. Task name - Task description
+2. Another task - Another description
+
 For each suggested task, provide:
-1. A clear, concise task name
-2. A brief description of what the task involves
-3. The appropriate column for the task (usually "Backlog" or the first column)
-4. Any relevant tags
-5. Any subtasks if applicable
+- A clear, concise task name
+- A brief description of what the task involves (separated from the name by a dash or colon)
 
 Consider including tasks for different phases of the project:
 - Setup/initialization tasks (e.g., "Set up development environment", "Create project repository")

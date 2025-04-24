@@ -536,22 +536,24 @@ case $selection in
     echo ""
     project_description=$(get_input "Enter project description" "A custom project with specific requirements")
 
-    # Use a simple prompt that lets the default prompts handle the task generation
-    message="$project_description"
+    # Extract just the project description without the prompt text
+    # This removes the "Enter project description [xxx]: " prefix if present
+    clean_message=$(echo "$project_description" | sed -E 's/^Enter project description \[[^]]+\]: //')
 
-    # Clean up the project name to remove any prompt text
-    clean_project_name="$project_name"
+    # Extract just the project name without the prompt text
+    # This removes the "Project name [xxx]: " prefix if present
+    clean_project_name=$(echo "$project_name" | sed -E 's/^Project name \[[^]]+\]: //')
 
     print_info "Running AI initialization..."
     # Print the command with debug info
     print_info "Debug: Clean project name = \"$clean_project_name\""
-    print_info "Debug: Clean message = \"$message\""
+    print_info "Debug: Clean message = \"$clean_message\""
     if [ -n "$CUSTOM_MODEL" ]; then
       print_info "Debug: Model = \"$CUSTOM_MODEL\""
-      print_command "kanbn init --ai --name \"$clean_project_name\" --message \"$message\" --model \"$CUSTOM_MODEL\""
+      print_command "kanbn init --ai --name \"$clean_project_name\" --message \"$clean_message\" --model \"$CUSTOM_MODEL\""
     else
       print_info "Debug: Using default model from environment"
-      print_command "kanbn init --ai --name \"$clean_project_name\" --message \"$message\""
+      print_command "kanbn init --ai --name \"$clean_project_name\" --message \"$clean_message\""
     fi
 
     # Add more debug info
@@ -561,7 +563,7 @@ case $selection in
 
     # Run the command with explicit parameters
     print_info "Debug: Running kanbn init with explicit parameters"
-    kanbn init --ai --name "$clean_project_name" --message "$message" ${CUSTOM_MODEL:+--model "$CUSTOM_MODEL"}
+    kanbn init --ai --name "$clean_project_name" --message "$clean_message" ${CUSTOM_MODEL:+--model "$CUSTOM_MODEL"}
     ;;
   8)
     print_info "Initializing Documentation Project with GitHub Pages: $project_name"
