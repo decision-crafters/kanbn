@@ -365,20 +365,36 @@ if [ "$use_custom_model" = "y" ] || [ "$use_custom_model" = "Y" ]; then
   model_selection=$(get_input "Enter your choice" "1")
 
   case $model_selection in
-    1) CUSTOM_MODEL="google/gemma-3-4b-it:free" ;;
-    2) CUSTOM_MODEL="anthropic/claude-3-haiku-20240307" ;;
-    3) CUSTOM_MODEL="anthropic/claude-3-sonnet-20240229" ;;
-    4) CUSTOM_MODEL="meta-llama/llama-3-8b-instruct" ;;
-    5) CUSTOM_MODEL=$(get_input "Enter custom model identifier" "") ;;
-    *) CUSTOM_MODEL="" ;;
+    1)
+       CUSTOM_MODEL="google/gemma-3-4b-it:free"
+       print_success "Using model: $CUSTOM_MODEL"
+       ;;
+    2)
+       CUSTOM_MODEL="anthropic/claude-3-haiku-20240307"
+       print_success "Using model: $CUSTOM_MODEL"
+       ;;
+    3)
+       CUSTOM_MODEL="anthropic/claude-3-sonnet-20240229"
+       print_success "Using model: $CUSTOM_MODEL"
+       ;;
+    4)
+       CUSTOM_MODEL="meta-llama/llama-3-8b-instruct"
+       print_success "Using model: $CUSTOM_MODEL"
+       ;;
+    5)
+       CUSTOM_MODEL=$(get_input "Enter custom model identifier" "")
+       if [ -n "$CUSTOM_MODEL" ]; then
+         print_success "Using model: $CUSTOM_MODEL"
+       else
+         print_warning "No custom model specified. Using default."
+         CUSTOM_MODEL=""
+       fi
+       ;;
+    *)
+       print_warning "Invalid selection. Using default model."
+       CUSTOM_MODEL=""
+       ;;
   esac
-
-  if [ -n "$CUSTOM_MODEL" ]; then
-    print_success "Using model: $CUSTOM_MODEL"
-  else
-    print_warning "No model selected. Using default."
-    CUSTOM_MODEL=""
-  fi
 else
   CUSTOM_MODEL=""
 fi
