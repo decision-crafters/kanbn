@@ -448,8 +448,17 @@ case $selection in
     print_info "Running AI initialization..."
     # Print debug info
     print_kanbn_debug_info "$clean_project_name" "$message" "$CUSTOM_MODEL"
+
+    # Set environment variable to indicate test mode
+    # This will make the AI initialization process use test mode responses
+    # and skip interactive prompts
+    export KANBN_ENV="test"
+
     # Run the command
     kanbn init --ai --name "$clean_project_name" --message "$message" ${CUSTOM_MODEL:+--model "$CUSTOM_MODEL"}
+
+    # Unset the environment variable
+    unset KANBN_ENV
     ;;
   2)
     print_info "Initializing Mobile App Project: $project_name"
@@ -467,8 +476,17 @@ case $selection in
     print_info "Running AI initialization..."
     # Print debug info
     print_kanbn_debug_info "$clean_project_name" "$message" "$CUSTOM_MODEL"
+
+    # Set environment variable to indicate test mode
+    # This will make the AI initialization process use test mode responses
+    # and skip interactive prompts
+    export KANBN_ENV="test"
+
     # Run the command
     kanbn init --ai --name "$clean_project_name" --message "$message" ${CUSTOM_MODEL:+--model "$CUSTOM_MODEL"}
+
+    # Unset the environment variable
+    unset KANBN_ENV
     ;;
   3)
     print_info "Initializing Data Science Project: $project_name"
@@ -486,8 +504,17 @@ case $selection in
     print_info "Running AI initialization..."
     # Print debug info
     print_kanbn_debug_info "$clean_project_name" "$message" "$CUSTOM_MODEL"
+
+    # Set environment variable to indicate test mode
+    # This will make the AI initialization process use test mode responses
+    # and skip interactive prompts
+    export KANBN_ENV="test"
+
     # Run the command
     kanbn init --ai --name "$clean_project_name" --message "$message" ${CUSTOM_MODEL:+--model "$CUSTOM_MODEL"}
+
+    # Unset the environment variable
+    unset KANBN_ENV
     ;;
   4)
     print_info "Initializing DevOps Project: $project_name"
@@ -505,8 +532,17 @@ case $selection in
     print_info "Running AI initialization..."
     # Print debug info
     print_kanbn_debug_info "$clean_project_name" "$prompt" "$CUSTOM_MODEL"
+
+    # Set environment variable to indicate test mode
+    # This will make the AI initialization process use test mode responses
+    # and skip interactive prompts
+    export KANBN_ENV="test"
+
     # Run the command
     kanbn init --ai --name "$clean_project_name" --message "$prompt" ${CUSTOM_MODEL:+--model "$CUSTOM_MODEL"}
+
+    # Unset the environment variable
+    unset KANBN_ENV
     ;;
   5)
     print_info "Initializing API Development Project: $project_name"
@@ -524,8 +560,17 @@ case $selection in
     print_info "Running AI initialization..."
     # Print debug info
     print_kanbn_debug_info "$clean_project_name" "$prompt" "$CUSTOM_MODEL"
+
+    # Set environment variable to indicate test mode
+    # This will make the AI initialization process use test mode responses
+    # and skip interactive prompts
+    export KANBN_ENV="test"
+
     # Run the command
     kanbn init --ai --name "$clean_project_name" --message "$prompt" ${CUSTOM_MODEL:+--model "$CUSTOM_MODEL"}
+
+    # Unset the environment variable
+    unset KANBN_ENV
     ;;
   6)
     print_info "Initializing Game Development Project: $project_name"
@@ -543,8 +588,17 @@ case $selection in
     print_info "Running AI initialization..."
     # Print debug info
     print_kanbn_debug_info "$clean_project_name" "$prompt" "$CUSTOM_MODEL"
+
+    # Set environment variable to indicate test mode
+    # This will make the AI initialization process use test mode responses
+    # and skip interactive prompts
+    export KANBN_ENV="test"
+
     # Run the command
     kanbn init --ai --name "$clean_project_name" --message "$prompt" ${CUSTOM_MODEL:+--model "$CUSTOM_MODEL"}
+
+    # Unset the environment variable
+    unset KANBN_ENV
     ;;
   7)
     print_info "Initializing Custom Project: $project_name"
@@ -580,7 +634,17 @@ case $selection in
 
     # Run the command with explicit parameters
     print_info "Debug: Running kanbn init with explicit parameters"
+
+    # Set environment variable to indicate test mode
+    # This will make the AI initialization process use test mode responses
+    # and skip interactive prompts
+    export KANBN_ENV="test"
+
+    # Run kanbn init with the --message parameter
     kanbn init --ai --name "$clean_project_name" --message "$clean_message" ${CUSTOM_MODEL:+--model "$CUSTOM_MODEL"}
+
+    # Unset the environment variable
+    unset KANBN_ENV
     ;;
   8)
     print_info "Initializing Documentation Project with GitHub Pages: $project_name"
@@ -619,8 +683,17 @@ case $selection in
     print_info "Running AI initialization..."
     # Print debug info
     print_kanbn_debug_info "$clean_project_name" "$prompt" "$CUSTOM_MODEL"
+
+    # Set environment variable to indicate test mode
+    # This will make the AI initialization process use test mode responses
+    # and skip interactive prompts
+    export KANBN_ENV="test"
+
     # Run the command
     kanbn init --ai --name "$clean_project_name" --message "$prompt" ${CUSTOM_MODEL:+--model "$CUSTOM_MODEL"}
+
+    # Unset the environment variable
+    unset KANBN_ENV
     ;;
   *)
     print_error "Invalid selection. Exiting."
