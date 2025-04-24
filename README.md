@@ -26,6 +26,11 @@ kanbn init
 # Or use AI-powered initialization
 kanbn init --ai
 
+# Or bootstrap a new project with our script
+curl -O https://raw.githubusercontent.com/decision-crafters/kanbn/main/examples/bootstrap.sh
+chmod +x bootstrap.sh
+./bootstrap.sh
+
 # Add a task
 kanbn add
 
@@ -41,7 +46,7 @@ kanbn help <command>
 Check out the `examples` directory for interactive scripts that demonstrate Kanbn's features:
 
 - `interactive-demo.sh` - A comprehensive demo of Kanbn's features
-- `ai-init-examples.sh` - Examples of AI initialization for different project types
+- `bootstrap.sh` - Quickly set up a new Kanbn project with AI assistance
 - `github-repo-init.sh` - How to use Kanbn with existing GitHub repositories
 
 Run any example with:

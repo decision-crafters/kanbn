@@ -17,20 +17,30 @@ To run the interactive demo:
 ./interactive-demo.sh
 ```
 
-## AI Initialization Examples
+## Project Bootstrap
 
-The `ai-init-examples.sh` script demonstrates how to use Kanbn's AI initialization for different project types:
+The `bootstrap.sh` script helps you quickly set up a new Kanbn project board with AI assistance:
 
-- Web Application
-- Mobile App
-- Data Science Project
-- DevOps Project
-- Custom Project
+- Checks for Kanbn installation and Git repository
+- Helps set up OpenRouter API key for AI features
+- Creates a project board with AI-generated tasks based on project type
+- Offers options for Web Application, Mobile App, Data Science, DevOps, API Development, Game Development, and Custom projects
+- Provides guidance on next steps and available features
+- Integrates with Git for version control
 
-To run the AI initialization examples:
+To bootstrap a new Kanbn project:
 
 ```bash
-./ai-init-examples.sh
+# Run from your project directory
+curl -O https://raw.githubusercontent.com/decision-crafters/kanbn/main/examples/bootstrap.sh
+chmod +x bootstrap.sh
+./bootstrap.sh
+```
+
+Or if you've already cloned the repository:
+
+```bash
+./examples/bootstrap.sh
 ```
 
 ## GitHub Repository Initialization
