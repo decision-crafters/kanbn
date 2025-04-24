@@ -293,6 +293,9 @@ echo ""
 # Get user selection
 selection=$(get_input "Enter your choice" "1")
 
+# Debug: Show the selection value
+echo "DEBUG: Selection value is '$selection'"
+
 if [ "$selection" = "q" ]; then
   print_info "Exiting without creating a project."
   exit 0
