@@ -115,10 +115,59 @@ async function handleChatMessage(options) {
       // Load conversation history
       const history = aiService.loadConversationHistory(boardFolder, conversationId);
       
-      // Create user message
+      // Check if the user is asking about a specific task
+      // Improved regex to more precisely extract just the task ID
+      const taskIdRegex = /(?:details|info|about|show|tell me about|status of|what is|describe)\s+(?:task|the task)?\s+["']?([a-zA-Z0-9-_]+)["']?/i;
+      
+      // Direct task ID mention pattern (e.g., "test-feature task details")
+      const directTaskIdRegex = /["']?([a-zA-Z0-9-_]+)["']?\s+(?:task|details|info)/i;
+      
+      // Try both patterns to find task ID
+      const taskMatch = message.match(taskIdRegex) || message.match(directTaskIdRegex);
+      let enhancedMessage = message;
+      
+      // If a potential task ID was detected, try to fetch task details
+      if (taskMatch && taskMatch[1]) {
+        const potentialTaskId = taskMatch[1].trim();
+        utility.debugLog(`Potential task ID detected: ${potentialTaskId}`);
+        
+        try {
+          // Check if the task exists before trying to get details
+          let taskExists = false;
+          try {
+            // Use the safer task exists check first
+            taskExists = await kanbn.taskExists(potentialTaskId);
+            utility.debugLog(`Task existence check: ${potentialTaskId} exists = ${taskExists}`);
+          } catch (existsError) {
+            utility.debugLog(`Task existence check failed: ${existsError.message}`);
+            // Fall through to try reading the task directly
+          }
+          
+          // Only proceed if the task exists or we couldn't check
+          if (taskExists) {
+            // Create a ProjectContext instance if needed
+            const contextManager = new ProjectContext(kanbn);
+            const taskDetails = await contextManager.getTaskDetails(potentialTaskId);
+            
+            // Only enhance the message if task details were found
+            if (taskDetails && !taskDetails.includes('not found')) {
+              utility.debugLog('Task details found, enhancing message');
+              enhancedMessage = `${message}\n\n${taskDetails}`;
+            } else {
+              utility.debugLog(`No details found for task: ${potentialTaskId}`);
+            }
+          } else {
+            utility.debugLog(`Task ${potentialTaskId} does not exist, skipping details lookup`);
+          }
+        } catch (taskError) {
+          utility.debugLog(`Error retrieving task details: ${taskError.message}`);
+        }
+      }
+      
+      // Create user message (possibly enhanced with task details)
       const userMessage = {
         role: 'user',
-        content: message
+        content: enhancedMessage
       };
       
       // Call AI service

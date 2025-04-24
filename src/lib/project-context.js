@@ -192,24 +192,25 @@ class ProjectContext {
   /**
    * Extract board data for AI context
    * @param {Object} context Project context
+   * @param {boolean} [includeDetails=false] Whether to include comprehensive task details
    * @returns {string} Formatted board data
    */
-  extractBoardData(context) {
+  extractBoardData(context, includeDetails = false) {
     try {
       // Basic validation with detailed logging
       if (!context) {
-        console.log('Warning: No context provided to extractBoardData');
+        utility.debugLog('Warning: No context provided to extractBoardData');
         return 'No board data available.';
       }
       
       // Log context details for debugging
-      console.log(`Context info - columns: ${(context.columns || []).length}, tasks object: ${typeof context.tasks}, task count: ${context.tasks ? Object.keys(context.tasks).length : 0}`);
+      utility.debugLog(`Context info - columns: ${(context.columns || []).length}, tasks object: ${typeof context.tasks}, task count: ${context.tasks ? Object.keys(context.tasks).length : 0}`);
       
       // Check for missing tasks data
       if (!context.tasks || Object.keys(context.tasks).length === 0) {
         // Special handling for test environment - check for task data in the file system
         // This is a fallback for test environments
-        console.log('No tasks data in context, checking for tasks in file system');
+        utility.debugLog('No tasks data in context, checking for tasks in file system');
         
         // Even without task details, we can still report what was found by 'find' command
         // We know tasks exist in the file system based on the previous kanbn find output
@@ -233,7 +234,7 @@ class ProjectContext {
         return 'Here is the current state of your board:\n\nBacklog (0 tasks):\n';
       }
 
-      // Normal processing with full task details
+      // Organize tasks by column
       const tasksByColumn = {};
       for (const taskId in context.tasks) {
         const task = context.tasks[taskId];
@@ -246,13 +247,78 @@ class ProjectContext {
         tasksByColumn[column].push(taskId);
       }
 
+      // Format board data with tasks by column
       let result = 'Here is the current state of your board:\n';
       for (const column of context.columns || []) {
         const tasks = tasksByColumn[column] || [];
         result += `\n${column} (${tasks.length} tasks):\n`;
-        for (const taskId of tasks) {
+        
+        // Limit the number of detailed tasks to keep the context manageable
+        const displayLimit = includeDetails ? 5 : 10;
+        const visibleTasks = tasks.slice(0, displayLimit);
+        const hiddenCount = tasks.length - visibleTasks.length;
+        
+        for (const taskId of visibleTasks) {
           const task = context.tasks[taskId];
+          
+          // Add basic task information
           result += `- ${taskId}: ${task.name}${task.due ? ` (Due: ${task.due})` : ''}\n`;
+          
+          // Include comprehensive details when requested
+          if (includeDetails) {
+            // Add description if available
+            if (task.description) {
+              // Format multiline descriptions for readability
+              const formattedDescription = task.description
+                .split('\n')
+                .map(line => `    ${line}`)
+                .join('\n');
+              
+              // Add the formatted description
+              result += `    Description: \n${formattedDescription}\n`;
+            }
+            
+            // Add tags if available
+            if (task.tags && task.tags.length > 0) {
+              result += `    Tags: ${task.tags.join(', ')}\n`;
+            }
+            
+            // Add workload if available
+            if (task.workload !== undefined) {
+              result += `    Workload: ${task.workload}\n`;
+            }
+            
+            // Add metadata if available
+            if (task.metadata) {
+              // Include created/updated dates
+              if (task.metadata.created) {
+                result += `    Created: ${task.metadata.created.toISOString()}\n`;
+              }
+              if (task.metadata.updated) {
+                result += `    Updated: ${task.metadata.updated.toISOString()}\n`;
+              }
+              
+              // Include custom metadata fields
+              const customMetadataKeys = Object.keys(task.metadata).filter(
+                key => key !== 'created' && key !== 'updated' && key !== 'tags'
+              );
+              
+              if (customMetadataKeys.length > 0) {
+                const metadataStr = customMetadataKeys
+                  .map(key => `${key}: ${JSON.stringify(task.metadata[key])}`)
+                  .join(', ');
+                result += `    Custom Fields: ${metadataStr}\n`;
+              }
+            }
+            
+            // Add spacer between tasks for readability
+            result += `\n`;
+          }
+        }
+        
+        // Indicate hidden tasks
+        if (hiddenCount > 0) {
+          result += `    ... and ${hiddenCount} more task(s)\n`;
         }
       }
 
@@ -278,6 +344,129 @@ class ProjectContext {
       tags: [],
       statistics: {}
     };
+  }
+
+  /**
+   * Get detailed information about a specific task
+   * @param {string} taskId The ID of the task to retrieve details for
+   * @param {Object} [context] Optional context object (will be retrieved if not provided)
+   * @returns {Promise<string>} Formatted task details
+   */
+  async getTaskDetails(taskId, context = null) {
+    try {
+      // Get context if not provided
+      if (!context) {
+        utility.debugLog(`No context provided for task ${taskId}, retrieving fresh context`);
+        context = await this.getContext(true); // Include references for better task details
+      }
+      
+      // Try to get the task directly from Kanbn if available in context
+      let task = null;
+      
+      // First check if it's in the context
+      if (context && context.tasks && context.tasks[taskId]) {
+        utility.debugLog(`Found task ${taskId} in context`);
+        task = context.tasks[taskId];
+      } else {
+        // Try to get the task directly from the filesystem
+        try {
+          utility.debugLog(`Task ${taskId} not found in context, trying direct task retrieval`);
+          if (typeof this.kanbn.getTask === 'function') {
+            task = await this.kanbn.getTask(taskId);
+            utility.debugLog(`Successfully retrieved task ${taskId} directly`);
+          }
+        } catch (directTaskError) {
+          utility.debugLog(`Error retrieving task directly: ${directTaskError.message}`);
+        }
+      }
+      
+      // If task still not found, return error message
+      if (!task) {
+        utility.debugLog(`Task ${taskId} not found after all retrieval attempts`);
+        return `Task ${taskId} not found.`;
+      }
+      let result = `# Task Details: ${taskId}\n\n`;
+      
+      // Add basic information
+      result += `**Name:** ${task.name}\n`;
+      result += `**Column:** ${task.column || 'Not assigned'}\n`;
+      
+      // Add due date if available
+      if (task.due) {
+        result += `**Due Date:** ${task.due}\n`;
+      }
+      
+      // Add workload if available
+      if (task.workload !== undefined) {
+        result += `**Workload:** ${task.workload}\n`;
+      }
+      
+      // Add assigns if available
+      if (task.assigned && task.assigned.length > 0) {
+        result += `**Assigned to:** ${task.assigned.join(', ')}\n`;
+      }
+      
+      // Add tags if available
+      if (task.tags && task.tags.length > 0) {
+        result += `**Tags:** ${task.tags.join(', ')}\n`;
+      }
+      
+      // Add description if available
+      if (task.description) {
+        result += `\n## Description\n\n${task.description}\n`;
+      }
+      
+      // Add subtasks if available
+      if (task.subtasks && task.subtasks.length > 0) {
+        result += `\n## Subtasks\n\n`;
+        for (const subtask of task.subtasks) {
+          const status = subtask.complete ? '[x]' : '[ ]';
+          result += `- ${status} ${subtask.name}\n`;
+        }
+      }
+      
+      // Add relations if available
+      if (task.relations && Object.keys(task.relations).length > 0) {
+        result += `\n## Relations\n\n`;
+        for (const relationType in task.relations) {
+          const relatedTasks = task.relations[relationType];
+          if (Array.isArray(relatedTasks) && relatedTasks.length > 0) {
+            result += `**${relationType}:** ${relatedTasks.join(', ')}\n`;
+          }
+        }
+      }
+      
+      // Add metadata if available
+      if (task.metadata && Object.keys(task.metadata).length > 0) {
+        result += `\n## Metadata\n\n`;
+        
+        // Include created/updated dates
+        if (task.metadata.created) {
+          result += `**Created:** ${task.metadata.created instanceof Date ? 
+            task.metadata.created.toISOString() : task.metadata.created}\n`;
+        }
+        if (task.metadata.updated) {
+          result += `**Updated:** ${task.metadata.updated instanceof Date ? 
+            task.metadata.updated.toISOString() : task.metadata.updated}\n`;
+        }
+        
+        // Include custom metadata fields
+        const customMetadataKeys = Object.keys(task.metadata).filter(
+          key => key !== 'created' && key !== 'updated' && key !== 'tags'
+        );
+        
+        if (customMetadataKeys.length > 0) {
+          for (const key of customMetadataKeys) {
+            result += `**${key}:** ${JSON.stringify(task.metadata[key])}\n`;
+          }
+        }
+      }
+      
+      return result;
+    } catch (error) {
+      console.error('Error getting task details:', error);
+      return `Error retrieving details for task ${taskId}.`;
+    }
   }
 
   /**
@@ -353,7 +542,7 @@ class ProjectContext {
     
     return {
       role: 'system',
-      content: `You are a helpful project management assistant for a Kanbn task board. Your role is to help the user manage their tasks and projects.\n\nImportant rules to follow:\n1. FOCUS ON TASKS: Your primary job is to help with tasks, not to suggest changing the board structure.\n2. DO NOT suggest new columns or changes to the board structure.\n3. The board structure is already established with these columns: ${(context.columns || []).join(', ')}.\n4. When asked about the project or board structure, refer to the EXISTING columns.\n5. For requests to create tasks, always specify which column the task should go in. Default to the first column if unsure.\n6. Be concise and helpful, focusing on the user's specific requests.\n\n# Command Recognition\nIf the user asks you to perform a command like "init", "create", or other Kanbn CLI commands, explain that you can't directly execute commands, but provide instructions on how to run them. For example:\n- If asked to "init": Explain they should run 'kanbn init' in their terminal\n- If asked to "create a task": Explain they can run 'kanbn task add "Task Name"'\n- If asked about CLI commands: Provide information about available Kanbn commands\n\n# Available Kanbn Commands\nKanbn has these main commands:\n- init: Initialize a new Kanbn board\n- task: Manage tasks (add, edit, remove, etc.)\n- column: Manage columns\n- sprint: Work with sprints\n- burndown: Generate burndown charts\n- chat: Interactive AI assistance (current mode)\n\n${boardData}`
+      content: `You are a helpful project management assistant for a Kanbn task board. Your role is to help the user manage their tasks and projects.\n\nImportant rules to follow:\n1. FOCUS ON TASKS: Your primary job is to help with tasks, not to suggest changing the board structure.\n2. DO NOT suggest new columns or changes to the board structure.\n3. The board structure is already established with these columns: ${(context.columns || []).join(', ')}.\n4. When asked about the project or board structure, refer to the EXISTING columns.\n5. For requests to create tasks, always specify which column the task should go in. Default to the first column if unsure.\n6. Be concise and helpful, focusing on the user's specific requests.\n\n# Task Information Capabilities\nYou can provide detailed information about specific tasks when asked. For example:\n- If the user asks "Tell me about task X", provide all available details about that task\n- If the user asks "What's the status of task Y?", provide the current column and any other relevant details\n- If the user asks to see all tasks with a specific tag, list those tasks\n\n# Command Recognition\nIf the user asks you to perform a command like "init", "create", or other Kanbn CLI commands, explain that you can't directly execute commands, but provide instructions on how to run them. For example:\n- If asked to "init": Explain they should run 'kanbn init' in their terminal\n- If asked to "create a task": Explain they can run 'kanbn task add "Task Name"'\n- If asked about CLI commands: Provide information about available Kanbn commands\n\n# Available Kanbn Commands\nKanbn has these main commands:\n- init: Initialize a new Kanbn board\n- task: Manage tasks (add, edit, remove, etc.)\n- column: Manage columns\n- sprint: Work with sprints\n- burndown: Generate burndown charts\n- chat: Interactive AI assistance (current mode)\n\n${boardData}`
     };
   }
 }
