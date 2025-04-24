@@ -198,6 +198,8 @@ if [ -z "$OPENROUTER_API_KEY" ]; then
       export KANBN_ENV="test"
     else
       export OPENROUTER_API_KEY="$api_key_input"
+      # Unset test mode if it was previously set
+      unset KANBN_ENV
       print_success "API key set for this session: ${OPENROUTER_API_KEY:0:5}... (${#OPENROUTER_API_KEY} chars)"
 
       # Ask if the user wants to save the API key
@@ -207,6 +209,48 @@ if [ -z "$OPENROUTER_API_KEY" ]; then
       if [ "$save_key" != "n" ] && [ "$save_key" != "N" ]; then
         echo "OPENROUTER_API_KEY=$OPENROUTER_API_KEY" > .env
         print_success "API key saved to .env file"
+      fi
+
+      # Add a confirmation message
+      print_info "Using OpenRouter API for AI features"
+
+      # Verify the API key works (optional)
+      echo -e "${YELLOW}Would you like to verify the API key works? (y/n) [n]:${NC} "
+      read verify_key
+
+      if [ "$verify_key" = "y" ] || [ "$verify_key" = "Y" ]; then
+        print_info "Verifying OpenRouter API key..."
+
+        # Create a temporary file to store the API response
+        API_RESPONSE_FILE=$(mktemp)
+
+        # Test the API key with a simple request and save the response
+        echo -e "🌐 Sending test request to OpenRouter API..."
+        curl -s -X POST \
+          -H "Authorization: Bearer $OPENROUTER_API_KEY" \
+          -H "Content-Type: application/json" \
+          -d '{"model":"google/gemma-3-4b-it:free","messages":[{"role":"user","content":"Hello"}]}' \
+          https://openrouter.ai/api/v1/chat/completions > "$API_RESPONSE_FILE"
+
+        # Check if the response contains expected fields
+        if grep -q "choices" "$API_RESPONSE_FILE"; then
+          print_success "OpenRouter API key is valid!"
+
+          # Extract and validate the model name
+          MODEL_NAME=$(grep -o '"model":"[^"]*"' "$API_RESPONSE_FILE" | head -1 | cut -d '"' -f 4)
+          echo -e "📊 Model used: ${CYAN}$MODEL_NAME${NC}"
+
+          # Clean up temporary file
+          rm -f "$API_RESPONSE_FILE"
+        else
+          print_warning "API key verification failed. Response:"
+          cat "$API_RESPONSE_FILE"
+          echo ""
+          print_info "Continuing anyway, but AI features may not work correctly."
+
+          # Clean up temporary file
+          rm -f "$API_RESPONSE_FILE"
+        fi
       fi
     fi
   else
