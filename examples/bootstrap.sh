@@ -288,6 +288,7 @@ print_option "4" "DevOps Project"
 print_option "5" "API Development"
 print_option "6" "Game Development"
 print_option "7" "Custom Project"
+print_option "8" "Documentation (GitHub Pages)"
 print_option "q" "Quit"
 echo ""
 
@@ -299,6 +300,27 @@ if [ "$selection" = "q" ]; then
   print_info "Exiting without creating a project."
   exit 0
 fi
+
+# Function to get additional context from the user
+get_additional_context() {
+  local project_type="$1"
+  local additional_context=""
+
+  print_info "Would you like to provide additional context for your $project_type project? (y/n) [y]:"
+  read provide_context
+
+  if [ "$provide_context" != "n" ] && [ "$provide_context" != "N" ]; then
+    print_info "Please provide any specific requirements, features, or context for your project:"
+    print_info "(This will help the AI generate more relevant tasks and columns)"
+    echo ""
+    additional_context=$(get_input "Additional context" "")
+    echo "$additional_context"
+    return 0
+  else
+    echo ""
+    return 1
+  fi
+}
 
 # Function to run kanbn init with model parameter if specified
 run_init() {
@@ -367,33 +389,99 @@ print_header "Initializing Project"
 case $selection in
   1)
     print_info "Initializing Web Application Project: $project_name"
+    base_prompt="Create a web application with user authentication, database integration, and responsive UI"
+
+    # Get additional context if the user wants to provide it
+    additional_context=$(get_additional_context "Web Application")
+
+    if [ -n "$additional_context" ]; then
+      prompt="$base_prompt. Additional context: $additional_context"
+    else
+      prompt="$base_prompt"
+    fi
+
     print_info "Running AI initialization..."
-    run_init "$project_name" "Create a web application with user authentication, database integration, and responsive UI" "$CUSTOM_MODEL"
+    run_init "$project_name" "$prompt" "$CUSTOM_MODEL"
     ;;
   2)
     print_info "Initializing Mobile App Project: $project_name"
+    base_prompt="Create a mobile app with user profiles, push notifications, and offline support"
+
+    # Get additional context if the user wants to provide it
+    additional_context=$(get_additional_context "Mobile App")
+
+    if [ -n "$additional_context" ]; then
+      prompt="$base_prompt. Additional context: $additional_context"
+    else
+      prompt="$base_prompt"
+    fi
+
     print_info "Running AI initialization..."
-    run_init "$project_name" "Create a mobile app with user profiles, push notifications, and offline support" "$CUSTOM_MODEL"
+    run_init "$project_name" "$prompt" "$CUSTOM_MODEL"
     ;;
   3)
     print_info "Initializing Data Science Project: $project_name"
+    base_prompt="Create a data science project with data collection, preprocessing, model training, and evaluation phases"
+
+    # Get additional context if the user wants to provide it
+    additional_context=$(get_additional_context "Data Science")
+
+    if [ -n "$additional_context" ]; then
+      prompt="$base_prompt. Additional context: $additional_context"
+    else
+      prompt="$base_prompt"
+    fi
+
     print_info "Running AI initialization..."
-    run_init "$project_name" "Create a data science project with data collection, preprocessing, model training, and evaluation phases" "$CUSTOM_MODEL"
+    run_init "$project_name" "$prompt" "$CUSTOM_MODEL"
     ;;
   4)
     print_info "Initializing DevOps Project: $project_name"
+    base_prompt="Create a DevOps project with CI/CD pipeline setup, infrastructure as code, and monitoring"
+
+    # Get additional context if the user wants to provide it
+    additional_context=$(get_additional_context "DevOps")
+
+    if [ -n "$additional_context" ]; then
+      prompt="$base_prompt. Additional context: $additional_context"
+    else
+      prompt="$base_prompt"
+    fi
+
     print_info "Running AI initialization..."
-    run_init "$project_name" "Create a DevOps project with CI/CD pipeline setup, infrastructure as code, and monitoring" "$CUSTOM_MODEL"
+    run_init "$project_name" "$prompt" "$CUSTOM_MODEL"
     ;;
   5)
     print_info "Initializing API Development Project: $project_name"
+    base_prompt="Create an API development project with endpoint design, authentication, documentation, and testing"
+
+    # Get additional context if the user wants to provide it
+    additional_context=$(get_additional_context "API Development")
+
+    if [ -n "$additional_context" ]; then
+      prompt="$base_prompt. Additional context: $additional_context"
+    else
+      prompt="$base_prompt"
+    fi
+
     print_info "Running AI initialization..."
-    run_init "$project_name" "Create an API development project with endpoint design, authentication, documentation, and testing" "$CUSTOM_MODEL"
+    run_init "$project_name" "$prompt" "$CUSTOM_MODEL"
     ;;
   6)
     print_info "Initializing Game Development Project: $project_name"
+    base_prompt="Create a game development project with game design, asset creation, programming, and testing phases"
+
+    # Get additional context if the user wants to provide it
+    additional_context=$(get_additional_context "Game Development")
+
+    if [ -n "$additional_context" ]; then
+      prompt="$base_prompt. Additional context: $additional_context"
+    else
+      prompt="$base_prompt"
+    fi
+
     print_info "Running AI initialization..."
-    run_init "$project_name" "Create a game development project with game design, asset creation, programming, and testing phases" "$CUSTOM_MODEL"
+    run_init "$project_name" "$prompt" "$CUSTOM_MODEL"
     ;;
   7)
     print_info "Initializing Custom Project: $project_name"
@@ -403,6 +491,40 @@ case $selection in
     project_description=$(get_input "Enter project description" "A custom project with specific requirements")
     print_info "Running AI initialization..."
     run_init "$project_name" "$project_description" "$CUSTOM_MODEL"
+    ;;
+  8)
+    print_info "Initializing Documentation Project with GitHub Pages: $project_name"
+
+    # Check if this is a git repository
+    if ! git rev-parse --is-inside-work-tree &> /dev/null; then
+      print_error "This is not a git repository. GitHub Pages documentation requires a git repository."
+      print_info "Please initialize git first with: git init"
+      exit 1
+    fi
+
+    # Get repository information
+    repo_name=$(basename -s .git $(git config --get remote.origin.url 2>/dev/null || echo "$(basename $(pwd))"))
+
+    print_info "Repository: $repo_name"
+    print_info "This will create tasks for documenting your project using GitHub Pages."
+
+    # Get additional context about the repository
+    print_info "Please provide information about your repository:"
+    repo_description=$(get_input "Repository description" "A project that needs documentation")
+
+    # Ask about existing documentation
+    print_info "Does your repository already have any documentation? (y/n) [n]:"
+    read has_docs
+
+    if [ "$has_docs" = "y" ] || [ "$has_docs" = "Y" ]; then
+      docs_location=$(get_input "Where is your existing documentation located?" "docs/")
+      prompt="Create a documentation project using GitHub Pages for the repository '$repo_name'. Repository description: $repo_description. The repository already has documentation in '$docs_location'. Create tasks for improving and expanding the documentation, setting up GitHub Pages, and maintaining documentation."
+    else
+      prompt="Create a documentation project using GitHub Pages for the repository '$repo_name'. Repository description: $repo_description. The repository does not have any documentation yet. Create tasks for creating documentation from scratch, setting up GitHub Pages, and maintaining documentation."
+    fi
+
+    print_info "Running AI initialization..."
+    run_init "$project_name" "$prompt" "$CUSTOM_MODEL"
     ;;
   *)
     print_error "Invalid selection. Exiting."
