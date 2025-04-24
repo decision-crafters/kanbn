@@ -12,8 +12,8 @@ module.exports = async () => {
     console.log('DEBUG: dotenv parsed:', dotenvResult.parsed ? Object.keys(dotenvResult.parsed).join(', ') : 'No parsed values');
   }
 
-  // Log environment variables for debugging (only in test mode)
-  if (process.env.KANBN_ENV === 'test' || process.env.DEBUG) {
+  // Log environment variables for debugging (only in test/debug mode)
+  if (process.env.KANBN_ENV === 'test' || process.env.DEBUG === 'true') {
     console.log('Environment variables loaded:');
     if (process.env.OPENROUTER_API_KEY) {
       const keyPrefix = process.env.OPENROUTER_API_KEY.substring(0, 5);

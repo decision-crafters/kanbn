@@ -6,6 +6,7 @@
 const fetch = require('node-fetch');
 const axios = require('axios');
 const openRouterConfig = require('../config/openrouter');
+const utility = require('../utility');
 
 class OpenRouterClient {
   /**
@@ -70,11 +71,11 @@ class OpenRouterClient {
     this.validateApiKey();
 
     // Log which model is being used
-    console.log(`Making API call to OpenRouter using model: ${this.model}...`);
+    utility.debugLog(`Making API call to OpenRouter using model: ${this.model}...`);
 
     // Debug log to verify API key is being used (only show prefix for security)
     if (this.apiKey) {
-      console.log(`API call using key: ${this.apiKey.substring(0, 5)}... (${this.apiKey.length} chars)`);
+      utility.debugLog(`API call using key: ${this.apiKey.substring(0, 5)}... (${this.apiKey.length} chars)`);
     }
 
     if (this.useStreaming && onChunk) {
@@ -91,7 +92,7 @@ class OpenRouterClient {
    * @returns {Promise<string>} The full response content
    */
   async streamingChatCompletion(messages, onChunk) {
-    console.log('Using streaming response...');
+    utility.debugLog('Using streaming response...');
 
     // Debug logging
     if (process.env.DEBUG === 'true') {
@@ -108,7 +109,7 @@ class OpenRouterClient {
     // Use fetch for streaming
     let response;
     try {
-      console.log('Making fetch request to OpenRouter API...');
+      utility.debugLog('Making fetch request to OpenRouter API...');
       response = await fetch(`${this.baseUrl}/chat/completions`, {
         method: 'POST',
         headers: this.getHeaders(),
@@ -118,7 +119,7 @@ class OpenRouterClient {
           stream: true
         })
       });
-      console.log('Fetch request completed with status:', response.status);
+      utility.debugLog(`Fetch request completed with status: ${response.status}`);
     } catch (error) {
       console.error('Error making fetch request:', error);
       throw new Error(`Failed to connect to OpenRouter API: ${error.message}`);
@@ -131,7 +132,7 @@ class OpenRouterClient {
 
     // Check if response.body is available and has a getReader method
     if (!response.body || typeof response.body.getReader !== 'function') {
-      console.log('Streaming not supported by the response, falling back to standard response...');
+      utility.debugLog('Streaming not supported by the response, falling back to standard response...');
       // Fall back to reading the entire response as text
       const responseText = await response.text();
 
@@ -173,7 +174,7 @@ class OpenRouterClient {
         return content;
       } catch (e) {
         console.error('Error parsing response JSON:', e);
-        console.log('Response text:', responseText);
+        utility.debugLog(`Response text: ${responseText}`);
 
         // Fall back to test mode response
         console.log('Falling back to test mode response...');
@@ -251,7 +252,7 @@ class OpenRouterClient {
    * @returns {Promise<string>} The response content
    */
   async standardChatCompletion(messages) {
-    console.log('Using standard (non-streaming) response...');
+    utility.debugLog('Using standard (non-streaming) response...');
 
     // Debug logging
     if (process.env.DEBUG === 'true') {
