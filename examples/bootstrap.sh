@@ -53,18 +53,27 @@ get_input() {
   local default="$2"
   local input
 
+  # Debug
+  echo "DEBUG: get_input called with prompt='$prompt', default='$default'"
+
   if [ -n "$default" ]; then
     printf "${YELLOW}%s [%s]:${NC} " "$prompt" "$default"
   else
     printf "${YELLOW}%s:${NC} " "$prompt"
   fi
 
-  read input
+  # Use read -r to preserve backslashes
+  read -r input
+
+  # Debug
+  echo "DEBUG: User entered: '$input'"
 
   if [ -z "$input" ] && [ -n "$default" ]; then
     input="$default"
+    echo "DEBUG: Using default value: '$input'"
   fi
 
+  # Return just the input, not the prompt
   echo "$input"
 }
 
@@ -275,7 +284,9 @@ echo ""
 
 # Get project name
 DEFAULT_PROJECT_NAME=$(basename $(pwd))
+echo "DEBUG: Default project name is '$DEFAULT_PROJECT_NAME'"
 project_name=$(get_input "Project name" "$DEFAULT_PROJECT_NAME")
+echo "DEBUG: User entered project name: '$project_name'"
 
 # Project types menu
 print_header "Select a Project Type"
