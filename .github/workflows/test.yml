@@ -44,22 +44,22 @@ jobs:
       - name: Run binary tests
         run: |
           set -e
-          chmod +x ./test-all-commands.sh
-          ./test-all-commands.sh --use-built-package
+          chmod +x ./scripts/test-all-commands.sh
+          ./scripts/test-all-commands.sh --use-built-package
 
       - name: Run AI initialization tests
         run: |
           set -e
-          chmod +x ./test-ai-init.sh
-          ./test-ai-init.sh
+          chmod +x ./scripts/test-ai-init.sh
+          ./scripts/test-ai-init.sh
         env:
           KANBN_ENV: test
 
       - name: Run binary tests
         run: |
           set -e
-          chmod +x ./test-ai-init-scenarios.sh
-          ./test-ai-init-scenarios.sh
+          chmod +x ./scripts/test-ai-init-scenarios.sh
+          ./scripts/test-ai-init-scenarios.sh
 
       - name: Run linting
         run: |
