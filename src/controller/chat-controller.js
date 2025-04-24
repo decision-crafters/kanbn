@@ -14,6 +14,7 @@ const ContextSerializer = require('../lib/context-serializer');
 const AILogging = require('../lib/ai-logging');
 const PromptLoader = require('../lib/prompt-loader');
 const MemoryManager = require('../lib/memory-manager');
+const eventBus = require('../lib/event-bus');
 
 const { execSync } = require('child_process');
 const { debugLog } = require('../utility');
@@ -103,7 +104,26 @@ async function handleChatMessage(options) {
       let systemMessage;
       if (projectContext) {
         const contextManager = new ProjectContext(kanbn);
-        systemMessage = contextManager.createSystemMessage(projectContext);
+        
+        // Load memory context for task reference history if available
+        let memoryContext = null;
+        try {
+          // Use the project root directory for consistency with task reference recording
+          const projectRoot = process.cwd();
+          utility.debugLog(`Loading memory context using project root: ${projectRoot}`);
+          
+          const memoryManager = new MemoryManager(projectRoot);
+          await memoryManager.loadMemory();
+          memoryContext = memoryManager.memory;
+          
+          utility.debugLog(`Memory file location: ${memoryManager.memoryFile}`);
+          utility.debugLog(`Loaded memory context with ${Object.keys(memoryContext.taskReferences || {}).length} task references`);
+        } catch (memoryError) {
+          utility.debugLog(`Error loading memory context: ${memoryError.message}`);
+        }
+        
+        // Create system message with memory context if available
+        systemMessage = contextManager.createSystemMessage(projectContext, memoryContext);
       } else {
         // Fallback to simple system message
         systemMessage = {
@@ -153,6 +173,37 @@ async function handleChatMessage(options) {
             if (taskDetails && !taskDetails.includes('not found')) {
               utility.debugLog('Task details found, enhancing message');
               enhancedMessage = `${message}\n\n${taskDetails}`;
+              
+              // Record the task reference in memory if we have access to a memory manager
+              try {
+                // Create a memory manager for the board folder if we don't already have one
+                // Ensure we're using the project root directory
+                const projectRoot = process.cwd();
+                utility.debugLog(`Creating memory manager using project root: ${projectRoot}`);
+                
+                const memoryManager = new MemoryManager(projectRoot);
+                await memoryManager.loadMemory();
+                
+                // Get basic task data to store in the reference
+                const taskData = { 
+                  taskId: potentialTaskId,
+                  taskName: taskDetails.match(/\*\*Name:\*\* ([^\n]+)/)?.[1] || potentialTaskId,
+                  column: taskDetails.match(/\*\*Column:\*\* ([^\n]+)/)?.[1] || 'Unknown'
+                };
+                
+                utility.debugLog(`Recording task reference for ${potentialTaskId}: ${JSON.stringify(taskData)}`);
+                
+                // Record this task reference
+                await memoryManager.addTaskReference(potentialTaskId, taskData, 'view');
+                
+                // Log memory file location for debugging
+                utility.debugLog(`Memory file location: ${memoryManager.memoryFile}`);
+                
+                // Emit an event for tracking
+                eventBus.emit('taskDetailViewed', [{ taskId: potentialTaskId, taskName: taskData.taskName }]);
+              } catch (memoryError) {
+                utility.debugLog(`Error recording task reference: ${memoryError.message}`);
+              }
             } else {
               utility.debugLog(`No details found for task: ${potentialTaskId}`);
             }
