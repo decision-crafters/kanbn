@@ -277,10 +277,12 @@ echo ""
 
 # Get project name
 DEFAULT_PROJECT_NAME=$(basename $(pwd))
+print_info "Please enter a name for your project:"
 project_name=$(get_input "Project name" "$DEFAULT_PROJECT_NAME")
 
 # Project types menu
 print_header "Select a Project Type"
+print_info "Please select the type of project you want to create:"
 print_option "1" "Web Application"
 print_option "2" "Mobile App"
 print_option "3" "Data Science Project"
@@ -349,12 +351,13 @@ run_init() {
 }
 
 # Get custom model if user wants to specify one
-print_info "Would you like to use a specific AI model? (y/n) [n]:"
+print_info "Would you like to use a specific AI model for generating tasks? (y/n) [n]:"
 read use_custom_model
 
 if [ "$use_custom_model" = "y" ] || [ "$use_custom_model" = "Y" ]; then
   print_header "Select AI Model"
-  print_info "Available models:"
+  print_info "Please select one of the following AI models:"
+  print_info "Available models (free options don't require payment):"
   print_option "1" "google/gemma-3-4b-it:free (Default, Free)"
   print_option "2" "anthropic/claude-3-haiku-20240307 (Faster, Paid)"
   print_option "3" "anthropic/claude-3-sonnet-20240229 (Better quality, Paid)"
