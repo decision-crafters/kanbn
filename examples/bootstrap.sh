@@ -83,7 +83,7 @@ get_input() {
     input="$default"
   fi
 
-  # Return just the input, not the prompt
+  # Return just the clean input value, not the prompt
   echo "$input"
 }
 
@@ -347,9 +347,14 @@ print_kanbn_init_command() {
   local message="$2"
   local model="$3"
 
+  # Print debug info
+  print_info "Debug: Project name = \"$name\""
+  print_info "Debug: Message = \"$message\""
   if [ -n "$model" ]; then
+    print_info "Debug: Model = \"$model\""
     print_command "kanbn init --ai --name \"$name\" --message \"$message\" --model \"$model\""
   else
+    print_info "Debug: Using default model from environment"
     print_command "kanbn init --ai --name \"$name\" --message \"$message\""
   fi
 }
@@ -535,9 +540,16 @@ case $selection in
     message="$project_description"
 
     print_info "Running AI initialization..."
-    # Print the command
+    # Print the command with debug info
     print_kanbn_init_command "$project_name" "$message" "$CUSTOM_MODEL"
-    # Run the command
+
+    # Add more debug info
+    print_info "Debug: Environment variables:"
+    print_info "Debug: OPENROUTER_API_KEY = ${OPENROUTER_API_KEY:0:5}... (${#OPENROUTER_API_KEY} chars)"
+    print_info "Debug: OPENROUTER_MODEL = $OPENROUTER_MODEL"
+
+    # Run the command with explicit parameters
+    print_info "Debug: Running kanbn init with explicit parameters"
     kanbn init --ai --name "$project_name" --message "$message" ${CUSTOM_MODEL:+--model "$CUSTOM_MODEL"}
     ;;
   8)
