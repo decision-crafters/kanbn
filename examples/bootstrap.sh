@@ -333,14 +333,19 @@ run_init() {
   # Create a temporary file to capture the output
   local output_file=$(mktemp)
 
+  # Clean up the name and message to remove any prompt text
+  # This ensures we only pass the actual values to kanbn init
+  clean_name=$(echo "$name" | sed -E 's/^Project name \[[^]]+\]: //')
+  clean_message=$(echo "$message" | sed -E 's/^Enter project description \[[^]]+\]: //')
+
   if [ -n "$model" ]; then
-    print_command "kanbn init --ai --name \"$name\" --message \"$message\" --model \"$model\""
+    print_command "kanbn init --ai --name \"$clean_name\" --message \"$clean_message\" --model \"$model\""
     # Run the command and capture the output
-    kanbn init --ai --name "$name" --message "$message" --model "$model" > "$output_file" 2>&1
+    kanbn init --ai --name "$clean_name" --message "$clean_message" --model "$model" > "$output_file" 2>&1
   else
-    print_command "kanbn init --ai --name \"$name\" --message \"$message\""
+    print_command "kanbn init --ai --name \"$clean_name\" --message \"$clean_message\""
     # Run the command and capture the output
-    kanbn init --ai --name "$name" --message "$message" > "$output_file" 2>&1
+    kanbn init --ai --name "$clean_name" --message "$clean_message" > "$output_file" 2>&1
   fi
 
   # Filter out the "Falling back to test mode response" message and display the output
