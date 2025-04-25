@@ -1,0 +1,31 @@
+{
+  "name": "Integrations Manager",
+  "commands": [
+    "integrations",
+    "integration"
+  ],
+  "args": {
+    "boolean": [
+      "help",
+      "list",
+      "add",
+      "remove"
+    ],
+    "string": [
+      "name",
+      "url",
+      "content"
+    ],
+    "alias": {
+      "help": ["h"],
+      "list": ["l", "ls"],
+      "add": ["a", "create", "new"],
+      "remove": ["r", "delete", "rm"],
+      "name": ["n"],
+      "url": ["u", "source"],
+      "content": ["c", "text"]
+    }
+  },
+  "controller": "./src/controller/integrations",
+  "help": "./docs/commands/integrations.txt"
+}
