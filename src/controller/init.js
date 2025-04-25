@@ -146,9 +146,32 @@ async function callOpenRouterAPI(message, context, apiKey, model, promptName, pr
         content: ''
       };
 
+      // First, check if we already have a board structure to work with
+      let existingColumns = [];
+      let hasBoardStructure = false;
+      
+      // Try to get existing board structure from the message or context
+      try {
+        if (context && context.columns && context.columns.length > 0) {
+          existingColumns = context.columns;
+          hasBoardStructure = true;
+        }
+      } catch (err) {
+        console.log('Error getting existing board structure:', err);
+      }
+      
       switch (promptName) {
         case 'project-type':
-          mockResponse.content = `Based on your project description, I recommend a Software Development project type with the following columns:
+          if (hasBoardStructure) {
+            // If we already have columns, acknowledge them and focus on tasks
+            mockResponse.content = `I see you already have a board with the following columns: ${existingColumns.join(', ')}.
+
+This existing structure is suitable for your project and ready to use. I recommend focusing on creating task content rather than modifying the board structure.
+
+Would you like me to suggest some initial tasks that would be appropriate for your project?`;
+          } else {
+            // Otherwise provide a default recommendation
+            mockResponse.content = `Based on your project description, I recommend a Software Development project type with the following columns:
 
 - Backlog
 - To Do
@@ -157,6 +180,7 @@ async function callOpenRouterAPI(message, context, apiKey, model, promptName, pr
 - Done
 
 This structure follows a standard software development workflow and will help you track tasks from initial ideas through completion.`;
+          }
           break;
         case 'class-of-service':
           mockResponse.content = `For your project, I recommend the following Classes of Service:
@@ -308,25 +332,35 @@ async function aiInit(options, initialised, args) {
       projectName = nameAnswer.name;
     }
 
+    // Only prompt for a description if one wasn't provided through options or args
+    // This allows bootstrap scripts to provide descriptions non-interactively
     if (!projectDescription) {
-      const descAnswer = await inquirer.prompt([
-        {
-          type: 'confirm',
-          name: 'setDescription',
-          message: 'Add a project description?',
-          default: true
-        },
-        {
-          type: 'editor',
-          name: 'description',
-          message: 'Project description:',
-          when: answers => answers.setDescription
-        }
-      ]);
+      // Check if we're in a non-interactive environment
+      if (process.env.KANBN_ENV === 'test' || process.env.CI === 'true') {
+        console.log(chalk.gray('Skipping project description prompt in non-interactive mode'));
+        projectDescription = 'Auto-generated project description';
+      } else {
+        const descAnswer = await inquirer.prompt([
+          {
+            type: 'confirm',
+            name: 'setDescription',
+            message: 'Add a project description?',
+            default: true
+          },
+          {
+            type: 'editor',
+            name: 'description',
+            message: 'Project description:',
+            when: answers => answers.setDescription
+          }
+        ]);
 
-      if (descAnswer.setDescription) {
-        projectDescription = descAnswer.description;
+        if (descAnswer.setDescription) {
+          projectDescription = descAnswer.description;
+        }
       }
+    } else {
+      console.log(chalk.green('Using provided project description'));
     }
 
     // Update options with project name and description

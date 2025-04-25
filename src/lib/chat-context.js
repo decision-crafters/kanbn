@@ -47,6 +47,14 @@ class ChatContext {
   }
 
   /**
+   * Set the project context information
+   * @param {object} projectContext The project context object
+   */
+  setProjectContext(projectContext) {
+    this.projectContext = projectContext;
+  }
+
+  /**
    * Validate a column name
    * @param {string} column The column name to validate
    * @return {boolean} True if the column exists

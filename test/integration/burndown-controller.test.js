@@ -24,12 +24,20 @@ QUnit.module('Burndown Controller tests', {
 
   beforeEach: async function() {
     console.error('Running test setup');
+    
+    // Ensure complete cleanup before setting up new fixtures
+    fixtures.cleanup();
+    
+    // Add a small delay between cleanup and setup to prevent conflicts
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
     const now = new Date();
     const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
     const twoDaysAgo = new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000);
 
     // Set up a fresh board with tasks for each test
-    this.index = fixtures({
+    try {
+      const fixtureData = fixtures({
       tasks: [
         {
           name: 'Task 1',
@@ -55,17 +63,39 @@ QUnit.module('Burndown Controller tests', {
           }
         }
       ],
+      columnNames: ['Todo', 'In Progress', 'Done'],
       columns: {
-        'Sprint 1': ['task-1', 'task-2'],
-        'Sprint 2': ['task-3'],
-        'Done': []
+        'Todo': ['task-2', 'task-3'],
+        'In Progress': [],
+        'Done': ['task-1']
       }
     });
+      
+      // Extract data from fixture
+      this.index = fixtureData.index;
+      this.testDir = fixtureData.testPath;
+      
+      // Update the current directory to the new test directory
+      process.chdir(this.testDir);
+      
+      // Verify the test directory exists
+      if (!fs.existsSync(this.testDir)) {
+        console.error('Test directory does not exist:', this.testDir);
+      }
+    } catch (setupError) {
+      console.error('Error during test setup:', setupError);
+      throw setupError; // Re-throw to fail the test properly
+    }
   },
 
   afterEach: function() {
-    mockRequire.stopAll();
-    fixtures.cleanup();
+    // Ensure thorough cleanup after each test
+    try {
+      fixtures.cleanup();
+      mockRequire.stopAll();
+    } catch (cleanupError) {
+      console.error('Error during afterEach cleanup:', cleanupError);
+    }
   }
 });
 

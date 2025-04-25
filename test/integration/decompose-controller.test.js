@@ -2,6 +2,11 @@ const path = require('path');
 const fs = require('fs');
 const rimraf = require('rimraf');
 const mockRequire = require('mock-require');
+const testHelper = require('../test-helper');
+const dotenv = require('dotenv');
+
+// Load environment variables from .env file
+dotenv.config();
 
 // Store the original modules
 let originalDecomposeModule;
@@ -181,16 +186,52 @@ QUnit.module('Decompose controller tests', {
 });
 
 QUnit.test('should log AI interaction when OpenRouter API key is not available', async function(assert) {
-    // Get the decompose module with our mocks
-    const decompose = require('../../src/controller/decompose');
-
     // Save original environment variables
     const originalApiKey = process.env.OPENROUTER_API_KEY;
-    const originalUseRealApi = process.env.USE_REAL_API;
+    
+    // Create a counter for AILogging interactions
+    let aiLoggingCallCount = 0;
+    
+    // More robust mock for AILogging that will be used throughout the test
+    const MockAILogging = class {
+      constructor() {
+        console.log('MockAILogging instantiated');
+      }
+      async logInteraction(boardFolder, type, data) {
+        console.log(`MockAILogging.logInteraction called with type: ${type}`);
+        aiLoggingCallCount++;
+        return true;
+      }
+    };
+    
+    // Mock the AILogging module
+    mockRequire('../../src/lib/ai-logging', MockAILogging);
+    
+    // Force the axios module to return a mock response
+    mockRequire('axios', {
+      post: async () => ({
+        data: {
+          choices: [{
+            message: {
+              content: JSON.stringify({
+                subtasks: [
+                  { text: "This is a test task for decomposition", completed: false }
+                ]
+              })
+            }
+          }]
+        }
+      })
+    });
+    
+    // Get the decompose module with our mocks
+    // Force reload to use our new mocks
+    delete require.cache[require.resolve('../../src/controller/decompose')];
+    const decompose = require('../../src/controller/decompose');
 
     // Set environment variables for testing
+    // Explicitly set to undefined to force the fallback behavior
     process.env.OPENROUTER_API_KEY = undefined;
-    process.env.USE_REAL_API = undefined;
 
     try {
       await decompose({
@@ -198,13 +239,20 @@ QUnit.test('should log AI interaction when OpenRouter API key is not available',
         interactive: false
       });
 
-      // Since we're using mocks, we can't actually check the tasks
-      // Instead, we'll verify that our mock was called correctly
+      // In test environment with API key undefined, it should still attempt to log
+      // the interaction, even though it will use the fallback implementation
+      console.log(`AI logging call count: ${aiLoggingCallCount}`);
+      
+      // We expect at least one call to logInteraction
+      assert.ok(aiLoggingCallCount > 0, 'AI logging function was called at least once');
       assert.ok(true, 'Decompose function executed without errors');
     } finally {
       // Restore original environment variables
       process.env.OPENROUTER_API_KEY = originalApiKey;
-      process.env.USE_REAL_API = originalUseRealApi;
+      
+      // Stop mocking
+      mockRequire.stop('../../src/lib/ai-logging');
+      mockRequire.stop('axios');
     }
 });
 

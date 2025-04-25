@@ -4,6 +4,15 @@
  * Main entry point for the chat functionality
  */
 
+// Suppress deprecation warnings (including punycode)
+process.noDeprecation = true;
+
+// When spawning child processes, make sure they also suppress deprecation warnings
+process.env.NODE_OPTIONS = process.env.NODE_OPTIONS || '';
+if (!process.env.NODE_OPTIONS.includes('--no-deprecation')) {
+  process.env.NODE_OPTIONS += ' --no-deprecation';
+}
+
 const kanbnModule = require('../main');
 const utility = require('../utility');
 const AIService = require('../lib/ai-service');
@@ -79,7 +88,20 @@ async function handleChatMessage(options) {
       // Initialize components normally if no parent context
       utility.debugLog('No parent context found, initializing normally');
       const projectContextManager = new ProjectContext(kanbn);
-      projectContext = await projectContextManager.getContext(true);
+      
+      // Include both system tasks and project tasks for the AI context (true = include references, true = include system tasks)
+      // This ensures the AI has complete context while users only see project tasks
+      projectContext = await projectContextManager.getContext(true, true);
+      
+      // Debug information about task counts
+      if (projectContext.tasks) {
+        const taskUtils = require('../lib/task-utils');
+        const systemTasks = Object.entries(projectContext.tasks)
+          .filter(([id, task]) => taskUtils.isSystemTask(id, task));
+        
+        utility.debugLog(`Providing AI with ${Object.keys(projectContext.tasks).length} total tasks, including ${systemTasks.length} system tasks`);
+      }
+      
       chatHandler = new ChatHandler(kanbn, boardFolder, projectContext);
     }
     
@@ -437,7 +459,8 @@ module.exports = async args => {
                 [contextVar]: serializedContext
               };
               
-              const cmd = `KANBN_QUIET=true kanbn chat --message "${escapedMessage}"`;
+              // Force KANBN_QUIET=true and explicitly disable DEBUG output in the subprocess
+              const cmd = `KANBN_QUIET=true DEBUG=false kanbn chat --message "${escapedMessage}"`;
               let aiResponse = "I'm sorry, I couldn't process your request.";
               try {
                 // Execute the command with enhanced context
@@ -483,9 +506,15 @@ module.exports = async args => {
                   aiResponse = match[1].trim();
                   utility.debugLog(`Successfully extracted response: ${aiResponse.substring(0, 50)}...`);
                 } else {
-                  // Fall back to the raw result if regex doesn't match
-                  aiResponse = result.trim();
-                  utility.debugLog('Could not extract response with regex, using raw output');
+                  // Fall back to the raw result if regex doesn't match, but clean it first
+                  const cleanedResult = result
+                    .split('\n')
+                    .filter(line => !line.includes('[DEBUG]') && !line.startsWith('DEBUG:'))
+                    .join('\n')
+                    .trim();
+                  
+                  aiResponse = cleanedResult || result.trim();
+                  utility.debugLog('Could not extract response with regex, using cleaned output');
                 }
                 
                 // Commenting out memory updates as ChatHandler doesn't expose addMemoryItem method
@@ -508,10 +537,26 @@ module.exports = async args => {
                 aiResponse = `Error: ${execError.message}`;
               }
               
+              // Filter out any remaining DEBUG lines and clean up HTML/markdown artifacts from the response
+              let filteredResponse = aiResponse
+                .split('\n')
+                .filter(line => !line.includes('[DEBUG]') && !line.match(/^DEBUG:/))
+                .join('\n');
+                
+              // Remove HTML doctype and common markup if present
+              filteredResponse = filteredResponse
+                .replace(/<!DOCTYPE\s+HTML>|<\/?html>|<\/?head>|<\/?body>|<\/?title>.*?<\/title>/gi, '')
+                .replace(/<h1>Kanban Board<\/h1>/gi, '');
+              
+              // Remove AI interaction task references
+              filteredResponse = filteredResponse
+                .replace(/ai-(?:request|response)-interaction-at-[\w-\.]+/g, '[system task]')
+                .replace(/AI (?:request|response) interaction at [\w-\.:]+/g, '[system task]');
+              
               // Clear the thinking message and display response
               process.stdout.write('\r' + ' '.repeat(80) + '\r');
               // For interactive mode, keep the prefix for context
-              console.log(`${colors.yellow}Project Assistant: ${colors.reset}${aiResponse}`);
+              console.log(`${colors.yellow}Project Assistant: ${colors.reset}${filteredResponse}`);
             } catch (execError) {
               console.error('Error with message-based approach:', execError.message);
               console.log(`${colors.yellow}Project Assistant: ${colors.reset}I'm sorry, there was an error processing your message.`);

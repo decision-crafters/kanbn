@@ -116,6 +116,24 @@ function taskCompleted(index, task) {
   );
 }
 
+/**
+ * Determines if a task is a system-generated task (like AI interactions)
+ * @param {string} taskId The task ID to check
+ * @param {object} task The task object to check
+ * @return {boolean} True if this is a system task
+ */
+function isSystemTask(taskId, task) {
+  return taskId.includes('ai-request') || 
+         taskId.includes('ai-response') || 
+         (task.name && (
+           task.name.toLowerCase().includes('ai request') || 
+           task.name.toLowerCase().includes('ai response') || 
+           task.name.toLowerCase().includes('ai interaction')
+         )) || 
+         (task.description && 
+          task.description.includes('automatically generated record of an AI interaction'));
+}
+
 module.exports = {
   taskInIndex,
   findTaskColumn,
@@ -124,5 +142,6 @@ module.exports = {
   renameTaskInIndex,
   getTaskMetadata,
   setTaskMetadata,
-  taskCompleted
+  taskCompleted,
+  isSystemTask
 };

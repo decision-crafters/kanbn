@@ -1,3 +1,12 @@
+// Suppress all deprecation warnings (including punycode)
+process.noDeprecation = true;
+
+// When spawning child processes, pass the no-deprecation flag
+process.env.NODE_OPTIONS = process.env.NODE_OPTIONS || '';
+if (!process.env.NODE_OPTIONS.includes('--no-deprecation')) {
+  process.env.NODE_OPTIONS += ' --no-deprecation';
+}
+
 const minimist = require('minimist');
 const path = require('path');
 const utility = require('./src/utility');

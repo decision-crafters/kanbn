@@ -31,10 +31,27 @@ module.exports = async args => {
     return;
   }
 
-  // Load and hydrate all tracked tasks
-  const tasks = (await kanbn.loadAllTrackedTasks(index)).map(
-    task => kanbn.hydrateTask(index, task)
-  );
+  // Load all tracked tasks
+  const taskUtils = require('../lib/task-utils');
+  const utility = require('../utility');
+  
+  // Get all tasks from the index - returns an object with task IDs as keys
+  let allTasks = await kanbn.loadAllTrackedTasks(index);
+  
+  // Convert tasks object to array for filtering and hydration
+  const tasksArray = Object.entries(allTasks).map(([id, task]) => {
+    // Make sure the task has its ID
+    task.id = id;
+    return task;
+  });
+  
+  // Filter out system tasks (AI interaction records)
+  const projectTasks = tasksArray.filter(task => !taskUtils.isSystemTask(task.id, task));
+  
+  utility.debugLog(`Loaded ${tasksArray.length} total tasks, displaying ${projectTasks.length} project tasks`);
+  
+  // Hydrate only the project tasks for display
+  const tasks = projectTasks.map(task => kanbn.hydrateTask(index, task));
 
   // Show the board
   board
