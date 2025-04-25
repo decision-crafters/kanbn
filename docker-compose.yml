@@ -1,0 +1,26 @@
+version: '3'
+
+services:
+  kanbn:
+    build: .
+    image: decision-crafters/kanbn:latest
+    container_name: kanbn-dev
+    volumes:
+      - .:/app
+    environment:
+      - NODE_ENV=development
+      # Connect to host's Ollama instance
+      - OLLAMA_HOST=http://host.docker.internal:11434
+      - OLLAMA_MODEL=llama3:latest
+      # Force use of Ollama, not OpenRouter
+      - OPENROUTER_API_KEY=
+      - USE_OLLAMA=true
+    # Allow access to host network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    # Keep container running
+    tty: true
+    stdin_open: true
+    command: tail -f /dev/null
+
+# No separate Ollama container - using host system's Ollama

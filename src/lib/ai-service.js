@@ -25,7 +25,7 @@ class AIService {
       apiKey: options.apiKey || process.env.OPENROUTER_API_KEY || null,
       model: options.model || process.env.OPENROUTER_MODEL || 'openai/gpt-3.5-turbo',
       ollamaModel: options.ollamaModel || process.env.OLLAMA_MODEL || 'llama3',
-      ollamaUrl: options.ollamaUrl || process.env.OLLAMA_URL || 'http://localhost:11434'
+      ollamaUrl: options.ollamaUrl || process.env.OLLAMA_HOST || process.env.OLLAMA_URL || 'http://localhost:11434'
     };
     
     // Debug mode flag
