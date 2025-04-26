@@ -162,7 +162,8 @@ NODE_OPTIONS=--no-deprecation kanbn chat --message "What are some interesting ch
 # Test vector search with specific query
 print_info "Testing direct vector search with RAGManager..."
 cat > /tmp/test_rag_search.js << EOL
-const RAGManager = require('../src/lib/rag-manager');
+const path = require('path');
+const RAGManager = require(path.join(process.env.KANBN_ROOT || process.cwd(), 'src/lib/rag-manager'));
 const util = require('util');
 
 async function testRagSearch() {

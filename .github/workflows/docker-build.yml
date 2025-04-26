@@ -101,15 +101,22 @@ jobs:
               --network host \
               kanbn:test /bin/bash -c "$(cat ./examples/test_docker_rag_integrations.sh)"
               
-            # Test OpenRouter integration if API key is available
-            if [ ! -z "${{ secrets.OPENROUTER_API_KEY }}" ]; then
-              docker run --rm -v $TEST_DIR:/workspace -w /workspace \
-                -e KANBN_ENV=test \
-                -e NODE_ENV=test \
-                -e OPENROUTER_API_KEY=${{ secrets.OPENROUTER_API_KEY }} \
-                -e USE_OLLAMA=false \
-                kanbn:test /bin/bash -c "$(cat ./examples/test_openrouter_rag_integrations.sh)"
-            fi
+          # Setup OpenRouter test environment
+          if [ ! -z "${{ secrets.OPENROUTER_API_KEY }}" ]; then
+            echo "Setting up OpenRouter test environment..."
+            echo "OPENROUTER_API_KEY=${{ secrets.OPENROUTER_API_KEY }}" > $TEST_DIR/.env
+            echo "KANBN_ROOT=$(pwd)" >> $TEST_DIR/.env
+            
+            docker run --rm -v $TEST_DIR:/workspace -w /workspace \
+              -e KANBN_ENV=test \
+              -e NODE_ENV=test \
+              -e KANBN_ROOT=/app \
+              -v $(pwd):/app \
+              -e USE_OLLAMA=false \
+              kanbn:test /bin/bash -c "$(cat ./examples/test_openrouter_rag_integrations.sh)"
+            
+            rm -f $TEST_DIR/.env
+          fi
           fi
 
       - name: Login to Quay.io

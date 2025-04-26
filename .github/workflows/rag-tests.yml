@@ -84,9 +84,26 @@ jobs:
         
       - name: Run OpenRouter RAG Tests
         if: github.event_name != 'workflow_dispatch' || github.event.inputs.test_type == 'all' || github.event.inputs.test_type == 'openrouter'
-        env:
-          KANBN_ENV: test
-          DEBUG: ${{ github.event.inputs.debug_mode == 'true' || 'false' }}
-          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
-          USE_OLLAMA: false
-        run: bash ./examples/test_openrouter_rag_integrations.sh
+        run: |
+          if [ ! -z "${{ secrets.OPENROUTER_API_KEY }}" ]; then
+            # Create test directory and setup environment
+            TEST_DIR=$(mktemp -d)
+            echo "Setting up OpenRouter test environment in $TEST_DIR"
+            
+            # Create .env file with necessary configuration
+            echo "OPENROUTER_API_KEY=${{ secrets.OPENROUTER_API_KEY }}" > $TEST_DIR/.env
+            echo "KANBN_ROOT=$(pwd)" >> $TEST_DIR/.env
+            echo "DEBUG=${{ github.event.inputs.debug_mode == 'true' || 'false' }}" >> $TEST_DIR/.env
+            
+            # Run the test with proper environment setup
+            cd $TEST_DIR
+            KANBN_ENV=test \
+            NODE_ENV=test \
+            USE_OLLAMA=false \
+            bash ../examples/test_openrouter_rag_integrations.sh
+            
+            # Cleanup
+            rm -f .env
+          else
+            echo "Skipping OpenRouter tests - API key not available"
+          fi
