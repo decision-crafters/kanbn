@@ -29,6 +29,13 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
+      - name: Check workspace structure
+        run: |
+          echo "GitHub workspace: $GITHUB_WORKSPACE"
+          echo "Current directory: $(pwd)"
+          echo "Repository structure:"
+          find . -type f -name "*.sh" | sort
+
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
@@ -90,15 +97,20 @@ jobs:
           echo "Verifying kanbn command is available..."
           which kanbn || { echo "kanbn command not found in PATH"; exit 1; }
           echo "Testing kanbn command..."
-          kanbn version || { echo "kanbn command failed to execute"; exit 1; }
+          kanbn --version || { echo "kanbn command failed to execute"; exit 1; }
           echo "kanbn command is working properly"
 
       - name: Prepare Ollama test script
         run: |
+          # List contents of examples directory
+          echo "Contents of examples directory:"
+          ls -la ./examples/
+
           # Make sure the script is executable
-          chmod +x ./examples/test_ollama_rag_integrations.sh
+          chmod +x ./examples/test_ollama_rag_integrations.sh || echo "Failed to chmod script"
+
           # Verify the script exists
-          ls -la ./examples/test_ollama_rag_integrations.sh
+          ls -la ./examples/test_ollama_rag_integrations.sh || echo "Script not found"
 
       - name: Run Ollama RAG Tests
         if: github.event_name != 'workflow_dispatch' || github.event.inputs.test_type == 'all' || github.event.inputs.test_type == 'ollama'
@@ -109,14 +121,28 @@ jobs:
           OLLAMA_HOST: http://localhost:11434
           OLLAMA_MODEL: llama2
           USE_OLLAMA: true
-        run: bash ./examples/test_ollama_rag_integrations.sh
+        run: |
+          # Use absolute path to the script
+          SCRIPT_PATH="$(pwd)/examples/test_ollama_rag_integrations.sh"
+
+          # Debug script path
+          echo "Script path: $SCRIPT_PATH"
+          ls -la "$SCRIPT_PATH" || echo "Script not found at $SCRIPT_PATH"
+
+          # Run the script
+          bash "$SCRIPT_PATH"
 
       - name: Prepare OpenRouter test script
         run: |
+          # List contents of examples directory
+          echo "Contents of examples directory:"
+          ls -la ./examples/
+
           # Make sure the script is executable
-          chmod +x ./examples/test_openrouter_rag_integrations.sh
+          chmod +x ./examples/test_openrouter_rag_integrations.sh || echo "Failed to chmod script"
+
           # Verify the script exists
-          ls -la ./examples/test_openrouter_rag_integrations.sh
+          ls -la ./examples/test_openrouter_rag_integrations.sh || echo "Script not found"
 
       - name: Run OpenRouter RAG Tests
         if: github.event_name != 'workflow_dispatch' || github.event.inputs.test_type == 'all' || github.event.inputs.test_type == 'openrouter'
@@ -137,9 +163,32 @@ jobs:
             echo "KANBN_ROOT=$(pwd)" >> $TEST_DIR/.env
             echo "DEBUG=${{ github.event.inputs.debug_mode == 'true' || 'true' }}" >> $TEST_DIR/.env
 
+            # Copy the test script to the test directory as a backup approach
+            cp ./examples/test_openrouter_rag_integrations.sh $TEST_DIR/
+            chmod +x $TEST_DIR/test_openrouter_rag_integrations.sh
+
             # Run the test with proper environment setup
+            # Use absolute path to the script
+            REPO_ROOT=$(pwd)
+            SCRIPT_PATH="$REPO_ROOT/examples/test_openrouter_rag_integrations.sh"
+
+            # Debug script path
+            echo "Script path: $SCRIPT_PATH"
+            ls -la "$SCRIPT_PATH" || echo "Script not found at $SCRIPT_PATH"
+
+            # Change to test directory and run the script
             cd $TEST_DIR
-            bash ../examples/test_openrouter_rag_integrations.sh
+            echo "Current directory: $(pwd)"
+
+            # Try to run the script using the absolute path
+            if [ -f "$SCRIPT_PATH" ]; then
+              echo "Running script from absolute path: $SCRIPT_PATH"
+              bash "$SCRIPT_PATH"
+            else
+              # Fallback to the local copy
+              echo "Absolute path script not found, using local copy"
+              bash "./test_openrouter_rag_integrations.sh"
+            fi
 
             # Cleanup
             rm -f .env
