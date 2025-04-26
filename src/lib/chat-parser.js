@@ -8,7 +8,7 @@ const commandPatterns = {
   moveTask: /^move "?([^"]+)"? to ([^"]+)/i,
   comment: /^(add )?comment "([^"]+)" (on|to) "?([^"]+)"?/i,
   complete: /^(complete|finish|mark done) "?([^"]+)"?/i,
-  listTasksInColumn: /^(what|which|list|show)( tasks| items)?( are)? in (the )?["']?([\w\s]+)["']?$/i,
+  listTasksInColumn: /^(what|which|list|show)( tasks| items)( are)? in (the )?["']?([\w\s]+)["']?$/i,
   status: /^(show )?(status|progress|board)/i,
   
   // New commands

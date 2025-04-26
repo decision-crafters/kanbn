@@ -6,7 +6,13 @@
 
 const kanbnModule = require('../main');
 const utility = require('../utility');
-const chalk = require('chalk');
+// Use a more compatible approach for terminal colors
+const colors = {
+  green: (text) => `\x1b[32m${text}\x1b[0m`,
+  gray: (text) => `\x1b[90m${text}\x1b[0m`,
+  red: (text) => `\x1b[31m${text}\x1b[0m`,
+  yellow: (text) => `\x1b[33m${text}\x1b[0m`
+};
 const path = require('path');
 const RAGManager = require('../lib/rag-manager');
 
@@ -45,7 +51,7 @@ module.exports = async args => {
       
       let result = 'Available integrations:\n';
       for (const integration of integrations) {
-        result += `- ${chalk.green(integration)}: ${chalk.gray(`${integration}.md`)}\n`;
+        result += `- ${colors.green(integration)}: ${colors.gray(`${integration}.md`)}\n`;
       }
       
       return result;

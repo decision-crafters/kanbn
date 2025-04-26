@@ -162,6 +162,20 @@ docker-test-all:
 		-v $$(pwd):/app \
 		$(DOCKER_IMAGE):$(DOCKER_TAG) npm run test:all
 
+.PHONY: docker-test-rag
+docker-test-rag: build-docker docker-network
+	@echo "Running RAG integration tests in Docker container..."
+	@echo "Creating Docker container with Ollama for embedding generation..."
+	@docker run --rm \
+		--name $(DOCKER_CONTAINER)-rag-test \
+		--network $(DOCKER_OLLAMA_NET) \
+		-e DEBUG=true \
+		-e KANBN_ENV=test \
+		-v $$(pwd):/app \
+		$(DOCKER_IMAGE):$(DOCKER_TAG) /bin/bash -c \
+		"cd /app && ./examples/test_docker_rag_integrations.sh"
+	@echo "RAG integration tests completed."
+
 #-------------------------------------------------------------------------------
 # Environment Setup
 #-------------------------------------------------------------------------------

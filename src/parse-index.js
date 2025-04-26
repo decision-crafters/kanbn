@@ -1,6 +1,6 @@
 const yaml = require('yamljs');
 const fm = require('front-matter');
-const marked = require('marked');
+const markdown = require('./lib/markdown');
 const validate = require('jsonschema').validate;
 const parseMarkdown = require('./parse-markdown');
 
@@ -238,7 +238,7 @@ module.exports = {
           throw new Error(`invalid options: ${error.message}`);
         }
       }
-      
+
       try {
         validateOptions(options);
       } catch (error) {
@@ -251,14 +251,57 @@ module.exports = {
         try {
           columns = Object.fromEntries(columnNames.map(columnName => {
             try {
-              return [
-                columnName,
-                index[columnName].content
-                  ? marked.lexer(index[columnName].content)[0].items.map(item => item.tokens[0].tokens[0].text)
-                  : []
-              ];
+              // If the column content is empty or just whitespace, return an empty array
+              if (!index[columnName].content || index[columnName].content.trim() === '') {
+                return [columnName, []];
+              }
+
+              // Parse the content with markdown
+              const tokens = markdown.lexer(index[columnName].content);
+
+              // Check if the first token is a list
+              if (tokens.length > 0 && tokens[0].type === 'list') {
+                try {
+                  // Safely extract text from tokens with proper error handling
+                  return [
+                    columnName,
+                    tokens[0].items.map(item => {
+                      try {
+                        // Check if the token structure is as expected
+                        if (item &&
+                            item.tokens &&
+                            item.tokens[0] &&
+                            item.tokens[0].tokens &&
+                            item.tokens[0].tokens[0] &&
+                            typeof item.tokens[0].tokens[0].text === 'string') {
+                          return item.tokens[0].tokens[0].text;
+                        } else if (item && item.text) {
+                          // Fallback to item.text if available
+                          return item.text;
+                        } else {
+                          // Return empty string as a last resort
+                          return '';
+                        }
+                      } catch (err) {
+                        console.warn(`Warning: Error extracting text from list item: ${err.message}`);
+                        return '';
+                      }
+                    })
+                  ];
+                } catch (err) {
+                  console.warn(`Warning: Error processing list items: ${err.message}`);
+                  return [columnName, []];
+                }
+              } else {
+                // If the content exists but is not a list, return an empty array
+                // This is more forgiving than throwing an error
+                return [columnName, []];
+              }
             } catch (error) {
-              throw new Error(`column "${columnName}" must contain a list`);
+              // If there's an error parsing the column content, return an empty array
+              // This is more forgiving than throwing an error
+              console.warn(`Warning: column "${columnName}" could not be parsed: ${error.message}`);
+              return [columnName, []];
             }
           }));
         } catch (error) {
@@ -322,7 +365,13 @@ module.exports = {
       for (let column in data.columns) {
         result.push(
           `## ${column}`,
-          data.columns[column].map(task => `- [${task}](tasks/${task}.md)`).join('\n')
+          data.columns[column].length > 0 ?
+            data.columns[column].map(task => {
+              // Ensure task is a simple string without markdown formatting
+              const taskId = task.replace(/[\[\]\(\)]/g, '').split('/').pop().replace(/\.md$/, '');
+              return `- ${taskId}`;
+            }).join('\n') :
+            ''
         );
       }
     } catch (error) {

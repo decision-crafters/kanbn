@@ -1,8 +1,8 @@
 const Kanbn = require("../main");
 const utility = require("../utility");
 const parseTask = require("../parse-task");
-const marked = require("marked");
-const markedTerminalRenderer = require("marked-terminal");
+const markdown = require("../lib/markdown");
+const TerminalRenderer = require("markdown-it-terminal");
 const promptBuilder = require("../promptBuilder");
 const eventBus = require("../lib/event-bus");
 
@@ -47,10 +47,10 @@ function showTask(taskId, json = false, prompt = false) {
           utility.error(`Error generating prompt: ${error.message}`);
         }
       } else {
-        marked.setOptions({
-          renderer: new markedTerminalRenderer(),
-        });
-        console.log(marked(parseTask.json2md(task)));
+        // Configure markdown-it with terminal renderer
+        const terminalRenderer = new TerminalRenderer();
+        const md = markdown.md.use(terminalRenderer);
+        console.log(md.render(parseTask.json2md(task)));
       }
     })
     .catch((error) => {

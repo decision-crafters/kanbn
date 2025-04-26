@@ -1,12 +1,12 @@
 #!/bin/bash
 
-# Test script for RAG-based integrations
+# Test script for RAG-based integrations with OpenRouter
 
 # Set environment variables for testing
 export KANBN_ENV=test
-export DEBUG=true
-export KANBN_TEST_MODE=true
-export KANBN_QUIET=true
+export DEBUG=false
+# Don't set KANBN_TEST_MODE so we use the real OpenRouter API
+export KANBN_QUIET=false
 
 # Function to print info message
 print_info() {
@@ -24,14 +24,22 @@ print_error() {
   exit 1
 }
 
-print_info "Starting Kanbn RAG Integrations Test"
+print_info "Starting Kanbn OpenRouter RAG Integrations Test"
 
 # Create a test directory
-TEST_DIR="/tmp/kanbn_rag_test_$(date +%s)"
+TEST_DIR="/tmp/kanbn_openrouter_test_$(date +%s)"
 mkdir -p "$TEST_DIR"
 cd "$TEST_DIR" || exit 1
 
 print_info "Testing in: $TEST_DIR"
+
+# Copy the .env file to the test directory to ensure API keys are available
+if [ -f "/Users/tosinakinosho/workspaces/kanbn/.env" ]; then
+  cp "/Users/tosinakinosho/workspaces/kanbn/.env" "$TEST_DIR/.env"
+  print_success "Copied .env file with API keys"
+else
+  print_error "Could not find .env file with API keys"
+fi
 
 # Initialize kanbn board
 print_info "Initializing Kanbn board..."
@@ -126,13 +134,17 @@ fi
 print_info "Listing integrations after adding..."
 NODE_OPTIONS=--no-deprecation kanbn integrations --list
 
-# Test the RAG functionality with a specific query
-print_info "Testing chat with game systems integration..."
-KANBN_ENV=test NODE_OPTIONS=--no-deprecation kanbn chat --message "What stats are used in D&D 5E?" --integration game-systems --quiet
+# Test the RAG functionality with a specific query using OpenRouter
+print_info "Testing chat with game systems integration using OpenRouter..."
+NODE_OPTIONS=--no-deprecation kanbn chat --message="What stats are used in D&D 5E?" --integration=game-systems
 
-# Check chat with multiple integrations
-print_info "Testing chat with all integrations..."
-KANBN_ENV=test NODE_OPTIONS=--no-deprecation kanbn chat --message "What combinations of D&D 5E character stats and personality traits make for interesting NPCs?" --with-integrations --quiet
+# Check chat with multiple integrations using OpenRouter (using --with-integrations)
+print_info "Testing chat with all integrations using OpenRouter..."
+NODE_OPTIONS=--no-deprecation kanbn chat --message="What combinations of D&D 5E character stats and personality traits make for interesting NPCs?" --with-integrations
+
+# Check chat with multiple specific integrations using OpenRouter (using multiple --integration flags)
+print_info "Testing chat with multiple specific integrations using OpenRouter..."
+NODE_OPTIONS=--no-deprecation kanbn chat --message="How can personality traits influence a character's behavior in D&D?" --integration=game-systems --integration=personality-traits
 
 # Clean up if not needed for further inspection
 # rm -rf "$TEST_DIR"
