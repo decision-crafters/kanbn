@@ -25,15 +25,15 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-    
+
     steps:
       - uses: actions/checkout@v3
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: '18'
-          
+
       - name: Install dependencies and link package
         run: |
           npm ci
@@ -43,16 +43,23 @@ jobs:
           echo "Node modules bin directory: $(npm bin -g)"
           # Add global npm bin to PATH
           echo "$(npm bin -g)" >> $GITHUB_PATH
-        
+          # Debug npm link
+          echo "Checking npm link status:"
+          npm ls -g --depth=0 | grep kanbn || echo "kanbn not found in global packages"
+          # Debug PATH
+          echo "PATH: $PATH"
+          # Debug kanbn binary
+          ls -la $(which kanbn 2>/dev/null) || echo "kanbn binary not found"
+
       - name: Setup and verify Ollama
         run: |
           # Install Ollama
           curl https://ollama.ai/install.sh | sh
-          
+
           # Start Ollama service
           ollama serve &
           echo "Started Ollama service in background"
-          
+
           # Wait for Ollama to be ready (up to 30 seconds)
           MAX_RETRIES=30
           RETRY_COUNT=0
@@ -66,18 +73,33 @@ jobs:
             RETRY_COUNT=$((RETRY_COUNT + 1))
           done
           echo "✓ Ollama service is running"
-          
+
           # Pull the model
           ollama pull llama2
           echo "✓ Model pulled successfully"
-          
+
           # Verify model is available
           if ! ollama list | grep -q "llama2"; then
             echo "Error: llama2 model not found after pulling"
             exit 1
           fi
           echo "✓ Model verified"
-          
+
+      - name: Verify kanbn command before tests
+        run: |
+          echo "Verifying kanbn command is available..."
+          which kanbn || { echo "kanbn command not found in PATH"; exit 1; }
+          echo "Testing kanbn command..."
+          kanbn --version || { echo "kanbn command failed to execute"; exit 1; }
+          echo "kanbn command is working properly"
+
+      - name: Prepare Ollama test script
+        run: |
+          # Make sure the script is executable
+          chmod +x ./examples/test_ollama_rag_integrations.sh
+          # Verify the script exists
+          ls -la ./examples/test_ollama_rag_integrations.sh
+
       - name: Run Ollama RAG Tests
         if: github.event_name != 'workflow_dispatch' || github.event.inputs.test_type == 'all' || github.event.inputs.test_type == 'ollama'
         env:
@@ -87,28 +109,38 @@ jobs:
           OLLAMA_HOST: http://localhost:11434
           OLLAMA_MODEL: llama2
           USE_OLLAMA: true
-        run: bash ./examples/test_ollama_rag_integrations\ copy.sh
-        
+        run: bash ./examples/test_ollama_rag_integrations.sh
+
+      - name: Prepare OpenRouter test script
+        run: |
+          # Make sure the script is executable
+          chmod +x ./examples/test_openrouter_rag_integrations.sh
+          # Verify the script exists
+          ls -la ./examples/test_openrouter_rag_integrations.sh
+
       - name: Run OpenRouter RAG Tests
         if: github.event_name != 'workflow_dispatch' || github.event.inputs.test_type == 'all' || github.event.inputs.test_type == 'openrouter'
+        env:
+          KANBN_ENV: test
+          NODE_ENV: test
+          DEBUG: ${{ github.event.inputs.debug_mode == 'true' || 'true' }}
+          USE_OLLAMA: false
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
         run: |
           if [ ! -z "${{ secrets.OPENROUTER_API_KEY }}" ]; then
             # Create test directory and setup environment
             TEST_DIR=$(mktemp -d)
             echo "Setting up OpenRouter test environment in $TEST_DIR"
-            
+
             # Create .env file with necessary configuration
             echo "OPENROUTER_API_KEY=${{ secrets.OPENROUTER_API_KEY }}" > $TEST_DIR/.env
             echo "KANBN_ROOT=$(pwd)" >> $TEST_DIR/.env
-            echo "DEBUG=${{ github.event.inputs.debug_mode == 'true' || 'false' }}" >> $TEST_DIR/.env
-            
+            echo "DEBUG=${{ github.event.inputs.debug_mode == 'true' || 'true' }}" >> $TEST_DIR/.env
+
             # Run the test with proper environment setup
             cd $TEST_DIR
-            KANBN_ENV=test \
-            NODE_ENV=test \
-            USE_OLLAMA=false \
             bash ../examples/test_openrouter_rag_integrations.sh
-            
+
             # Cleanup
             rm -f .env
           else

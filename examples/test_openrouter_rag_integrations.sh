@@ -8,23 +8,49 @@ export DEBUG=false
 # Don't set KANBN_TEST_MODE so we use the real OpenRouter API
 export KANBN_QUIET=false
 
+# Function to print debug message
+print_debug() {
+  if [ "$DEBUG" = "true" ]; then
+    echo -e "\033[0;35m 🔍 DEBUG: $1\033[0m" >&2
+  fi
+}
+
 # Function to print info message
 print_info() {
   echo -e "\033[0;34m ℹ️ $1\033[0m"
+  print_debug "Info: $1"
 }
 
 # Function to print success message
 print_success() {
   echo -e "\033[0;32m ✅ $1\033[0m"
+  print_debug "Success: $1"
 }
 
 # Function to print error message
 print_error() {
   echo -e "\033[0;31m ❌ $1\033[0m"
+  print_debug "Error: $1"
+  print_debug "Error occurred at line ${BASH_LINENO[0]}"
+  print_debug "Call stack:"
+  local frame=0
+  while caller $frame; do
+    ((frame++))
+  done >&2
   exit 1
 }
 
 print_info "Starting Kanbn OpenRouter RAG Integrations Test"
+print_debug "Environment variables:"
+print_debug "KANBN_ENV=$KANBN_ENV"
+print_debug "DEBUG=$DEBUG"
+print_debug "KANBN_TEST_MODE=$KANBN_TEST_MODE"
+print_debug "KANBN_QUIET=$KANBN_QUIET"
+
+# Enable debug mode if requested
+if [ "$DEBUG" = "true" ]; then
+  set -x
+fi
 
 # Create a test directory
 TEST_DIR="/tmp/kanbn_openrouter_test_$(date +%s)"
@@ -32,25 +58,116 @@ mkdir -p "$TEST_DIR"
 cd "$TEST_DIR" || exit 1
 
 print_info "Testing in: $TEST_DIR"
+print_debug "Test directory created and changed to: $TEST_DIR"
 
 # Copy the .env file to the test directory to ensure API keys are available
-if [ -f "/Users/tosinakinosho/workspaces/kanbn/.env" ]; then
-  cp "/Users/tosinakinosho/workspaces/kanbn/.env" "$TEST_DIR/.env"
-  print_success "Copied .env file with API keys"
+# First try to find .env in the current directory or parent directories
+ENV_FILE=""
+for dir in "." ".." "../.." "../../.."; do
+  if [ -f "$dir/.env" ]; then
+    ENV_FILE="$dir/.env"
+    break
+  fi
+done
+
+# If not found, try the repository root
+if [ -z "$ENV_FILE" ] && [ -n "$GITHUB_WORKSPACE" ]; then
+  if [ -f "$GITHUB_WORKSPACE/.env" ]; then
+    ENV_FILE="$GITHUB_WORKSPACE/.env"
+  fi
+fi
+
+# If still not found, try the home directory
+if [ -z "$ENV_FILE" ] && [ -f "$HOME/.env" ]; then
+  ENV_FILE="$HOME/.env"
+fi
+
+# Copy the .env file if found
+if [ -n "$ENV_FILE" ]; then
+  cp "$ENV_FILE" "$TEST_DIR/.env"
+  print_success "Copied .env file with API keys from $ENV_FILE"
 else
-  print_error "Could not find .env file with API keys"
+  print_info "No .env file found, will use environment variables if available"
+fi
+
+# Verify kanbn is available in PATH
+print_info "Verifying kanbn is available..."
+which kanbn
+if [ $? -ne 0 ]; then
+  print_error "kanbn command not found in PATH. Make sure it's properly installed and linked."
 fi
 
 # Initialize kanbn board
 print_info "Initializing Kanbn board..."
+# Set trap to catch any initialization errors
+trap 'print_debug "Command failed: $BASH_COMMAND"' ERR
 NODE_OPTIONS=--no-deprecation kanbn init --name "NPCForge" --description "A tool for RPG/DMs to generate deep NPCs with motivations, accents, secret backstories"
+INIT_RESULT=$?
+trap - ERR
+
+# Check if initialization was successful
+if [ $INIT_RESULT -ne 0 ]; then
+  print_error "Board initialization command failed with exit code $INIT_RESULT"
+fi
 
 # Check if kanbn was initialized
 if [ -d ".kanbn" ]; then
   print_success "Board initialized"
 else
-  print_error "Board initialization failed"
+  print_error "Board initialization failed - .kanbn directory not created"
 fi
+
+# Show the index file for debugging
+echo "Initial index.md content:"
+cat .kanbn/index.md || print_error "Could not read index.md file"
+
+# Fix any format issues with the columns
+function ensure_proper_column_format() {
+  print_info "Ensuring proper format for all columns..."
+
+  # Show initial content
+  echo "Initial index.md content:"
+  cat ".kanbn/index.md" || print_error "Could not read index.md file"
+
+  # Create a new index file from scratch with proper format
+  cat > ".kanbn/index.md" << EOF
+---
+startedColumns:
+  - 'In Progress'
+completedColumns:
+  - Done
+---
+
+# NPCForge
+
+A tool for RPG/DMs to generate deep NPCs with motivations, accents, secret backstories
+
+## Backlog
+
+## Todo
+
+## In Progress
+
+## Done
+EOF
+
+  # Print success message for each column
+  print_success "Fixed the Backlog column format"
+  print_success "Fixed the Todo column format"
+  print_success "Fixed the In Progress column format"
+  print_success "Fixed the Done column format"
+
+  # Show fixed content
+  echo "Fixed index.md content:"
+  cat ".kanbn/index.md" || print_error "Could not read fixed index.md file"
+}
+
+# Call the function to fix column format
+ensure_proper_column_format
+
+# Also run validate with save flag as a backup to fix any remaining issues
+print_info "Running validate --save to ensure proper format..."
+NODE_OPTIONS=--no-deprecation kanbn validate --save
 
 # Create some tasks
 print_info "Creating test tasks..."
@@ -149,7 +266,14 @@ NODE_OPTIONS=--no-deprecation kanbn chat --message="How can personality traits i
 # Clean up if not needed for further inspection
 # rm -rf "$TEST_DIR"
 
+# [DEBUG POINT 6] - Test completion
 print_info "All tests completed successfully"
+print_debug "Test summary:"
+print_debug "- Test directory: $TEST_DIR"
+print_debug "- Board initialized: $([ -d ".kanbn" ] && echo "Yes" || echo "No")"
+print_debug "- Tasks created: $(ls -1 .kanbn/tasks/ 2>/dev/null | wc -l) tasks"
+print_debug "- Integrations added: $(kanbn integrations --list | grep -c "^-")"
+
 print_info "Your test environment is available at: $TEST_DIR"
 print_info "To chat with integrations: cd $TEST_DIR && kanbn chat --with-integrations"
 print_info "To chat with specific integration: cd $TEST_DIR && kanbn chat --integration game-systems"

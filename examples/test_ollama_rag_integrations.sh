@@ -59,23 +59,36 @@ cd "$TEST_DIR" || exit 1
 print_info "Testing in: $TEST_DIR"
 print_debug "Test directory created and changed to: $TEST_DIR"
 
+# Verify kanbn is available in PATH
+print_info "Verifying kanbn is available..."
+which kanbn
+if [ $? -ne 0 ]; then
+  print_error "kanbn command not found in PATH. Make sure it's properly installed and linked."
+fi
+
 # [DEBUG POINT 2] - Board initialization
 print_info "Initializing Kanbn board..."
 # Set trap to catch any initialization errors
 trap 'print_debug "Command failed: $BASH_COMMAND"' ERR
 NODE_OPTIONS=--no-deprecation kanbn init --name "NPCForge" --description "A tool for RPG/DMs to generate deep NPCs with motivations, accents, secret backstories"
+INIT_RESULT=$?
 trap - ERR
+
+# Check if initialization was successful
+if [ $INIT_RESULT -ne 0 ]; then
+  print_error "Board initialization command failed with exit code $INIT_RESULT"
+fi
 
 # Check if kanbn was initialized
 if [ -d ".kanbn" ]; then
   print_success "Board initialized"
 else
-  print_error "Board initialization failed"
+  print_error "Board initialization failed - .kanbn directory not created"
 fi
 
 # Show the index file for debugging
 echo "Initial index.md content:"
-cat .kanbn/index.md
+cat .kanbn/index.md || print_error "Could not read index.md file"
 
 # Fix any format issues with the columns
 function ensure_proper_column_format() {
@@ -83,7 +96,7 @@ function ensure_proper_column_format() {
 
   # Show initial content
   echo "Initial index.md content:"
-  cat ".kanbn/index.md"
+  cat ".kanbn/index.md" || print_error "Could not read index.md file"
 
   # Create a new index file from scratch with proper format
   cat > ".kanbn/index.md" << EOF
@@ -115,7 +128,7 @@ EOF
 
   # Show fixed content
   echo "Fixed index.md content:"
-  cat ".kanbn/index.md"
+  cat ".kanbn/index.md" || print_error "Could not read fixed index.md file"
 }
 
 # Call the function to fix column format
