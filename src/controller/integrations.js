@@ -25,7 +25,7 @@ module.exports = async args => {
   try {
     // Create a Kanbn instance
     const kanbn = typeof kanbnModule === 'function' ? kanbnModule() : kanbnModule;
-    
+
     // Check if we're in a Kanbn board
     let boardFolder;
     try {
@@ -33,47 +33,59 @@ module.exports = async args => {
     } catch (error) {
       return 'Not in a Kanbn board. Initialize a board with `kanbn init` first.';
     }
-    
+
     // Create RAG manager instance
     const ragManager = new RAGManager({paths: {kanbn: boardFolder}});
-    
+
     // Initialize RAG manager and integrations directory
     await ragManager.initialize();
-    
+
     // Handle different subcommands
     if (args.list) {
       // List all integrations
       const integrations = await ragManager.listIntegrations();
-      
+
       if (integrations.length === 0) {
         return 'No integrations found. Add integrations with `kanbn integrations add <n> <url-or-content>`.';
       }
-      
+
       let result = 'Available integrations:\n';
       for (const integration of integrations) {
         result += `- ${colors.green(integration)}: ${colors.gray(`${integration}.md`)}\n`;
       }
-      
+
       return result;
     } else if (args.add) {
       // Add a new integration
       if (!args.name) {
         return 'Missing integration name. Usage: `kanbn integrations add --name <name> [--url <url>] [--content <content>]`';
       }
-      
+
       if (args.url) {
         // Add integration from URL
+        const { isLikelyHtmlUrl } = require('../utils/html-to-markdown');
+        const isHtml = isLikelyHtmlUrl(args.url);
+
+        // Inform the user if we're converting HTML to Markdown
+        if (isHtml) {
+          utility.debugLog(`URL appears to be an HTML webpage, will convert to Markdown: ${args.url}`);
+        }
+
         const success = await ragManager.addIntegrationFromUrl(args.name, args.url);
-        
+
         if (success) {
-          return `Integration '${args.name}' added successfully from URL: ${args.url}`;
+          if (isHtml) {
+            return `Integration '${args.name}' added successfully from URL: ${args.url} (HTML converted to Markdown)`;
+          } else {
+            return `Integration '${args.name}' added successfully from URL: ${args.url}`;
+          }
         } else {
           return `Failed to add integration '${args.name}' from URL: ${args.url}`;
         }
       } else if (args.content) {
         // Add integration from content
         const success = await ragManager.addIntegration(args.name, args.content);
-        
+
         if (success) {
           return `Integration '${args.name}' added successfully with provided content`;
         } else {
@@ -87,9 +99,9 @@ module.exports = async args => {
       if (!args.name) {
         return 'Missing integration name. Usage: `kanbn integrations remove --name <name>`';
       }
-      
+
       const success = await ragManager.removeIntegration(args.name);
-      
+
       if (success) {
         return `Integration '${args.name}' removed successfully`;
       } else {

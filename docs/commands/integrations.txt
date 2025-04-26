@@ -19,6 +19,7 @@ The RAG-based approach:
 - Combines knowledge from multiple integrations when needed
 - Uses local Ollama models for embeddings when available
 - Falls back to simple keyword matching when embeddings are not available
+- Automatically converts HTML webpages to Markdown when adding from URLs
 
 Options:
 -------
@@ -37,6 +38,9 @@ List all integrations:
 
 Add an integration from a URL:
   kanbn integrations --add --name github --url https://raw.githubusercontent.com/username/repo/main/README.md
+
+Add an integration from an HTML webpage (automatically converted to Markdown):
+  kanbn integrations --add --name docs --url https://js.langchain.com/docs/tutorials/rag/
 
 Add an integration from content:
   kanbn integrations --add --name api-spec --content "# API Specification\n\nThis is the API spec..."

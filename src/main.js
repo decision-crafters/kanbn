@@ -794,6 +794,17 @@ class Kanbn {
           )
         ));
     }
+    
+    // Ensure all columns have proper array representation
+    if (index && index.columns) {
+      for (const column in index.columns) {
+        // Make sure each column has at least an empty array
+        if (!Array.isArray(index.columns[column])) {
+          index.columns[column] = [];
+        }
+      }
+    }
+    
     await this.saveIndex(index);
   }
 

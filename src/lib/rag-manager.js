@@ -278,9 +278,54 @@ class RAGManager {
      */
     async addIntegrationFromUrl(name, url) {
         try {
-            // Fetch the content from the URL
-            const response = await axios.get(url);
-            const content = response.data;
+            // Validate URL
+            if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                throw new Error('URL must start with http:// or https://');
+            }
+
+            utility.debugLog(`Adding integration from URL: ${url}`);
+
+            // Check if we need to convert HTML to Markdown
+            let content;
+            try {
+                // Import the HTML-to-Markdown converter
+                const { isLikelyHtmlUrl, convertUrlToMarkdown } = require('../utils/html-to-markdown');
+
+                // Check if the URL is likely to be an HTML webpage
+                if (isLikelyHtmlUrl(url)) {
+                    utility.debugLog(`URL appears to be an HTML webpage, converting to Markdown: ${url}`);
+
+                    // Convert HTML to Markdown
+                    content = await convertUrlToMarkdown(url);
+                    utility.debugLog('Successfully converted HTML to Markdown');
+                } else {
+                    // Fetch raw content directly
+                    utility.debugLog(`Fetching raw content from URL: ${url}`);
+                    const response = await axios.get(url);
+                    content = response.data;
+
+                    // If content is not a string (e.g., JSON), convert it to string
+                    if (typeof content !== 'string') {
+                        content = JSON.stringify(content, null, 2);
+                    }
+
+                    // Add metadata about the source URL
+                    content = `# ${name}\n\nSource: ${url}\n\n${content}`;
+                }
+            } catch (conversionError) {
+                // If HTML-to-Markdown conversion fails, fall back to direct fetching
+                utility.debugLog(`HTML conversion failed, falling back to direct fetching: ${conversionError.message}`);
+                const response = await axios.get(url);
+                content = response.data;
+
+                // If content is not a string (e.g., JSON), convert it to string
+                if (typeof content !== 'string') {
+                    content = JSON.stringify(content, null, 2);
+                }
+
+                // Add metadata about the source URL
+                content = `# ${name}\n\nSource: ${url}\n\n${content}`;
+            }
 
             // Add the integration with the fetched content
             return await this.addIntegration(name, content);

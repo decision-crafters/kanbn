@@ -10,6 +10,7 @@
 - 🔄 Git-friendly markdown-based task management
 - 🏃‍♂️ Sprint planning and execution
 - 📱 Command-line interface for speed and efficiency
+- 🌐 RAG integrations with HTML-to-Markdown conversion
 
 ## 🚀 Quick Start
 
@@ -101,6 +102,8 @@ Where <command> is one of:
 kanbn decompose  # Use AI to break down tasks
 kanbn chat       # Chat with AI project assistant
 kanbn task task-id --prompt  # Generate AI-friendly prompt from task data
+kanbn integrations --add --name docs --url https://example.com/docs  # Add web content as context
+kanbn chat --integration docs  # Chat with context from integrations
 ```
 
 #### Environment Variables for AI Features

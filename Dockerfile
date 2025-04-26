@@ -6,6 +6,9 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm install
 
+# Install HTML-to-Markdown conversion dependencies
+RUN npm install --save turndown cheerio
+
 # Copy source code
 COPY . .
 
