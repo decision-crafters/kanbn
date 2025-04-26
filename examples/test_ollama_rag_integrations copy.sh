@@ -8,34 +8,63 @@ export DEBUG=true
 export KANBN_TEST_MODE=true
 export KANBN_QUIET=true
 
+# Enable debug mode
+set -x
+
+# Function to print debug message
+print_debug() {
+  if [ "$DEBUG" = "true" ]; then
+    echo -e "\033[0;35m 🔍 DEBUG: $1\033[0m" >&2
+  fi
+}
+
 # Function to print info message
 print_info() {
   echo -e "\033[0;34m ℹ️ $1\033[0m"
+  print_debug "Info: $1"
 }
 
 # Function to print success message
 print_success() {
   echo -e "\033[0;32m ✅ $1\033[0m"
+  print_debug "Success: $1"
 }
 
 # Function to print error message
 print_error() {
   echo -e "\033[0;31m ❌ $1\033[0m"
+  print_debug "Error: $1"
+  print_debug "Error occurred at line ${BASH_LINENO[0]}"
+  print_debug "Call stack:"
+  local frame=0
+  while caller $frame; do
+    ((frame++))
+  done >&2
   exit 1
 }
 
 print_info "Starting Kanbn RAG Integrations Test"
+print_debug "Environment variables:"
+print_debug "KANBN_ENV=$KANBN_ENV"
+print_debug "DEBUG=$DEBUG"
+print_debug "KANBN_TEST_MODE=$KANBN_TEST_MODE"
+print_debug "KANBN_QUIET=$KANBN_QUIET"
 
+# [DEBUG POINT 1] - Test initialization
 # Create a test directory
 TEST_DIR="/tmp/kanbn_rag_test_$(date +%s)"
 mkdir -p "$TEST_DIR"
 cd "$TEST_DIR" || exit 1
 
 print_info "Testing in: $TEST_DIR"
+print_debug "Test directory created and changed to: $TEST_DIR"
 
-# Initialize kanbn board
+# [DEBUG POINT 2] - Board initialization
 print_info "Initializing Kanbn board..."
+# Set trap to catch any initialization errors
+trap 'print_debug "Command failed: $BASH_COMMAND"' ERR
 NODE_OPTIONS=--no-deprecation kanbn init --name "NPCForge" --description "A tool for RPG/DMs to generate deep NPCs with motivations, accents, secret backstories"
+trap - ERR
 
 # Check if kanbn was initialized
 if [ -d ".kanbn" ]; then
@@ -96,10 +125,11 @@ ensure_proper_column_format
 print_info "Running validate --save to ensure proper format..."
 NODE_OPTIONS=--no-deprecation kanbn validate --save
 
-# Create some tasks
+# [DEBUG POINT 3] - Task creation
 print_info "Creating test tasks..."
+print_debug "About to create test tasks..."
 
-# Add high priority tasks with explicit error checking
+# Add high priority tasks with explicit error checking and debug output
 NODE_OPTIONS=--no-deprecation kanbn add "npc-generator-core" \
     --name "Create NPC generation engine" \
     --description "Develop the core algorithm for generating NPCs with consistent personalities and backstories" \
@@ -118,8 +148,9 @@ print_success "Test tasks created"
 print_info "Testing integrations list command..."
 NODE_OPTIONS=--no-deprecation kanbn integrations --list
 
-# Add game systems integration
+# [DEBUG POINT 4] - Integration setup
 print_info "Adding game systems integration..."
+print_debug "Starting game systems integration setup..."
 NODE_OPTIONS=--no-deprecation kanbn integrations --add --name game-systems --content "# RPG Game Systems Reference
 
 ## Dungeons & Dragons 5E
@@ -178,8 +209,9 @@ fi
 print_info "Listing integrations after adding..."
 NODE_OPTIONS=--no-deprecation kanbn integrations --list
 
-# Test the RAG functionality with a specific query
+# [DEBUG POINT 5] - RAG testing
 print_info "Testing chat with game systems integration..."
+print_debug "Starting RAG test with game systems integration..."
 KANBN_ENV=test NODE_OPTIONS=--no-deprecation kanbn chat --message "What stats are used in D&D 5E?" --integration game-systems --quiet
 
 # Check chat with multiple integrations
@@ -189,7 +221,14 @@ KANBN_ENV=test NODE_OPTIONS=--no-deprecation kanbn chat --message "What combinat
 # Clean up if not needed for further inspection
 # rm -rf "$TEST_DIR"
 
+# [DEBUG POINT 6] - Test completion
 print_info "All tests completed successfully"
+print_debug "Test summary:"
+print_debug "- Test directory: $TEST_DIR"
+print_debug "- Board initialized: $([ -d ".kanbn" ] && echo "Yes" || echo "No")"
+print_debug "- Tasks created: $(ls -1 .kanbn/tasks/ 2>/dev/null | wc -l) tasks"
+print_debug "- Integrations added: $(kanbn integrations --list | grep -c "^-")"
+
 print_info "Your test environment is available at: $TEST_DIR"
 print_info "To chat with integrations: cd $TEST_DIR && kanbn chat --with-integrations"
 print_info "To chat with specific integration: cd $TEST_DIR && kanbn chat --integration game-systems"
