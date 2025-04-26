@@ -4,6 +4,21 @@ on:
   release:
     types: [published]
   workflow_dispatch:
+    inputs:
+      push_to_registry:
+        description: 'Push to Quay.io after tests'
+        required: true
+        type: boolean
+        default: false
+      run_rag_tests:
+        description: 'Run RAG integration tests'
+        required: true
+        type: boolean
+        default: true
+      image_tag:
+        description: 'Custom image tag (optional)'
+        required: false
+        type: string
 
 jobs:
   docker:
@@ -45,28 +60,31 @@ jobs:
               kanbn board && \
               kanbn status
             '
-            
-          # Test RAG integrations with Ollama
-          docker run --rm -v $TEST_DIR:/workspace -w /workspace \
-            -e KANBN_ENV=test \
-            -e NODE_ENV=test \
-            -e OLLAMA_HOST=http://host.docker.internal:11434 \
-            -e USE_OLLAMA=true \
-            --network host \
-            kanbn:test /bin/bash -c "$(cat ./examples/test_docker_rag_integrations.sh)"
-            
-          # Test OpenRouter integration if API key is available
-          if [ ! -z "${{ secrets.OPENROUTER_API_KEY }}" ]; then
+          
+          # Run RAG tests if requested or if this is a release
+          if [ "${{ github.event_name == 'release' || github.event.inputs.run_rag_tests == 'true' }}" = "true" ]; then
+            # Test RAG integrations with Ollama
             docker run --rm -v $TEST_DIR:/workspace -w /workspace \
               -e KANBN_ENV=test \
               -e NODE_ENV=test \
-              -e OPENROUTER_API_KEY=${{ secrets.OPENROUTER_API_KEY }} \
-              -e USE_OLLAMA=false \
-              kanbn:test /bin/bash -c "$(cat ./examples/test_openrouter_rag_integrations.sh)"
+              -e OLLAMA_HOST=http://host.docker.internal:11434 \
+              -e USE_OLLAMA=true \
+              --network host \
+              kanbn:test /bin/bash -c "$(cat ./examples/test_docker_rag_integrations.sh)"
+              
+            # Test OpenRouter integration if API key is available
+            if [ ! -z "${{ secrets.OPENROUTER_API_KEY }}" ]; then
+              docker run --rm -v $TEST_DIR:/workspace -w /workspace \
+                -e KANBN_ENV=test \
+                -e NODE_ENV=test \
+                -e OPENROUTER_API_KEY=${{ secrets.OPENROUTER_API_KEY }} \
+                -e USE_OLLAMA=false \
+                kanbn:test /bin/bash -c "$(cat ./examples/test_openrouter_rag_integrations.sh)"
+            fi
           fi
 
       - name: Login to Quay.io
-        if: success()
+        if: success() && (github.event_name == 'release' || github.event.inputs.push_to_registry == 'true')
         uses: docker/login-action@v2
         with:
           registry: quay.io
@@ -79,7 +97,7 @@ jobs:
         with:
           context: .
           platforms: linux/amd64,linux/arm64
-          push: true
+          push: ${{ github.event_name == 'release' || github.event.inputs.push_to_registry == 'true' }}
           tags: |
-            quay.io/takinosh/kanbn:latest
-            quay.io/takinosh/kanbn:${{ github.event.release.tag_name }}
+            ${{ github.event_name == 'release' || github.event.inputs.push_to_registry == 'true' && 'quay.io/takinosh/kanbn:latest' || '' }}
+            ${{ github.event_name == 'release' && format('quay.io/takinosh/kanbn:{0}', github.event.release.tag_name) || github.event.inputs.image_tag != '' && format('quay.io/takinosh/kanbn:{0}', github.event.inputs.image_tag) || '' }}
