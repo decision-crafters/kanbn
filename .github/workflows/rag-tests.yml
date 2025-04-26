@@ -34,8 +34,15 @@ jobs:
         with:
           node-version: '18'
           
-      - name: Install dependencies
-        run: npm ci
+      - name: Install dependencies and link package
+        run: |
+          npm ci
+          npm link
+          # Verify kanbn is available
+          which kanbn || echo "kanbn not found in PATH"
+          echo "Node modules bin directory: $(npm bin -g)"
+          # Add global npm bin to PATH
+          echo "$(npm bin -g)" >> $GITHUB_PATH
         
       - name: Setup and verify Ollama
         run: |

@@ -69,6 +69,26 @@ You can modify these in the launch.json configuration:
 - KANBN_TEST_MODE=true
 - KANBN_QUIET=true
 - NODE_OPTIONS=--no-deprecation
+- KANBN_ROOT: Path to the project root (automatically set)
+
+### Test Environment Setup
+
+The test scripts handle environment setup in different contexts:
+
+1. **Local Development**
+   - Uses launch.json configuration
+   - Test directory created in /tmp
+   - KANBN_ROOT set to current project directory
+
+2. **Docker Tests**
+   - Isolated test directory mounted as volume
+   - Project files mounted at /app
+   - KANBN_ROOT=/app for module resolution
+
+3. **CI/CD Environment**
+   - Test directory created per test run
+   - Environment variables set via GitHub Actions
+   - API keys handled via GitHub Secrets
 
 ## Common Debugging Scenarios
 
