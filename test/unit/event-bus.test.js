@@ -21,12 +21,17 @@ QUnit.module('Event Bus Communication Tests', {
     // Reset event listeners before each test
     eventBus.removeAllListeners();
 
-    // Create a fresh mock Kanbn instance with required methods
+    // Create a mock Kanbn instance with all required methods
     this.kanbn = {
-      getIndex: async () => ({
+      initialised: async () => true, // Add the missing initialised method
+      getIndex: async () => ({ // Add mock index data
         name: 'Test Project',
-        description: 'Test Description',
-        columns: { 'Backlog': [], 'In Progress': [], 'Done': [] }
+        description: 'Test project for event testing',
+        columns: {
+          'Backlog': ['test-task-id'],
+          'In Progress': [],
+          'Done': []
+        }
       }),
       createTask: async () => 'test-task-id',
       getTask: async () => ({ name: 'Test Task', metadata: {} }),

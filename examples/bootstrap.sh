@@ -342,14 +342,14 @@ get_additional_context() {
   local project_type="$1"
   local additional_context=""
 
-  print_info "Would you like to provide additional context for your $project_type project? (y/n) [y]:"
+  print_info "Would you like to provide a description for your $project_type project? (y/n) [y]:"
   read provide_context
 
   if [ "$provide_context" != "n" ] && [ "$provide_context" != "N" ]; then
-    print_info "Please provide any specific requirements, features, or context for your project:"
-    print_info "(This will help the AI generate more relevant tasks and columns)"
+    print_info "Please provide a description with any specific requirements, features, or context for your project:"
+    print_info "(This will help the AI generate relevant tasks and columns, and serve as your project description)"
     echo ""
-    additional_context=$(get_input "Additional context" "")
+    additional_context=$(get_input "Project description" "")
     echo "$additional_context"
     return 0
   else
@@ -463,27 +463,33 @@ case $selection in
   2)
     print_info "Initializing Mobile App Project: $project_name"
 
-    # Get additional context if the user wants to provide it
-    additional_context=$(get_additional_context "Mobile App")
+    print_info "Getting a description for your project..."
+    project_context=$(get_additional_context "Mobile App")
+    
+    # Base prompt for mobile app
+    base_prompt="Create a mobile app project with user authentication, API integration, and native features"
 
-    # Create a simple message that describes the project type and any additional context
-    if [ -n "$additional_context" ]; then
-      message="Create a mobile app with user profiles, push notifications, and offline support. Additional context: $additional_context"
+    # Combine base prompt with additional context
+    if [ -n "$project_context" ]; then
+      full_prompt="$base_prompt. Additional context: $project_context"
     else
-      message="Create a mobile app with user profiles, push notifications, and offline support."
+      full_prompt="$base_prompt"
+      project_context="$base_prompt"
     fi
 
     print_info "Running AI initialization..."
     # Print debug info
-    print_kanbn_debug_info "$clean_project_name" "$message" "$CUSTOM_MODEL"
+    print_kanbn_debug_info "$clean_project_name" "$full_prompt" "$CUSTOM_MODEL"
 
     # Set environment variable to indicate test mode
-    # This will make the AI initialization process use test mode responses
-    # and skip interactive prompts
-    export KANBN_ENV="test"
+    # Run kanbn init with AI and the project name
+    print_info "Running kanbn init..."
+    
+    # Set test environment to avoid interactive prompts
+    export KANBN_ENV=test
 
-    # Run the command
-    kanbn init --ai --name "$clean_project_name" --message "$message" ${CUSTOM_MODEL:+--model "$CUSTOM_MODEL"}
+    # Run the command with both message and description to avoid duplicate prompts
+    kanbn init --ai --name "$clean_project_name" --message "$full_prompt" --description "$project_context" ${CUSTOM_MODEL:+--model "$CUSTOM_MODEL"}
 
     # Unset the environment variable
     unset KANBN_ENV
@@ -491,27 +497,33 @@ case $selection in
   3)
     print_info "Initializing Data Science Project: $project_name"
 
-    # Get additional context if the user wants to provide it
-    additional_context=$(get_additional_context "Data Science")
+    print_info "Getting a description for your project..."
+    project_context=$(get_additional_context "Data Science")
+    
+    # Base prompt for data science project
+    base_prompt="Create a data science project with data collection, preprocessing, modeling, and visualization phases"
 
-    # Create a simple message that describes the project type and any additional context
-    if [ -n "$additional_context" ]; then
-      message="Create a data science project with data collection, preprocessing, model training, and evaluation phases. Additional context: $additional_context"
+    # Combine base prompt with additional context
+    if [ -n "$project_context" ]; then
+      full_prompt="$base_prompt. Additional context: $project_context"
     else
-      message="Create a data science project with data collection, preprocessing, model training, and evaluation phases."
+      full_prompt="$base_prompt"
+      project_context="$base_prompt"
     fi
 
     print_info "Running AI initialization..."
     # Print debug info
-    print_kanbn_debug_info "$clean_project_name" "$message" "$CUSTOM_MODEL"
+    print_kanbn_debug_info "$clean_project_name" "$full_prompt" "$CUSTOM_MODEL"
 
     # Set environment variable to indicate test mode
-    # This will make the AI initialization process use test mode responses
-    # and skip interactive prompts
-    export KANBN_ENV="test"
+    # Run kanbn init with AI and the project name
+    print_info "Running kanbn init..."
+    
+    # Set test environment to avoid interactive prompts
+    export KANBN_ENV=test
 
-    # Run the command
-    kanbn init --ai --name "$clean_project_name" --message "$message" ${CUSTOM_MODEL:+--model "$CUSTOM_MODEL"}
+    # Run the command with both message and description to avoid duplicate prompts
+    kanbn init --ai --name "$clean_project_name" --message "$full_prompt" --description "$project_context" ${CUSTOM_MODEL:+--model "$CUSTOM_MODEL"}
 
     # Unset the environment variable
     unset KANBN_ENV
@@ -521,25 +533,29 @@ case $selection in
     base_prompt="Create a DevOps project with CI/CD pipeline setup, infrastructure as code, and monitoring"
 
     # Get additional context if the user wants to provide it
-    additional_context=$(get_additional_context "DevOps")
+    project_context=$(get_additional_context "DevOps")
 
-    if [ -n "$additional_context" ]; then
-      prompt="$base_prompt. Additional context: $additional_context"
+    if [ -n "$project_context" ]; then
+      full_prompt="$base_prompt. Additional context: $project_context"
     else
-      prompt="$base_prompt"
+      full_prompt="$base_prompt"
+      # If no custom description was provided, use the base prompt as description
+      project_context="$base_prompt"
     fi
 
     print_info "Running AI initialization..."
     # Print debug info
-    print_kanbn_debug_info "$clean_project_name" "$prompt" "$CUSTOM_MODEL"
+    print_kanbn_debug_info "$clean_project_name" "$full_prompt" "$CUSTOM_MODEL"
 
     # Set environment variable to indicate test mode
-    # This will make the AI initialization process use test mode responses
-    # and skip interactive prompts
-    export KANBN_ENV="test"
+    # Run kanbn init with AI and the project name
+    print_info "Running kanbn init..."
+    
+    # Set test environment to avoid interactive prompts
+    export KANBN_ENV=test
 
-    # Run the command
-    kanbn init --ai --name "$clean_project_name" --message "$prompt" ${CUSTOM_MODEL:+--model "$CUSTOM_MODEL"}
+    # Run the command with both message and description to avoid duplicate prompts
+    kanbn init --ai --name "$clean_project_name" --message "$full_prompt" --description "$project_context" ${CUSTOM_MODEL:+--model "$CUSTOM_MODEL"}
 
     # Unset the environment variable
     unset KANBN_ENV
@@ -549,25 +565,29 @@ case $selection in
     base_prompt="Create an API development project with endpoint design, authentication, documentation, and testing"
 
     # Get additional context if the user wants to provide it
-    additional_context=$(get_additional_context "API Development")
+    project_context=$(get_additional_context "API Development")
 
-    if [ -n "$additional_context" ]; then
-      prompt="$base_prompt. Additional context: $additional_context"
+    if [ -n "$project_context" ]; then
+      full_prompt="$base_prompt. Additional context: $project_context"
     else
-      prompt="$base_prompt"
+      full_prompt="$base_prompt"
+      # If no custom description was provided, use the base prompt as description
+      project_context="$base_prompt"
     fi
 
     print_info "Running AI initialization..."
     # Print debug info
-    print_kanbn_debug_info "$clean_project_name" "$prompt" "$CUSTOM_MODEL"
+    print_kanbn_debug_info "$clean_project_name" "$full_prompt" "$CUSTOM_MODEL"
 
     # Set environment variable to indicate test mode
-    # This will make the AI initialization process use test mode responses
-    # and skip interactive prompts
-    export KANBN_ENV="test"
+    # Run kanbn init with AI and the project name
+    print_info "Running kanbn init..."
+    
+    # Set test environment to avoid interactive prompts
+    export KANBN_ENV=test
 
-    # Run the command
-    kanbn init --ai --name "$clean_project_name" --message "$prompt" ${CUSTOM_MODEL:+--model "$CUSTOM_MODEL"}
+    # Run the command with both message and description to avoid duplicate prompts
+    kanbn init --ai --name "$clean_project_name" --message "$full_prompt" --description "$project_context" ${CUSTOM_MODEL:+--model "$CUSTOM_MODEL"}
 
     # Unset the environment variable
     unset KANBN_ENV
@@ -577,25 +597,29 @@ case $selection in
     base_prompt="Create a game development project with game design, asset creation, programming, and testing phases"
 
     # Get additional context if the user wants to provide it
-    additional_context=$(get_additional_context "Game Development")
+    project_context=$(get_additional_context "Game Development")
 
-    if [ -n "$additional_context" ]; then
-      prompt="$base_prompt. Additional context: $additional_context"
+    if [ -n "$project_context" ]; then
+      full_prompt="$base_prompt. Additional context: $project_context"
     else
-      prompt="$base_prompt"
+      full_prompt="$base_prompt"
+      # If no custom description was provided, use the base prompt as description
+      project_context="$base_prompt"
     fi
 
     print_info "Running AI initialization..."
     # Print debug info
-    print_kanbn_debug_info "$clean_project_name" "$prompt" "$CUSTOM_MODEL"
+    print_kanbn_debug_info "$clean_project_name" "$full_prompt" "$CUSTOM_MODEL"
 
     # Set environment variable to indicate test mode
-    # This will make the AI initialization process use test mode responses
-    # and skip interactive prompts
-    export KANBN_ENV="test"
+    # Run kanbn init with AI and the project name
+    print_info "Running kanbn init..."
+    
+    # Set test environment to avoid interactive prompts
+    export KANBN_ENV=test
 
-    # Run the command
-    kanbn init --ai --name "$clean_project_name" --message "$prompt" ${CUSTOM_MODEL:+--model "$CUSTOM_MODEL"}
+    # Run the command with both message and description to avoid duplicate prompts
+    kanbn init --ai --name "$clean_project_name" --message "$full_prompt" --description "$project_context" ${CUSTOM_MODEL:+--model "$CUSTOM_MODEL"}
 
     # Unset the environment variable
     unset KANBN_ENV
@@ -605,15 +629,18 @@ case $selection in
     print_info "For a custom project, please provide a detailed description of what you want to build."
     print_info "This will help the AI generate appropriate tasks and columns for your project."
     echo ""
-    project_description=$(get_input "Enter project description" "A custom project with specific requirements")
+    project_context=$(get_input "Enter project description" "A custom project with specific requirements")
 
     # Extract just the project description without the prompt text
     # This removes the "Enter project description [xxx]: " prefix if present
-    clean_message=$(echo "$project_description" | sed -E 's/^Enter project description \[[^]]+\]: //')
+    clean_message=$(echo "$project_context" | sed -E 's/^Enter project description \[[^]]+\]: //')
 
     # Extract just the project name without the prompt text
     # This removes the "Project name [xxx]: " prefix if present
     clean_project_name=$(echo "$project_name" | sed -E 's/^Project name \[[^]]+\]: //')
+    
+    # Clean up the clean_project_name further
+    clean_project_name="$(echo "$clean_project_name" | xargs)"
 
     print_info "Running AI initialization..."
     # Print the command with debug info
@@ -641,7 +668,7 @@ case $selection in
     export KANBN_ENV="test"
 
     # Run kanbn init with the --message parameter
-    kanbn init --ai --name "$clean_project_name" --message "$clean_message" ${CUSTOM_MODEL:+--model "$CUSTOM_MODEL"}
+    kanbn init --ai --name "$clean_project_name" --message "$clean_message" --description "$clean_message" ${CUSTOM_MODEL:+--model "$CUSTOM_MODEL"}
 
     # Unset the environment variable
     unset KANBN_ENV
@@ -664,7 +691,7 @@ case $selection in
 
     # Get additional context about the repository
     print_info "Please provide information about your repository:"
-    repo_description=$(get_input "Repository description" "A project that needs documentation")
+    project_context=$(get_input "Repository description" "A project that needs documentation")
 
     # Ask about existing documentation
     print_info "Does your repository already have any documentation? (y/n) [n]:"
@@ -674,10 +701,10 @@ case $selection in
       docs_location=$(get_input "Where is your existing documentation located?" "docs/")
 
       # Create a simple message that describes the documentation project
-      prompt="Create a documentation project using GitHub Pages for the repository '$repo_name'. Repository description: $repo_description. The repository already has documentation in '$docs_location'."
+      prompt="Create a documentation project using GitHub Pages for the repository '$repo_name'. Repository description: $project_context. The repository already has documentation in '$docs_location'."
     else
       # Create a simple message that describes the documentation project
-      prompt="Create a documentation project using GitHub Pages for the repository '$repo_name'. Repository description: $repo_description. The repository does not have any documentation yet."
+      prompt="Create a documentation project using GitHub Pages for the repository '$repo_name'. Repository description: $project_context. The repository does not have any documentation yet."
     fi
 
     print_info "Running AI initialization..."
@@ -685,12 +712,14 @@ case $selection in
     print_kanbn_debug_info "$clean_project_name" "$prompt" "$CUSTOM_MODEL"
 
     # Set environment variable to indicate test mode
-    # This will make the AI initialization process use test mode responses
-    # and skip interactive prompts
-    export KANBN_ENV="test"
+    # Run kanbn init with AI and the project name
+    print_info "Running kanbn init..."
+    
+    # Set test environment to avoid interactive prompts
+    export KANBN_ENV=test
 
-    # Run the command
-    kanbn init --ai --name "$clean_project_name" --message "$prompt" ${CUSTOM_MODEL:+--model "$CUSTOM_MODEL"}
+    # Run the command with both message and description to avoid duplicate prompts
+    kanbn init --ai --name "$clean_project_name" --message "$prompt" --description "$project_context" ${CUSTOM_MODEL:+--model "$CUSTOM_MODEL"}
 
     # Unset the environment variable
     unset KANBN_ENV
@@ -717,10 +746,14 @@ fi
 
 # Show the board
 print_header "Project Board"
-print_command "kanbn board"
-kanbn board
+print_info "Run kanbn board to see your new board."
+print_info "Run kanbn chat to chat with your project assistant."
 
-# Ask if user wants to chat with the project assistant
+# Note about API key requirement for chat
+print_info "IMPORTANT: To use the chat functionality, you need an OpenRouter API key."
+print_info "Your .env file has been set up with the API key, but you may need to:"
+print_info "  1. Source the .env file: source .env"
+print_info "  2. Or export the key directly: export OPENROUTER_API_KEY=your-key"
 print_header "Project Assistant"
 print_info "Would you like to chat with the project assistant? (y/n) [y]:"
 read chat_with_assistant

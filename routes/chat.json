@@ -7,19 +7,23 @@
   "args": {
     "boolean": [
       "help",
-      "with-refs"
+      "with-refs",
+      "with-integrations"
     ],
     "string": [
       "message",
       "api-key",
-      "model"
+      "model",
+      "integration"
     ],
     "alias": {
       "help": ["h"],
       "message": ["m"],
       "with-refs": ["include-refs", "references"],
       "api-key": ["key", "k"],
-      "model": ["mod"]
+      "model": ["mod"],
+      "with-integrations": ["integrations", "use-integrations"],
+      "integration": ["use-integration", "integrate"]
     }
   },
   "controller": "./src/controller/chat",

@@ -24,10 +24,27 @@ module.exports = (() => {
      * @param {Error|string} warning
      */
     warning(warning) {
+      // Skip warnings if KANBN_QUIET is set to true
+      if (process.env.KANBN_QUIET === 'true') {
+        return;
+      }
+      
       const message = warning instanceof Error
         ? (process.env.DEBUG === 'true' ? warning : this.replaceTags(warning.message))
         : this.replaceTags(warning);
       console.warn('\x1b[33mWarning:\x1b[0m', message);
+    },
+
+    /**
+     * Log debug message
+     * @param {string} message - Debug message
+     */
+    debugLog(message) {
+      // Only show debug messages if DEBUG environment variable is set
+      if (process.env.DEBUG === 'true') {
+        // Prefix with [DEBUG] for searchability in logs
+        console.log(`[DEBUG] ${message}`);
+      }
     },
 
     /**

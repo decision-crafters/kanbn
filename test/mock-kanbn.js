@@ -112,19 +112,46 @@ class Kanbn {
   }
 
   async burndown(sprints = null, dates = null, assigned = null, columns = null, normalise = null) {
-    const now = new Date();
-    const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-    return {
-      series: [{
-        total: 3,
-        from: yesterday,
-        to: now,
-        dataPoints: [
-          { x: yesterday, y: 3 },
-          { x: now, y: 2 }
-        ]
-      }]
-    };
+    return config.burndown;
+  }
+
+  /**
+   * Search for tasks matching specified criteria
+   * @param {Object} searchCriteria Criteria to search for
+   * @returns {Array} Array of matching tasks with their IDs
+   */
+  search(searchCriteria = {}) {
+    const results = [];
+    
+    // Simple mock implementation that returns tasks matching name search
+    for (const columnName in config.index.columns) {
+      for (const taskId of config.index.columns[columnName]) {
+        const task = { ...config.task, id: taskId };
+        
+        // Match by name if specified
+        if (searchCriteria.name && task.name) {
+          if (task.name.toLowerCase().includes(searchCriteria.name.toLowerCase())) {
+            results.push(task);
+            continue;
+          }
+        }
+        
+        // Match by description if specified
+        if (searchCriteria.description && task.description) {
+          if (task.description.toLowerCase().includes(searchCriteria.description.toLowerCase())) {
+            results.push(task);
+            continue;
+          }
+        }
+        
+        // If no criteria were specified or other matches failed, add as fallback
+        if (Object.keys(searchCriteria).length === 0) {
+          results.push(task);
+        }
+      }
+    }
+    
+    return results;
   }
 }
 
@@ -148,7 +175,8 @@ const kanbn = {
   restoreTask: async (taskId, columnName) => await new Kanbn().restoreTask(taskId, columnName),
   status: async () => await new Kanbn().status(),
   burndown: async (sprints, dates, assigned, columns, normalise) => 
-    await new Kanbn().burndown(sprints, dates, assigned, columns, normalise)
+    await new Kanbn().burndown(sprints, dates, assigned, columns, normalise),
+  search: async (searchCriteria = {}) => await new Kanbn().search(searchCriteria)
 };
 
 const kanbnInstance = new Kanbn();

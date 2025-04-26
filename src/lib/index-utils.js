@@ -130,12 +130,20 @@ function compareValues(a, b) {
 /**
  * Filter a list of tasks using a filters object containing field names and filter values
  * @param {object} index
- * @param {object[]}} tasks
+ * @param {object|object[]} tasks - Can be an array of task objects or an object with task IDs as keys
  * @param {object} filters
+ * @return {object[]} Array of filtered tasks
  */
 function filterTasks(index, tasks, filters) {
-  return tasks.filter((task) => {
-    const taskId = utility.getTaskId(task.name);
+  // Convert tasks to array if it's an object
+  const taskArray = Array.isArray(tasks) ? tasks : Object.entries(tasks).map(([id, task]) => {
+    // Ensure task has its ID property set
+    return { ...task, id: task.id || id };
+  });
+  
+  return taskArray.filter((task) => {
+    // Get task ID, either from task.id or from task.name
+    const taskId = task.id || utility.getTaskId(task.name);
     const column = taskUtils.findTaskColumn(index, taskId);
 
     if (Object.keys(filters).length === 0) {
@@ -144,7 +152,7 @@ function filterTasks(index, tasks, filters) {
 
     let result = true;
 
-    if ("id" in filters && !filterUtils.stringFilter(filters.id, task.id)) {
+    if ("id" in filters && !filterUtils.stringFilter(filters.id, taskId)) {
       result = false;
     }
 

@@ -588,22 +588,116 @@ class Kanbn {
     } catch (error) {
       throw new Error(`Couldn't access task file: ${error.message}`);
     }
-    return parseTask.md2json(taskData);
+    const task = parseTask.md2json(taskData);
+    // Add the task ID to the task object for easier reference
+    task.id = taskId;
+    return task;
   }
 
   /**
-   * Load all tracked tasks and return an array of task objects
+   * Load all tracked tasks and return an object with both project tasks and system tasks
    * @param {object} index The index object
    * @param {?string} [columnName=null] The optional column name to filter tasks by
-   * @return {Promise<object[]>} All tracked tasks
+   * @return {Promise<object>} Object containing {projectTasks, systemTasks, allTasks}
    */
-  async loadAllTrackedTasks(index, columnName = null) {
-    const result = [];
-    const trackedTasks = getTrackedTaskIds(index, columnName);
-    for (let taskId of trackedTasks) {
-      result.push(await this.loadTask(taskId));
+  async loadAllTasksWithSeparation(index, columnName = null) {
+    const projectTasks = {};
+    const systemTasks = {};
+    const allTasks = {};
+
+    // Handle empty or undefined index or columns
+    if (!index || !index.columns) {
+      console.log('Warning: Index or columns is undefined or empty');
+      return { projectTasks, systemTasks, allTasks };
     }
-    return result;
+
+    const trackedTasks = getTrackedTaskIds(index, columnName);
+    const taskUtils = require('./lib/task-utils');
+
+    // Track how many tasks we failed to load
+    let failedTaskCount = 0;
+    const totalTaskCount = trackedTasks.size;
+
+    for (let taskId of trackedTasks) {
+      try {
+        const task = await this.loadTask(taskId);
+        allTasks[taskId] = task;
+
+        // Determine if this is a system task
+        if (taskUtils.isSystemTask(taskId, task)) {
+          systemTasks[taskId] = task;
+        } else {
+          projectTasks[taskId] = task;
+        }
+      } catch (error) {
+        // Log error but don't fail completely
+        console.error(`Could not load task ${taskId}: ${error.message}`);
+        failedTaskCount++;
+      }
+    }
+
+    // If we failed to load most or all tasks, try filesystem detection as a fallback
+    if (failedTaskCount > 0 && (totalTaskCount === 0 || failedTaskCount / totalTaskCount > 0.5)) {
+      console.log(`Failed to load ${failedTaskCount}/${totalTaskCount} tasks, trying filesystem detection...`);
+
+      try {
+        // Look for task files in the tasks directory
+        const taskFolder = await this.getTaskFolderPath();
+        const taskFiles = await fs.promises.readdir(taskFolder);
+
+        for (const file of taskFiles) {
+          if (file.endsWith('.md')) {
+            const taskId = file.replace('.md', '');
+
+            // Skip if we already loaded this task successfully
+            if (taskId in allTasks) {
+              continue;
+            }
+
+            try {
+              const taskPath = path.join(taskFolder, file);
+              const taskContent = await fs.promises.readFile(taskPath, { encoding: 'utf-8' });
+              const task = parseTask.md2json(taskContent);
+
+              // Add the task ID to the task object for easier reference
+              task.id = taskId;
+
+              // Add to the appropriate collection
+              allTasks[taskId] = task;
+
+              if (taskUtils.isSystemTask(taskId, task)) {
+                systemTasks[taskId] = task;
+              } else {
+                projectTasks[taskId] = task;
+              }
+            } catch (taskError) {
+              console.error(`Error loading task file ${file}: ${taskError.message}`);
+            }
+          }
+        }
+      } catch (fsError) {
+        console.error(`Error reading task directory: ${fsError.message}`);
+      }
+    }
+
+    return { projectTasks, systemTasks, allTasks };
+  }
+
+  /**
+   * Enhanced version of loadAllTrackedTasks that handles errors gracefully
+   * @param {object} index The index object
+   * @param {?string} [columnName=null] The optional column name to filter tasks by
+   * @param {boolean} [includeSystemTasks=false] Whether to include system-generated tasks
+   * @return {Promise<object>} Object with task data keyed by task ID
+   */
+  async loadAllTrackedTasks(index, columnName = null, includeSystemTasks = false) {
+    try {
+      const { projectTasks, systemTasks, allTasks } = await this.loadAllTasksWithSeparation(index, columnName);
+      return includeSystemTasks ? allTasks : projectTasks;
+    } catch (error) {
+      console.error(`Error loading tasks: ${error.message}`);
+      return {}; // Return empty object instead of failing
+    }
   }
 
   /**
@@ -700,6 +794,17 @@ class Kanbn {
           )
         ));
     }
+    
+    // Ensure all columns have proper array representation
+    if (index && index.columns) {
+      for (const column in index.columns) {
+        // Make sure each column has at least an empty array
+        if (!Array.isArray(index.columns[column])) {
+          index.columns[column] = [];
+        }
+      }
+    }
+    
     await this.saveIndex(index);
   }
 
@@ -735,7 +840,7 @@ class Kanbn {
     if (!(await this.initialised())) {
       throw new Error("Not initialised in this folder");
     }
-    
+
     // Check if taskId is a string
     if (typeof taskId !== 'string') {
       throw new Error(`Invalid task id: expected string but got ${typeof taskId}`);
@@ -1080,11 +1185,11 @@ class Kanbn {
       // Add the index error to the errors array
       errors.push({
         task: null,
-        errors: error.message.includes('Unable to parse index') 
-          ? error.message 
+        errors: error.message.includes('Unable to parse index')
+          ? error.message
           : `Unable to parse index: ${error.message}`
       });
-      
+
       // Exit early if any errors were found in the index
       return errors;
     }

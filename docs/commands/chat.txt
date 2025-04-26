@@ -8,13 +8,19 @@ Description:
   It can help explain your project, analyze tasks, manage relationships, and provide guidance on project management.
 
 Options:
-  -m, --message     Specify a one-off message to send to the assistant
-  -k, --api-key     Specify the OpenRouter API key (overrides environment variable)
-  --model, --mod    Specify the OpenRouter model to use (overrides environment variable)
-  --with-refs       Include task references in the context
-  --include-refs    Same as --with-refs
-  --references      Same as --with-refs
-  -h, --help        Show help
+  -m, --message           Specify a one-off message to send to the assistant
+  -k, --api-key           Specify the OpenRouter API key (overrides environment variable)
+  --model, --mod          Specify the OpenRouter model to use (overrides environment variable)
+  --with-refs             Include task references in the context
+  --include-refs          Same as --with-refs
+  --references            Same as --with-refs
+  --with-integrations     Include all available integrations in the context
+  --integrations          Same as --with-integrations
+  --use-integrations      Same as --with-integrations
+  --integration <name>    Include a specific integration by name
+  --use-integration       Same as --integration
+  --integrate             Same as --integration
+  -h, --help              Show help
 
 Examples:
   kanbn chat
@@ -26,6 +32,11 @@ Examples:
   kanbn chat --api-key "your-api-key" --message "What should I work on next?"
   kanbn chat --model "openai/gpt-4o" --message "Analyze my project and suggest improvements"
 
+  # Integration examples
+  kanbn chat --with-integrations --message "What stats are used in D&D 5E?"
+  kanbn chat --integration game-systems --message "Tell me about character stats in D&D"
+  kanbn chat --integration api-docs --integration database-schema --message "How do I query users?"
+
 Notes:
   - Requires an OpenRouter API key set as OPENROUTER_API_KEY environment variable or via --api-key option
   - Can specify a model via OPENROUTER_MODEL environment variable or --model option (default: google/gemma-3-4b-it:free)
@@ -36,3 +47,12 @@ Notes:
   - Logs AI interactions for tracking and analysis
   - Interactive mode allows for continuous conversation
   - The assistant has access to your project context including tasks, columns, and statistics
+
+  Integration Features:
+  - Uses RAG (Retrieval-Augmented Generation) to enhance AI responses with domain knowledge
+  - Integrations are stored as markdown files in the .kanbn/integrations directory
+  - Manage integrations with the 'kanbn integrations' command
+  - Use --with-integrations to include all available integrations in the context
+  - Use --integration <name> to include specific integrations
+  - Supports local Ollama models for embeddings when available
+  - Falls back to simple keyword matching when embeddings are not available

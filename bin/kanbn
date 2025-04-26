@@ -1,2 +1,7 @@
 #!/usr/bin/env node
+
+// Suppress deprecation warnings
+process.noDeprecation = true;
+
+// Run the main application
 require('..')()

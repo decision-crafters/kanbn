@@ -122,7 +122,9 @@ const createFixtures = (options = {}) => {
 
   // Get absolute paths
   const projectRoot = path.resolve(__dirname, '..');
-  const testRoot = path.join(projectRoot, 'test');
+  const testRoot = path.resolve(__dirname, '.');
+  // Define burndownTestPath at function scope so it's available for the return statement
+  let burndownTestPath;
 
   console.log('Debug - Paths:');
   console.log('Project root:', projectRoot);
@@ -131,25 +133,43 @@ const createFixtures = (options = {}) => {
 
   // First, restore any existing mock filesystem
   try {
+    // Ensure we fully restore the mock filesystem before setting up a new one
     mockFileSystem.restore();
+    
+    // Small delay to ensure filesystem is fully restored
+    // This helps prevent race conditions in the mock-fs library
+    const start = Date.now();
+    while (Date.now() - start < 50) {
+      // Busy wait to ensure synchronous completion
+    }
   } catch (e) {
     // Ignore errors if no mock filesystem exists
+    console.error('Info: Mock filesystem not restored, may not exist yet:', e.message);
   }
 
   try {
-    // Generate in-memory files
-    const mockConfig = {
-      // Include the source and node_modules directories
-      [path.join(projectRoot, 'src')]: mockFileSystem.load(path.join(projectRoot, 'src')),
-      [path.join(projectRoot, 'routes')]: mockFileSystem.load(path.join(projectRoot, 'routes')),
-      [path.join(projectRoot, 'node_modules')]: mockFileSystem.load(path.join(projectRoot, 'node_modules')),
+    // Generate in-memory files with a more defensive approach
+    // First build the base configuration without test directories
+    const mockConfig = {};
+    
+    // Load real directories that need to be preserved
+    try {
+      mockConfig[path.join(projectRoot, 'src')] = mockFileSystem.load(path.join(projectRoot, 'src'));
+      mockConfig[path.join(projectRoot, 'routes')] = mockFileSystem.load(path.join(projectRoot, 'routes'));
+      mockConfig[path.join(projectRoot, 'node_modules')] = mockFileSystem.load(path.join(projectRoot, 'node_modules'));
+    } catch (loadError) {
+      console.error('Warning: Error loading real directories:', loadError.message);
+    }
 
-      // Add test directory structure with .kanbn folder
-      [path.join(testRoot, 'burndown-test')]: {
-        '.kanbn': {
-          'index.md': parseIndex.json2md(index),
-          'tasks': Object.fromEntries(tasks.map(i => [`${utility.getTaskId(i.name)}.md`, parseTask.json2md(i)]))
-        }
+    // Add test directory structure with unique name based on timestamp to avoid conflicts
+    const timestamp = Date.now();
+    burndownTestPath = path.join(testRoot, `burndown-test-${timestamp}`);
+    
+    // Setup test directory with .kanbn folder
+    mockConfig[burndownTestPath] = {
+      '.kanbn': {
+        'index.md': parseIndex.json2md(index),
+        'tasks': Object.fromEntries(tasks.map(i => [`${utility.getTaskId(i.name)}.md`, parseTask.json2md(i)]))
       }
     };
 
@@ -161,7 +181,7 @@ const createFixtures = (options = {}) => {
       'src': 'loaded',
       'routes': 'loaded',
       'node_modules': 'loaded',
-      'test/burndown-test': 'created with test data'
+      [`test/burndown-test-${timestamp}`]: 'created with test data'
     }, null, 2));
 
     mockFileSystem(mockConfig);
@@ -171,12 +191,12 @@ const createFixtures = (options = {}) => {
     console.error('src exists:', fs.existsSync(path.join(projectRoot, 'src')));
     console.error('routes exists:', fs.existsSync(path.join(projectRoot, 'routes')));
     console.error('node_modules exists:', fs.existsSync(path.join(projectRoot, 'node_modules')));
-    console.error('burndown-test exists:', fs.existsSync(path.join(testRoot, 'burndown-test')));
+    console.error(`Test directory exists: ${burndownTestPath}`, fs.existsSync(burndownTestPath));
   } catch (error) {
     console.error('Error in fixtures.js:', error);
   }
 
-  return index;
+  return { tasks, index, testPath: burndownTestPath };
 };
 
 // Create a mock kanbn instance
@@ -243,12 +263,21 @@ module.exports = createFixtures;
 // Add the mock kanbn instance
 module.exports.kanbn = mockKanbn;
 
-// Add a cleanup function to restore the filesystem
+// Export the cleanup function with improved handling
 module.exports.cleanup = () => {
   try {
+    // Restore the real filesystem
     mockFileSystem.restore();
-    console.error('Mock filesystem restored');
+    
+    // More aggressive cleanup - wait to ensure it's complete
+    const start = Date.now();
+    while (Date.now() - start < 100) {
+      // Busy wait to ensure synchronous completion
+    }
+    
+    return true;
   } catch (e) {
-    console.error('Error restoring mock filesystem:', e);
+    console.error('Error cleaning up mock filesystem:', e);
+    return false;
   }
 };

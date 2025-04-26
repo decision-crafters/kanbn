@@ -1,6 +1,6 @@
 const yaml = require('yamljs');
 const fm = require('front-matter');
-const marked = require('marked');
+const markdown = require('./lib/markdown');
 const utility = require('./utility');
 const chrono = require('chrono-node');
 const validate = require('jsonschema').validate;
@@ -288,7 +288,7 @@ module.exports = {
       // Parse sub-tasks
       if ('Sub-tasks' in task) {
         try {
-          subTasks = marked.lexer(task['Sub-tasks'].content)[0].items.map(item => ({
+          subTasks = markdown.lexer(task['Sub-tasks'].content)[0].items.map(item => ({
             text: item.text.trim(),
             completed: item.checked || false
           }));
@@ -301,7 +301,7 @@ module.exports = {
       // Parse relations
       if ('Relations' in task) {
         try {
-          relations = marked.lexer(task['Relations'].content)[0].items.map(item => {
+          relations = markdown.lexer(task['Relations'].content)[0].items.map(item => {
             const parts = item.tokens[0].tokens[0].text.split(' ');
             return parts.length === 1
               ? {
@@ -322,7 +322,7 @@ module.exports = {
       // Parse references
       if ('References' in task) {
         try {
-          const referenceItems = marked.lexer(task['References'].content)[0].items;
+          const referenceItems = markdown.lexer(task['References'].content)[0].items;
           if (!('references' in metadata)) {
             metadata.references = [];
           }
@@ -346,8 +346,8 @@ module.exports = {
           // } else {
           //   end = data.length;
           // }
-          // const parsedComments = marked.lexer(data.slice(start, end).trim())[0].items;
-          const parsedComments = marked.lexer(task['Comments'].content)[0].items;
+          // const parsedComments = markdown.lexer(data.slice(start, end).trim())[0].items;
+          const parsedComments = markdown.lexer(task['Comments'].content)[0].items;
           for (let parsedComment of parsedComments) {
             const comment = { text: [] };
             const parts = parsedComment.text.split('\n');

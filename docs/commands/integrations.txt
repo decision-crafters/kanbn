@@ -1,0 +1,75 @@
+Kanbn Integrations Command
+========================
+
+The 'integrations' command manages markdown files that provide additional context for AI assistance using RAG (Retrieval-Augmented Generation).
+
+Usage:
+------
+kanbn integrations [options]
+
+Description:
+-----------
+Manages integration markdown files that enhance the AI context when using chat commands.
+Integrations can be added from URLs or directly with content, and then used with the chat command.
+
+The RAG-based approach:
+- Stores integration content as markdown files in the .kanbn/integrations directory
+- Uses vector embeddings to find the most relevant information for each query
+- Automatically retrieves only the most relevant parts of integrations based on the user's question
+- Combines knowledge from multiple integrations when needed
+- Uses local Ollama models for embeddings when available
+- Falls back to simple keyword matching when embeddings are not available
+- Automatically converts HTML webpages to Markdown when adding from URLs
+
+Options:
+-------
+--list                     List all available integrations
+--add                      Add a new integration
+--remove                   Remove an integration
+--name <name>              Name of the integration (required for add/remove)
+--url <url>                URL to download integration content from
+--content <content>        Content for the integration
+--help                     Show this help message
+
+Examples:
+--------
+List all integrations:
+  kanbn integrations --list
+
+Add an integration from a URL:
+  kanbn integrations --add --name github --url https://raw.githubusercontent.com/username/repo/main/README.md
+
+Add an integration from an HTML webpage (automatically converted to Markdown):
+  kanbn integrations --add --name docs --url https://js.langchain.com/docs/tutorials/rag/
+
+Add an integration from content:
+  kanbn integrations --add --name api-spec --content "# API Specification\n\nThis is the API spec..."
+
+Remove an integration:
+  kanbn integrations --remove --name github
+
+Using integrations with chat:
+---------------------------
+To use integrations with the chat command, you can use the following options:
+
+Use all available integrations:
+  kanbn chat --with-integrations
+
+Use specific integration(s):
+  kanbn chat --integration github
+  kanbn chat --integration github --integration api-spec
+
+Example queries that leverage integrations:
+  kanbn chat --integration game-systems --message "What stats are used in D&D 5E?"
+  kanbn chat --with-integrations --message "How do I query users in our database?"
+  kanbn chat --integration api-docs --message "What endpoints are available for user management?"
+
+How RAG works with your queries:
+1. When you ask a question, the system converts it into an embedding vector
+2. It searches for the most relevant sections in your integrations
+3. Only the most relevant content is included in the AI context
+4. The AI uses this targeted information to provide more accurate answers
+5. This approach allows for much larger knowledge bases without context limitations
+
+These options make the AI more knowledgeable about your specific project needs
+while maintaining efficiency by only including relevant information.

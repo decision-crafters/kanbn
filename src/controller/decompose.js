@@ -4,17 +4,19 @@ const inquirer = require('inquirer');
 const fuzzy = require('fuzzy');
 const axios = require('axios');
 const getGitUsername = require('git-user-name');
+const AILogging = require('../lib/ai-logging');
 
 inquirer.registerPrompt('autocomplete', require('inquirer-autocomplete-prompt'));
 
 /**
  * Call OpenRouter API to decompose a task
+ * @param {Object} kanbnInstance Kanbn instance
  * @param {string} description Task description to decompose
  * @param {Object} task The task object
  * @param {boolean} includeReferences Whether to include references in the context
  * @return {Promise<Array>} Array of subtasks
  */
-async function callOpenRouterAPI(description, task, includeReferences = false) {
+async function callOpenRouterAPI(kanbnInstance, description, task, includeReferences = false) {
   try {
     // Check if we're in a test environment or CI environment
     if (process.env.KANBN_ENV === 'test' || process.env.CI === 'true') {
@@ -25,7 +27,18 @@ async function callOpenRouterAPI(description, task, includeReferences = false) {
         { text: `Subtask 2 for: ${description.substring(0, 30)}...`, completed: false }
       ];
 
-      await logAIInteraction('decompose', description, JSON.stringify({ subtasks: mockSubtasks }));
+      // Log the interaction
+      const aiLogging = new AILogging(kanbnInstance);
+      await aiLogging.logInteraction(process.cwd(), 'request', {
+        message: description,
+        context: `You are a task decomposition assistant. Given a task description, break it down into smaller, actionable subtasks.`
+      });
+
+      await aiLogging.logInteraction(process.cwd(), 'response', {
+        message: description,
+        response: JSON.stringify({ subtasks: mockSubtasks })
+      });
+
       return mockSubtasks;
     }
 
@@ -39,18 +52,28 @@ async function callOpenRouterAPI(description, task, includeReferences = false) {
     const model = process.env.OPENROUTER_MODEL || 'google/gemma-3-4b-it:free';
     console.log(`Using model: ${model}`);
 
-    console.log('Making API call to OpenRouter...');
+    // Create a system message with context
+    const systemMessage = {
+      role: 'system',
+      content: `You are a task decomposition assistant. Given a task description, break it down into smaller, actionable subtasks.
+      ${includeReferences && task.metadata && task.metadata.references && task.metadata.references.length > 0 ?
+        `\nHere are references that might be helpful:\n${task.metadata.references.map(ref => `- ${ref}`).join('\n')}` : ''}`
+    };
+
+    // Log the interaction
+    const aiLogging = new AILogging(kanbnInstance);
+    await aiLogging.logInteraction(process.cwd(), 'request', {
+      message: description,
+      context: systemMessage.content
+    });
+
+    // Send request to OpenRouter API
     const response = await axios.post(
       'https://openrouter.ai/api/v1/chat/completions',
       {
         model: model,
         messages: [
-          {
-            role: 'system',
-            content: `You are a task decomposition assistant. Given a task description, break it down into smaller, actionable subtasks.
-            ${includeReferences && task.metadata && task.metadata.references && task.metadata.references.length > 0 ?
-              `\nHere are references that might be helpful:\n${task.metadata.references.map(ref => `- ${ref}`).join('\n')}` : ''}`
-          },
+          systemMessage,
           {
             role: 'user',
             content: `Please decompose the following task into smaller, actionable subtasks:\n\n${description}`
@@ -72,7 +95,11 @@ async function callOpenRouterAPI(description, task, includeReferences = false) {
     const content = response.data.choices[0].message.content;
     const parsedContent = JSON.parse(content);
 
-    await logAIInteraction('decompose', description, content);
+    // Log the response
+    await aiLogging.logInteraction(process.cwd(), 'response', {
+      message: description,
+      response: content
+    });
 
     return parsedContent.subtasks || [];
   } catch (error) {
@@ -94,44 +121,6 @@ function fallbackDecomposition(description) {
 
   const sentences = description.split(/\.(?!\d)/).filter(s => s.trim().length > 0);
   return sentences.map(s => ({ text: s.trim(), completed: false }));
-}
-
-/**
- * Log AI interaction for tracking
- * @param {string} type Type of interaction
- * @param {string} input User input
- * @param {string} output AI output
- */
-async function logAIInteraction(type, input, output) {
-  try {
-    const taskId = 'ai-interaction-' + Date.now();
-    const username = getGitUsername() || 'unknown';
-    const date = new Date();
-
-    const taskData = {
-      name: `AI ${type} interaction at ${date.toISOString()}`,
-      description: `This is an automatically generated record of an AI interaction.`,
-      metadata: {
-        created: date,
-        updated: date,
-        tags: ['ai-interaction', type]
-      },
-      comments: [
-        {
-          author: username,
-          date: date,
-          text: `Input: ${input}\n\nOutput: ${output}`
-        }
-      ]
-    };
-
-    await kanbn.createTask(taskData, null, true);
-
-    return taskId;
-  } catch (error) {
-    console.error('Error logging AI interaction:', error.message);
-    return null;
-  }
 }
 
 /**
@@ -173,14 +162,15 @@ async function interactiveDecompose(taskId, taskIds) {
 
 /**
  * Create child tasks from decomposition
+ * @param {Object} kanbnInstance Kanbn instance
  * @param {string} parentTaskId Parent task ID
  * @param {Array} subtasks Array of subtask objects
  */
-async function createChildTasks(parentTaskId, subtasks) {
-  const parentTask = await kanbn.getTask(parentTaskId);
-  const parentColumn = await kanbn.findTaskColumn(parentTaskId);
+async function createChildTasks(kanbnInstance, parentTaskId, subtasks) {
+  const parentTask = await kanbnInstance.getTask(parentTaskId);
+  const parentColumn = await kanbnInstance.findTaskColumn(parentTaskId);
 
-  const index = await kanbn.getIndex();
+  const index = await kanbnInstance.getIndex();
   const columnNames = Object.keys(index.columns);
 
   const columnName = parentColumn || columnNames[0];
@@ -189,41 +179,34 @@ async function createChildTasks(parentTaskId, subtasks) {
 
   for (const subtask of subtasks) {
     try {
-      const taskData = {
-        name: subtask.text,
-        description: subtask.text,
+      // Create a child task in the same column as the parent
+      const childTaskId = await kanbnInstance.createTask({
+        name: subtask.text || subtask,
+        description: subtask.text || subtask,
         metadata: {
-          tags: parentTask.metadata.tags || []
-        },
-        relations: [
-          {
-            task: parentTaskId,
-            type: 'child-of'
-          }
-        ]
-      };
-
-      if (parentTask.metadata.assigned) {
-        taskData.metadata.assigned = parentTask.metadata.assigned;
-      }
-
-      const childTaskId = await kanbn.createTask(taskData, columnName);
+          tags: parentTask.metadata?.tags || [],
+          parent: parentTaskId
+        }
+      }, columnName);
+      
       childTasks.push(childTaskId);
-
-      if (!parentTask.relations) {
-        parentTask.relations = [];
+      
+      // Add reference to child in parent task
+      if (!parentTask.metadata) {
+        parentTask.metadata = {};
       }
-
-      parentTask.relations.push({
-        task: childTaskId,
-        type: 'parent-of'
-      });
+      
+      if (!parentTask.metadata.children) {
+        parentTask.metadata.children = [];
+      }
+      
+      parentTask.metadata.children.push(childTaskId);
     } catch (error) {
       console.error(`Error creating child task: ${error.message}`);
     }
   }
 
-  await kanbn.updateTask(parentTaskId, parentTask);
+  await kanbnInstance.updateTask(parentTaskId, parentTask);
 
   return childTasks;
 }
@@ -277,14 +260,27 @@ module.exports = async args => {
     }
 
     // Check if task exists
-    const allTasks = await kanbn.findTrackedTasks();
-    if (!allTasks.includes(taskId)) {
+    const allTaskIds = await kanbn.findTrackedTasks();
+    
+    // Handle both Set and Array return types for backward compatibility
+    let taskExists = false;
+    let matchingTaskId = null;
+    
+    // Convert to array for consistent processing
+    const taskIdsArray = Array.isArray(allTaskIds) ? allTaskIds : 
+                        (allTaskIds instanceof Set) ? [...allTaskIds] : 
+                        (allTaskIds && typeof allTaskIds === 'object') ? Object.keys(allTaskIds) : [];
+    
+    // Check for exact match
+    taskExists = taskIdsArray.includes(taskId);
+    
+    if (!taskExists) {
       // Try to find a task that matches the given ID (case-insensitive)
-      const matchingTask = allTasks.find(t => t.toLowerCase() === taskId.toLowerCase());
+      matchingTaskId = taskIdsArray.find(id => id.toLowerCase() === taskId.toLowerCase());
 
-      if (matchingTask) {
+      if (matchingTaskId) {
         // Use the matching task ID with correct case
-        taskId = matchingTask;
+        taskId = matchingTaskId;
       } else {
         utility.error(`Task "${taskId}" doesn't exist`);
         return;
@@ -306,7 +302,7 @@ module.exports = async args => {
   const description = customDescription || task.description;
 
   console.log(`Decomposing task "${task.name}"...`);
-  const subtasks = await callOpenRouterAPI(description, task, args['with-refs']);
+  const subtasks = await callOpenRouterAPI(kanbn, description, task, args['with-refs']);
 
   if (subtasks.length === 0) {
     utility.error('Failed to decompose task. No subtasks generated.');
@@ -319,7 +315,7 @@ module.exports = async args => {
   });
 
   console.log('\nCreating child tasks...');
-  const childTasks = await createChildTasks(taskId, subtasks);
+  const childTasks = await createChildTasks(kanbn, taskId, subtasks);
 
   console.log(`\nCreated ${childTasks.length} child tasks for "${task.name}"`);
   childTasks.forEach(childTaskId => {

@@ -138,6 +138,43 @@ class MockKanbn {
     async status() {
         return {};
     }
+    
+    /**
+     * Search for tasks matching criteria
+     * @param {Object} searchCriteria - Criteria to search for
+     * @returns {Array} - Array of matching tasks
+     */
+    async search(searchCriteria = {}) {
+        const results = [];
+        
+        // Convert tasks map to array of task objects with IDs
+        const tasksArray = Array.from(this.tasks.entries()).map(([id, task]) => ({ ...task, id }));
+        
+        for (const task of tasksArray) {
+            // Match by name if specified
+            if (searchCriteria.name && task.name) {
+                if (task.name.toLowerCase().includes(searchCriteria.name.toLowerCase())) {
+                    results.push(task);
+                    continue;
+                }
+            }
+            
+            // Match by description if specified
+            if (searchCriteria.description && task.description) {
+                if (task.description.toLowerCase().includes(searchCriteria.description.toLowerCase())) {
+                    results.push(task);
+                    continue;
+                }
+            }
+            
+            // If no criteria were specified, add all tasks
+            if (Object.keys(searchCriteria).length === 0) {
+                results.push(task);
+            }
+        }
+        
+        return results;
+    }
 }
 
 QUnit.module('Chat Infrastructure', {
@@ -157,6 +194,8 @@ QUnit.module('Chat Infrastructure', {
         });
 
         const mockKanbn = new MockKanbn();
+        
+        // Mock the main Kanbn module
         mockRequire('../../src/main', {
             Kanbn: function() { return mockKanbn; },
             findTaskColumn: (index, taskId) => {
@@ -169,6 +208,38 @@ QUnit.module('Chat Infrastructure', {
             }
         });
         this.mockKanbn = mockKanbn;
+        
+        // Reset all module caches to ensure clean mocking
+        Object.keys(require.cache).forEach(key => {
+            if (key.includes('/src/lib/chat-handler') || 
+                key.includes('/src/controller/chat') ||
+                key.includes('/src/controller/chat-controller')) {
+                delete require.cache[key];
+            }
+        });
+        
+        // Mock ChatHandler directly with our own implementation
+        mockRequire('../../src/lib/chat-handler', class MockChatHandler {
+            constructor(kanbn, memoryManager, promptLoader) {
+                this.kanbn = mockKanbn; // Always use our mock kanbn
+                this.memoryManager = memoryManager;
+                this.promptLoader = promptLoader;
+                this.context = {
+                    setProjectContext: () => {},
+                    getContext: () => ({})
+                };
+            }
+            
+            // Implement required methods
+            async handleMessage() {
+                return 'Mocked response';
+            }
+            
+            // Add the search method explicitly
+            async findTaskByName() {
+                return null;
+            }
+        });
 
         // Set up test environment
         process.env = {
