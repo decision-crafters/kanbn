@@ -25,6 +25,7 @@ Where {b}<command>{b} is one of:
   {b}remove-all{b} {d}....{d} Remove the kanbn board and all tasks
   {b}decompose{b} {d}.....{d} Use AI to break down tasks into subtasks
   {b}chat{b} {d}..........{d} Chat with AI project assistant
+  {b}integrations{b} {d}..{d} Manage RAG-based knowledge integrations
 
 For more help with commands, try:
 

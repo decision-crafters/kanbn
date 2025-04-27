@@ -244,3 +244,28 @@ Options:
 - `--interactive, -i`: Decompose a task interactively
 
 For detailed examples and usage instructions, see the [Decompose Demo](demos/decompose-demo.md).
+
+### `kanbn integrations`
+
+Manages RAG-based knowledge integrations for AI features.
+
+```bash
+kanbn integrations [--list] [--add] [--remove] [--name <name>] [--url <url>] [--content <content>]
+```
+
+Options:
+- `--list, -l`: List all available integrations
+- `--add, -a`: Add a new integration
+- `--remove, -r`: Remove an integration
+- `--name, -n`: Name of the integration (required for add/remove)
+- `--url, -u`: URL to download integration content from
+- `--content, -c`: Content for the integration
+
+Use integrations with the chat command:
+```bash
+# Use all available integrations
+kanbn chat --with-integrations
+
+# Use specific integration(s)
+kanbn chat --integration game-systems
+```

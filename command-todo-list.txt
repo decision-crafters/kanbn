@@ -33,3 +33,4 @@
 ## New AI Features
 - [x] decompose - Use AI to decompose a task into smaller subtasks
 - [x] chat - Interact with an AI project management assistant
+- [x] integrations - Manage RAG-based knowledge integrations for AI features

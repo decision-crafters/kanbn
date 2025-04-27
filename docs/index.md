@@ -52,6 +52,9 @@ kanbn decompose
 
 # Get AI project assistance
 kanbn chat
+
+# Manage knowledge integrations for AI
+kanbn integrations
 ```
 
 [Learn More About AI Features →](ai-features.md)
