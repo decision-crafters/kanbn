@@ -31,96 +31,103 @@ Kanbn revolutionizes project management by combining the simplicity of Kanban bo
 ## 🚀 Quick Start
 
 ```bash
-# Install Kanbn globally
+# Install Kanbn
 npm install -g @tosin2013/kanbn
 
-# Create a new project
+# Initialize a new project with AI assistance
 mkdir my-project && cd my-project
-
-# Initialize with AI assistance
 kanbn init --ai
 
 # Start managing tasks
-kanbn task add "Setup project structure"
+kanbn chat "Help me plan my project"
 kanbn list
 ```
 
-[Complete Getting Started Guide →](getting-started.md)
+For detailed setup instructions and best practices, see our [Getting Started Guide](getting-started.md).
+
+For real-world examples and scenarios:
+- [Project Setup Demo](demos/setup-demo.md)
+- [Workflow Examples](demos/workflow-demo.md)
 
 ## 💡 Essential Commands
 
 ### Task Management
 ```bash
-kanbn task add     # Create new task
-kanbn task edit    # Modify task
-kanbn task move    # Change task status
-kanbn list         # View board
-kanbn search       # Find tasks
-kanbn progress     # View task progress
+kanbn init      # Initialize kanbn board
+kanbn board     # Show the kanbn board
+kanbn task      # Show a kanbn task
+kanbn add       # Add a kanbn task
+kanbn edit      # Edit a kanbn task
+kanbn rename    # Rename a kanbn task
+kanbn move      # Move a kanbn task to another column
+kanbn comment   # Add a comment to a task
+kanbn remove    # Remove a kanbn task
+kanbn find      # Search for kanbn tasks
 ```
 
-### AI Chat & Analysis
+### AI Features
 ```bash
-# General AI assistance
+# Task decomposition
+kanbn decompose --task "complex-task"
+
+# Project assistant chat
 kanbn chat "How should I structure this project?"
-kanbn chat "What tasks should I prioritize?"
+kanbn chat --message "What tasks should I prioritize?"
 
-# Task-specific chat
-kanbn chat --task task-id "How can I break this down?"
-kanbn chat --task task-id "What are the dependencies?"
-
-# Progress analysis
-kanbn chat "Show me project progress"
-kanbn chat "Analyze sprint velocity"
-kanbn chat "Identify bottlenecks"
-
-# Task generation
-kanbn chat "Generate tasks for user authentication"
-kanbn chat "Create tasks for API integration"
-
-# Documentation help
-kanbn chat "Document current sprint progress"
-kanbn chat "Summarize recent changes"
+# Knowledge integration
+kanbn integrations add "project-docs"
 ```
 
-### Progress Tracking
+### Project Management
 ```bash
-# View overall progress
-kanbn progress
+# Project status and metrics
+kanbn status     # Get project and task statistics
+kanbn sort       # Sort a column in the index
+kanbn sprint     # Start a new sprint
+kanbn burndown   # View a burndown chart
 
-# Sprint progress
-kanbn progress --sprint current
-kanbn progress --sprint previous
-
-# Filtered progress
-kanbn progress --tag frontend
-kanbn progress --assignee username
-
-# Export progress reports
-kanbn progress --format markdown
-kanbn progress --format json --output progress.json
-
-# Burndown charts
-kanbn chart burndown
-kanbn chart velocity
+# Task organization
+kanbn validate   # Validate index and task files
+kanbn archive    # Archive a task
+kanbn restore    # Restore a task from the archive
 ```
 
-### Project Tools
+### Status Commands
 ```bash
-kanbn report       # Generate reports
-kanbn export       # Export data
-kanbn stats        # View metrics
-kanbn config       # Manage settings
+# View project status
+kanbn status                  # Overall project statistics
+kanbn status --detailed      # Detailed breakdown
+
+# Sprint management
+kanbn sprint new "Sprint 1"  # Start new sprint
+kanbn sprint end            # End current sprint
+kanbn burndown              # View burndown data
+
+# Task organization
+kanbn sort --column "In Progress"  # Sort tasks in column
+kanbn find --tag "priority"       # Find specific tasks
 ```
+
+### Task Visualization
+```bash
+# Board views
+kanbn board              # View kanban board
+kanbn board --compact   # Compact board view
+
+# Task details
+kanbn task task-id      # View detailed task info
+kanbn find --format detailed  # Detailed task listing
+```
+
 
 [View All Commands →](commands.md)
 
 ## 📚 Documentation
 
 ### Getting Started
-- [Quick Start Guide](quick-start.md)
 - [Installation & Setup](getting-started.md)
-- [Basic Usage](getting-started.md#basic-usage)
+- [Project Setup Demo](demos/setup-demo.md)
+- [Workflow Examples](demos/workflow-demo.md)
 - [Configuration](advanced-configuration.md)
 
 ### Core Features
@@ -164,51 +171,17 @@ We welcome contributions! See our [Contributing Guide](CONTRIBUTING.md) to get s
 
 ## 📊 Progress Features
 
-### Real-time Progress Tracking
-- **Sprint Metrics**: Track velocity, completion rates, and estimations
-- **Burndown Charts**: Visual representation of sprint progress
-- **Team Analytics**: Individual and team performance metrics
-- **Bottleneck Detection**: AI-powered analysis of workflow impediments
-- **Custom Reports**: Generate tailored progress reports
+### Project Status Tracking
+- **Sprint Management**: Track sprint progress with `kanbn sprint`
+- **Burndown Analysis**: Visual burndown data with `kanbn burndown`
+- **Task Statistics**: Get project metrics with `kanbn status`
+- **Team Analytics**: Track task assignments and completion rates
+- **Custom Reports**: Generate task reports using AI assistance
 
-### AI-Powered Progress Analysis
-- **Predictive Analytics**: Estimate completion times and resource needs
-- **Pattern Recognition**: Identify successful workflows and potential issues
-- **Resource Optimization**: Suggestions for better task distribution
-- **Risk Assessment**: Early warning system for project delays
-- **Trend Analysis**: Long-term project health monitoring
+### AI-Powered Analysis
+- **Task Insights**: Get AI recommendations for task organization
+- **Workflow Analysis**: Identify bottlenecks and optimization opportunities
+- **Resource Planning**: Get suggestions for task distribution
+- **Risk Assessment**: Early identification of potential delays
+- **Trend Analysis**: Understanding project patterns and health
 
-### Progress Commands
-```bash
-# Basic progress views
-kanbn progress                 # Overall progress
-kanbn progress --detailed     # Detailed breakdown
-kanbn progress --summary      # Quick summary
-
-# Filtered views
-kanbn progress --sprint "Sprint 1"
-kanbn progress --tag "frontend"
-kanbn progress --priority "high"
-kanbn progress --assignee "username"
-
-# Time-based analysis
-kanbn progress --period "last-week"
-kanbn progress --from "2024-01-01" --to "2024-03-01"
-
-# Export options
-kanbn progress --format markdown --output progress.md
-kanbn progress --format json --output metrics.json
-```
-
-### Progress Visualization
-```bash
-# Generate charts
-kanbn chart burndown          # Sprint burndown
-kanbn chart velocity          # Team velocity
-kanbn chart distribution      # Task distribution
-kanbn chart timeline          # Project timeline
-
-# Interactive views
-kanbn board --progress       # Board with progress
-kanbn status --live         # Live status updates
-```

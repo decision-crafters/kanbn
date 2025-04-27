@@ -1,19 +1,24 @@
-* Getting Started
-  * [Getting Started Guide](getting-started.md)
-  * [Quick Start](quick-start.md)
-  * [Advanced Configuration](advanced-configuration.md)
+- Getting Started
+  - [Introduction](/)
+  - [Installation & Setup](getting-started.md)
+  - [Project Setup Demo](demos/setup-demo.md)
+  - [Workflow Examples](demos/workflow-demo.md)
 
-* Core Documentation
-  * [Index Structure](index-structure.md)
-  * [Task Structure](task-structure.md)
-  * [Task References](references.md)
-  * [Commands](commands.md)
+- Core Features
+  - [Task Management](task-structure.md)
+  - [Board Organization](index-structure.md)
+  - [AI Features](ai-features.md)
+  - [Project Templates](rules-template-integration.md)
 
-* AI Features
-  * [Overview](ai-features.md)
-  * [AI-Powered Initialization](ai-init.md)
-  * [Chat Demo](demos/chat-demo.md)
-  * [Decompose Demo](demos/decompose-demo.md)
+- Advanced Topics
+  - [Configuration](advanced-configuration.md)
+  - [Dependencies](dependencies.md)
+  - [References](references.md)
 
-* Integration & Development
-  * [Rules Template Integration](rules-template-integration.md)
+- Examples & Demos
+  - [Chat Demo](demos/chat-demo.md)
+  - [Decompose Demo](demos/decompose-demo.md)
+
+- Contributing
+  - [Contributing Guide](CONTRIBUTING.md)
+  - [Code of Conduct](CODE_OF_CONDUCT.md)
