@@ -15,6 +15,9 @@ Kanbn is a modern CLI tool that revolutionizes task management by combining:
 
 ### 1. Installation
 
+You can install Kanbn either globally using npm or run it using a container:
+
+#### Option 1: NPM Installation
 ```bash
 # Install globally using npm
 npm install -g @tosin2013/kanbn
@@ -22,6 +25,26 @@ npm install -g @tosin2013/kanbn
 # Verify installation
 kanbn --version
 ```
+
+#### Option 2: Container Usage
+```bash
+# Pull the latest container image
+docker pull quay.io/takinosh/kanbn:latest
+
+# Run Kanbn commands using the container
+docker run -it --rm \
+  -v $(pwd):/workspace \
+  -e OPENROUTER_API_KEY=$OPENROUTER_API_KEY \
+  quay.io/takinosh/kanbn:latest kanbn <command>
+```
+
+When using the container:
+- Your current directory is mounted as `/workspace` inside the container
+- Environment variables (like `OPENROUTER_API_KEY`) can be passed using `-e` flag
+- All Kanbn commands are available through the container
+- Files created/modified by Kanbn will have the correct permissions on your host system
+
+For detailed container usage instructions, advanced configurations, and best practices, refer to our [Docker Guide](DOCKER.md).
 
 ### 2. Project Initialization
 

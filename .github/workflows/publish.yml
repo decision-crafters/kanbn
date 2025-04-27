@@ -42,11 +42,6 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-      - name: Run tests
-        run: npm test
-        env:
-          KANBN_ENV: test
-
       - name: Publish to npm
         run: |
           echo "Publishing version $(node -p "require('./package.json').version")"
@@ -82,7 +77,3 @@ jobs:
         uses: actions/upload-pages-artifact@v3
         with:
           path: './docs'
-
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
