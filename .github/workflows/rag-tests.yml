@@ -97,7 +97,7 @@ jobs:
           echo "Verifying kanbn command is available..."
           which kanbn || { echo "kanbn command not found in PATH"; exit 1; }
           echo "Testing kanbn command..."
-          kanbnversion || { echo "kanbn command failed to execute"; exit 1; }
+          kanbn version || { echo "kanbn command failed to execute"; exit 1; }
           echo "kanbn command is working properly"
 
       - name: Prepare Ollama test script
