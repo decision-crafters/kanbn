@@ -137,10 +137,10 @@ kanbn find --format detailed  # Detailed task listing
 - [Project Templates](rules-template-integration.md)
 
 ### Advanced Topics
-- [Custom Workflows](advanced-configuration.md#workflows)
-- [API Integration](advanced-configuration.md#api)
-- [Automation](advanced-configuration.md#automation)
-- [Security](advanced-configuration.md#security)
+- [Configuration Options](advanced-configuration.md)
+- [Project Dependencies](dependencies.md)
+- [Task References](references.md)
+- [Repository Integration](repository-analysis.md)
 
 ### Examples & Demos
 - [AI Chat Demo](demos/chat-demo.md)
