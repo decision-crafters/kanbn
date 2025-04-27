@@ -1,240 +1,146 @@
 # AI Features in Kanbn
 
-Kanbn includes AI-powered features to help you manage your tasks more efficiently.
+Kanbn includes AI-powered features to help you manage your tasks more efficiently. Version 0.12.0 introduces enhanced AI capabilities with OpenRouter and Ollama support, along with improved project memory and RAG (Retrieval-Augmented Generation) features.
 
 > For detailed examples and usage instructions, check out the [Chat Demo](demos/chat-demo.md), [Decompose Demo](demos/decompose-demo.md), and [AI-Powered Initialization](ai-init.md).
 
-## AI-Powered Initialization
+## AI Service Integration
 
-The `init --ai` command provides an AI-powered initialization process that helps you set up your Kanbn board based on your project description.
+Kanbn now supports multiple AI service providers:
 
-```
-kanbn init --ai
-```
+1. **OpenRouter Integration**
+   - Primary AI service provider
+   - Requires `OPENROUTER_API_KEY` environment variable
+   - Supports various models through OpenRouter's API
 
-### How It Works
+2. **Ollama Support**
+   - Local AI model support
+   - No API key required
+   - Run models locally for enhanced privacy
 
-1. You provide a project name and description
-2. The AI analyzes your project information and suggests appropriate columns
-3. You can accept the suggested columns or customize them
-4. The system creates your Kanbn board with the selected columns
-5. The AI suggests initial tasks to help you get started
-
-### Features
-
-- **Memory Persistence**: Your conversation with the AI is saved between sessions
-- **Custom Prompts**: You can customize the prompts used by the AI
-- **Project Type Detection**: The AI detects your project type and suggests appropriate columns
-- **Initial Task Suggestions**: The AI suggests initial tasks based on your project description
-
-For more details, see the [AI-Powered Initialization](ai-init.md) documentation.
-
-## Project Management Chat
-
-The `chat` command provides an AI-powered project management assistant that understands your Kanbn board and can help with project management.
-
-```
-kanbn chat
-```
-
-### How It Works
-
-1. The AI assistant analyzes your project context (tasks, columns, statistics)
-2. You can ask questions about your project, get advice, or discuss task management
-3. The assistant provides insights based on your project data
-4. All chat interactions are logged for tracking and analysis
-
-### Chat Context Memory
-
-The chat feature maintains context across interactions:
-- Remembers recently discussed tasks and their relationships
-- Understands task references without explicit names
-- Preserves conversation history for natural dialogue
-- Maintains board state consistency during operations
-- Tracks task modifications and updates
-
-### Board State Validation
-
-During chat operations, the system ensures:
-- Task count accuracy across all operations
-- Column integrity and task assignments
-- Task metadata consistency
-- Index structure validity
-- Proper parent-child relationships
-- Error recovery and state preservation
-
-### Error Handling
-
-The chat feature includes robust error handling:
-- Network error recovery with graceful fallbacks
-- API rate limit management
-- Invalid operation prevention
-- State consistency preservation
-- Transaction-like operations for multi-step changes
-
-### Options
-
-- `-m, --message`: Send a one-off message to the assistant without entering interactive mode
-- `--with-refs`, `--include-refs`, `--references`: Include task references in the context
-- `-h, --help`: Show help
-
-### Interactive Mode
-
-By default, the chat command enters interactive mode, allowing for continuous conversation:
-
-```
-📊 Kanbn Project Assistant 📊
-Type "exit" or "quit" to end the conversation
-
-You: What's the status of my project?
-Project Assistant: Your project "Example Project" has 12 tasks across 4 columns...
-```
-
-## AI Task Decomposition
-
-The `decompose` command allows you to break down complex tasks into smaller, actionable subtasks using AI.
-
-```
-kanbn decompose --task my-task
-```
-
-### How It Works
-
-1. The AI analyzes the task description and generates a list of subtasks
-2. Each subtask is created as a separate task in your kanban board
-3. Parent-child relationships are established between the original task and the subtasks
-4. All AI interactions are logged for tracking and analysis
-
-### Options
-
-- `-i, --interactive`: Decompose a task interactively
-- `-t, --task`: Specify the task ID to decompose
-- `-d, --description`: Provide a custom description for decomposition (optional)
-- `--with-refs`, `--include-refs`, `--references`: Include task references in the decomposition context
-
-### Requirements
-
-- An OpenRouter API key set as `OPENROUTER_API_KEY` environment variable
-- Internet connection (falls back to basic decomposition when offline)
-
-### Environment Variables
+### Configuration
 
 ```bash
-# Required for AI features
+# Primary AI service (OpenRouter)
 OPENROUTER_API_KEY=your_api_key_here
 
-# Optional: Specify a different model (defaults to google/gemma-3-4b-it:free)
+# Optional: Specify a different model
 OPENROUTER_MODEL=google/gemma-3-4b-it:free
 
 # Optional: Force real API calls in test environment
 USE_REAL_API=true
+
+# Optional: Ollama configuration (if using Ollama)
+OLLAMA_HOST=http://localhost:11434
 ```
 
-You can add these to a `.env` file in your project root.
+## Enhanced Project Memory System
+
+Version 0.12.0 introduces an improved project memory system that provides:
+
+1. **Persistent Context**: Better retention of project context across sessions
+2. **RAG Capabilities**: 
+   - Improved AI interactions through document retrieval
+   - Better understanding of project documentation
+   - More relevant and context-aware responses
+3. **Enhanced State Management**:
+   - Improved handling of project context
+   - Better error recovery
+   - More reliable state persistence
+
+## AI-Powered Initialization
+
+Use `kanbn init --ai` to initialize a new Kanbn board with AI assistance. The AI will:
+1. Analyze your project description
+2. Suggest appropriate board columns
+3. Create initial tasks based on project goals
+4. Set up task relationships and dependencies
+
+## Project Management Chat
+
+The `kanbn chat` command provides an intelligent project management assistant that:
+1. Maintains conversation context across sessions
+2. Understands your project's current state
+3. Provides task-specific recommendations
+4. Helps with task organization and prioritization
+5. Leverages RAG capabilities for more informed responses
+
+### Chat Features
+
+- **Context-Aware Responses**: The AI assistant uses RAG to reference your project documentation and history
+- **Task Management**: Create, update, and organize tasks through natural conversation
+- **Project Insights**: Get AI-powered insights about project progress and bottlenecks
+- **Documentation Help**: Generate and update project documentation with AI assistance
+
+## AI Task Decomposition
+
+Break down complex tasks into manageable subtasks using `kanbn decompose --task <task-id>`. The AI will:
+1. Analyze the task description and context
+2. Identify logical subtasks
+3. Create parent-child relationships
+4. Suggest task priorities and dependencies
 
 ## AI Interaction Tracking
 
-Kanbn automatically logs all AI interactions, allowing you to:
+Kanbn automatically tracks AI interactions to:
+1. Maintain conversation history
+2. Record AI-suggested changes
+3. Track task modifications
+4. Enable review of AI decisions
 
-1. Track AI usage and contributions
-2. View AI interaction details
-3. See AI metrics in status reports
+### Interaction Records
 
-### Viewing AI Interactions
-
-AI interactions are stored as special task files with the `ai-interaction` tag.
-
-```
-kanbn find --tag ai-interaction
-```
-
-### AI Metrics in Status Reports
-
-The `status` command now includes AI interaction metrics:
-
-```
-kanbn status
-```
+Each AI interaction is logged with:
+- Timestamp
+- Interaction type
+- Context used
+- Changes made
+- Task relationships affected
 
 ## Parent-Child Task Relationships
 
-Tasks can now have parent-child relationships:
-
-- A task can be a parent of multiple child tasks
-- A task can be a child of another task
-- These relationships are represented as special relation types: `parent-of` and `child-of`
-
-### Working with Parent-Child Relationships
-
-You can view parent-child relationships in the task view:
-
-```
-kanbn task my-task
-```
-
-Parent-child relationships are also considered in progress calculations, with parent task progress reflecting the completion status of child tasks.
+Tasks can have parent-child relationships that:
+1. Affect progress calculations
+2. Show task dependencies
+3. Help with project organization
+4. Enable better task tracking
 
 ## AI-Friendly Task Prompts
 
-The `task` command now includes a `--prompt` flag that generates an AI-friendly prompt from task data. This makes it easy to use task information with external AI tools.
-
-```
-kanbn task my-task --prompt
-```
-
-### How It Works
-
-1. The system extracts all relevant information from the task (name, description, metadata, subtasks, relations, comments)
-2. This information is formatted into a well-structured prompt
-3. The prompt can be copied and pasted into AI tools like ChatGPT, Claude, or other AI assistants
-4. The AI can then provide insights, suggestions, or next steps for the task
-
-### Benefits of AI-Friendly Prompts
-
-- Easily share task context with external AI tools
-- Get AI insights on specific tasks without switching context
-- Generate task-specific suggestions and recommendations
-- Streamline your workflow by combining Kanbn with your preferred AI tools
-- Maintain task context when collaborating with team members
-
-### Example Usage
-
+Generate AI-friendly prompts from your tasks using:
 ```bash
-# Generate an AI-friendly prompt for a specific task
-kanbn task complex-task --prompt > task-prompt.txt
-
-# Use the prompt with your preferred AI tool
-cat task-prompt.txt | pbcopy  # Copy to clipboard on macOS
+kanbn prompt --task <task-id>
 ```
 
-## Task References in AI Features
+This feature helps you:
+1. Get formatted prompts for external AI tools
+2. Include relevant task context
+3. Maintain consistency in AI interactions
+4. Leverage task relationships in prompts
 
-Kanbn now supports task references, which can be used to store URLs and external resources related to tasks. These references can be included in AI features to provide additional context.
+## Error Handling and Recovery
 
-### Including References in Chat
+Version 0.12.0 includes improved error handling for AI features:
+1. Graceful fallback between AI services
+2. Better error messages and recovery options
+3. Automatic retry mechanisms
+4. State preservation during failures
 
-When using the chat feature, you can include task references in the context:
+## Best Practices
 
-```
-kanbn chat --with-refs
-```
+1. **Environment Setup**:
+   - Always set up required environment variables
+   - Test AI connectivity before major operations
+   - Configure fallback options when possible
 
-This allows the AI assistant to see and reference external resources when answering questions or providing insights about your tasks.
+2. **Project Context**:
+   - Keep project documentation up-to-date
+   - Use consistent task descriptions
+   - Maintain clear task relationships
 
-### Including References in Task Decomposition
+3. **AI Interactions**:
+   - Review AI suggestions before applying
+   - Keep track of AI-generated changes
+   - Use specific prompts for better results
 
-When decomposing a task, you can include its references to help the AI generate more relevant subtasks:
-
-```
-kanbn decompose --task my-task --with-refs
-```
-
-This is particularly useful when the task references contain specifications, requirements, or other information that can help with decomposition.
-
-### Benefits of References in AI Features
-
-- Provides additional context for AI-powered features
-- Helps generate more relevant and accurate responses
-- Allows the AI to consider external resources when analyzing tasks
-- Improves the quality of task decomposition
-- Enhances the overall AI experience
+For more information about using these features, check the [documentation](README.md) or use `kanbn help` for command-specific guidance.

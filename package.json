@@ -1,6 +1,6 @@
 {
   "name": "@tosin2013/kanbn",
-  "version": "0.11.1",
+  "version": "0.12.0",
   "description": "A CLI Kanban board with AI-powered task management features",
   "main": "index.js",
   "scripts": {
