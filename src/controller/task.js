@@ -47,10 +47,8 @@ function showTask(taskId, json = false, prompt = false) {
           utility.error(`Error generating prompt: ${error.message}`);
         }
       } else {
-        // Configure markdown-it with terminal renderer
-        const terminalRenderer = new TerminalRenderer();
-        const md = markdown.md.use(terminalRenderer);
-        console.log(md.render(parseTask.json2md(task)));
+        // Skip the terminal renderer entirely and just show the markdown
+        console.log(parseTask.json2md(task));
       }
     })
     .catch((error) => {
