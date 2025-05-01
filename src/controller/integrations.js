@@ -6,6 +6,7 @@
 
 const kanbnModule = require('../main');
 const utility = require('../utility');
+const chalk = require('chalk');
 // Use a more compatible approach for terminal colors
 const colors = {
   green: (text) => `\x1b[32m${text}\x1b[0m`,
@@ -29,7 +30,13 @@ module.exports = async args => {
     // Check if we're in a Kanbn board
     let boardFolder;
     try {
-      boardFolder = await kanbn.findBoardFolder();
+      // Check if kanbn has been initialised
+      if (!await kanbn.initialised()) {
+        return 'Not in a Kanbn board. Initialize a board with `kanbn init` first.';
+      }
+
+      // Get the main folder
+      boardFolder = await kanbn.getMainFolder();
     } catch (error) {
       return 'Not in a Kanbn board. Initialize a board with `kanbn init` first.';
     }
