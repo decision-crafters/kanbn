@@ -76,12 +76,38 @@ module.exports = async () => {
   }
 
   // Parse arguments again using route-specific options and pass to the relevant controller
-  await require(route.config.controller)(
-    minimist(
-      process.argv.slice(2),
-      route.config.args
-    ),
-    process.argv,
-    route.id
-  );
+  try {
+    // Debug logging for controller execution
+    if (process.env.DEBUG === 'true') {
+      console.log(`DEBUG: Executing controller: ${route.config.controller}`);
+    }
+
+    const result = await require(route.config.controller)(
+      minimist(
+        process.argv.slice(2),
+        route.config.args
+      ),
+      process.argv,
+      route.id
+    );
+
+    // Debug logging for controller result
+    if (process.env.DEBUG === 'true') {
+      console.log(`DEBUG: Controller result type: ${typeof result}`);
+      if (typeof result === 'string') {
+        console.log(`DEBUG: Controller result: ${result.substring(0, 100)}${result.length > 100 ? '...' : ''}`);
+      } else if (result !== undefined) {
+        console.log(`DEBUG: Controller result: ${JSON.stringify(result).substring(0, 100)}${JSON.stringify(result).length > 100 ? '...' : ''}`);
+      } else {
+        console.log('DEBUG: Controller result: undefined');
+      }
+    }
+
+    // Display the result if it's a string and not in quiet mode
+    if (typeof result === 'string' && result.trim() !== '' && process.env.KANBN_QUIET !== 'true') {
+      console.log(result);
+    }
+  } catch (error) {
+    utility.error(`Error executing controller: ${error.message}`, true);
+  }
 };

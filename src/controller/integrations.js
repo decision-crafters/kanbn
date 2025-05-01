@@ -46,7 +46,10 @@ module.exports = async args => {
       const integrations = await ragManager.listIntegrations();
 
       if (integrations.length === 0) {
-        return 'No integrations found. Add integrations with `kanbn integrations add <n> <url-or-content>`.';
+        const message = 'No integrations found. Add integrations with `kanbn integrations add <n> <url-or-content>`.';
+        // Print directly to console to ensure visibility
+        console.log(message);
+        return message;
       }
 
       let result = 'Available integrations:\n';
@@ -54,6 +57,8 @@ module.exports = async args => {
         result += `- ${colors.green(integration)}: ${colors.gray(`${integration}.md`)}\n`;
       }
 
+      // Print directly to console to ensure visibility
+      console.log(result);
       return result;
     } else if (args.add) {
       // Add a new integration
@@ -75,11 +80,17 @@ module.exports = async args => {
 
         if (success) {
           if (isHtml) {
+            // Print directly to console to ensure visibility
+            console.log(`Integration '${args.name}' added successfully from URL: ${args.url} (HTML converted to Markdown)`);
             return `Integration '${args.name}' added successfully from URL: ${args.url} (HTML converted to Markdown)`;
           } else {
+            // Print directly to console to ensure visibility
+            console.log(`Integration '${args.name}' added successfully from URL: ${args.url}`);
             return `Integration '${args.name}' added successfully from URL: ${args.url}`;
           }
         } else {
+          // Print directly to console to ensure visibility
+          console.error(`Failed to add integration '${args.name}' from URL: ${args.url}`);
           return `Failed to add integration '${args.name}' from URL: ${args.url}`;
         }
       } else if (args.content) {
@@ -87,8 +98,12 @@ module.exports = async args => {
         const success = await ragManager.addIntegration(args.name, args.content);
 
         if (success) {
+          // Print directly to console to ensure visibility
+          console.log(`Integration '${args.name}' added successfully with provided content`);
           return `Integration '${args.name}' added successfully with provided content`;
         } else {
+          // Print directly to console to ensure visibility
+          console.error(`Failed to add integration '${args.name}' with provided content`);
           return `Failed to add integration '${args.name}' with provided content`;
         }
       } else {
@@ -103,8 +118,12 @@ module.exports = async args => {
       const success = await ragManager.removeIntegration(args.name);
 
       if (success) {
+        // Print directly to console to ensure visibility
+        console.log(`Integration '${args.name}' removed successfully`);
         return `Integration '${args.name}' removed successfully`;
       } else {
+        // Print directly to console to ensure visibility
+        console.error(`Failed to remove integration '${args.name}'`);
         return `Failed to remove integration '${args.name}'`;
       }
     } else {
