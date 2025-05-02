@@ -148,16 +148,45 @@ jobs:
 
             # Test container bootstrap script with different project modes
             echo "Testing container bootstrap script with default mode (3)..."
+
+            # Check if Ollama is available
+            if curl -s http://localhost:11434/api/tags > /dev/null; then
+              echo "✅ Ollama is available, using Ollama for tests"
+              OLLAMA_AVAILABLE=true
+              AI_CONFIG="-e USE_OLLAMA=true -e OLLAMA_HOST=http://host.docker.internal:11434 -e OLLAMA_MODEL=qwen3"
+              NETWORK_CONFIG="--add-host=host.docker.internal:host-gateway"
+            elif [ -n "${{ secrets.OPENROUTER_API_KEY }}" ]; then
+              echo "⚠️ Ollama is not available, using OpenRouter for tests"
+              OLLAMA_AVAILABLE=false
+              AI_CONFIG="-e USE_OLLAMA=false -e OPENROUTER_API_KEY=${{ secrets.OPENROUTER_API_KEY }} -e OPENROUTER_MODEL=google/gemma-3-4b-it:free"
+              NETWORK_CONFIG=""
+            else
+              echo "❌ ERROR: Neither Ollama nor OpenRouter API key is available"
+              echo "For release testing, either Ollama or OpenRouter API key must be available"
+              if [ "${{ github.event_name }}" = "release" ]; then
+                echo "This is a release build, failing the workflow"
+                exit 1
+              else
+                echo "⚠️ This is not a release build, continuing with mock mode"
+                OLLAMA_AVAILABLE=false
+                AI_CONFIG="-e USE_MOCK=true -e USE_OLLAMA=false -e KANBN_ENV=test"
+                NETWORK_CONFIG=""
+              fi
+            fi
+
+            # Export these variables for use in other parts of the script
+            export OLLAMA_AVAILABLE
+            export AI_CONFIG
+            export NETWORK_CONFIG
+
             docker run --rm -v $TEST_DIR/mode3:/workspace -w /workspace \
               -e KANBN_ENV=test \
               -e NODE_ENV=test \
               -e PROJECT_MODE=3 \
               -e PROJECT_NAME="Container Test Mode 3" \
               -e PROJECT_DESCRIPTION="Testing kanbn in container environment with mode 3" \
-              -e USE_OLLAMA=true \
-              -e OLLAMA_HOST=http://host.docker.internal:11434 \
-              -e OLLAMA_MODEL=qwen3 \
-              --network host \
+              $AI_CONFIG \
+              $NETWORK_CONFIG \
               kanbn:test /bin/bash -c "chmod +x /app/examples/bootstrap_container.sh && /app/examples/bootstrap_container.sh" \
               || { echo "::warning::Container bootstrap script test with mode 3 failed but continuing..."; }
 
@@ -166,10 +195,8 @@ jobs:
             docker run --rm -v $TEST_DIR/mode1:/workspace -w /workspace \
               -e KANBN_ENV=test \
               -e NODE_ENV=test \
-              -e USE_OLLAMA=true \
-              -e OLLAMA_HOST=http://host.docker.internal:11434 \
-              -e OLLAMA_MODEL=qwen3 \
-              --network host \
+              $AI_CONFIG \
+              $NETWORK_CONFIG \
               kanbn:test /bin/bash -c "chmod +x /app/examples/test_sno_quickstarts_integration.sh && /app/examples/test_sno_quickstarts_integration.sh" \
               || { echo "::warning::SNO Quickstarts integration test failed but continuing..."; }
 
@@ -192,11 +219,9 @@ jobs:
               -e REPO_PATH=/workspace/existing-repo \
               -e PROJECT_NAME="Container Test Mode 2" \
               -e PROJECT_DESCRIPTION="Testing kanbn in container environment with mode 2" \
-              -e USE_OLLAMA=true \
-              -e OLLAMA_HOST=http://host.docker.internal:11434 \
-              -e OLLAMA_MODEL=qwen3 \
               -e GIT_COMMIT=true \
-              --network host \
+              $AI_CONFIG \
+              $NETWORK_CONFIG \
               kanbn:test /bin/bash -c "chmod +x /app/examples/bootstrap_container.sh && /app/examples/bootstrap_container.sh" \
               || { echo "::warning::Container bootstrap script test with mode 2 failed but continuing..."; }
 
@@ -210,18 +235,53 @@ jobs:
             echo "Copying Makefile to container..."
             docker run --rm -v $(pwd)/Makefile:/app/Makefile kanbn:test ls -la /app/Makefile || echo "Failed to copy Makefile"
 
-            # Option 1: Run all CI tests at once (includes mock, Ollama, and OpenRouter if available)
-            echo "Running all CI tests..."
-            docker run --rm -v $(pwd):/app -w /app \
-              -e KANBN_ENV=development \
-              -e NODE_ENV=development \
-              -e USE_OLLAMA=true \
-              -e OLLAMA_HOST=http://host.docker.internal:11434 \
-              -e OLLAMA_MODEL=qwen3 \
-              -e OPENROUTER_API_KEY=${{ secrets.OPENROUTER_API_KEY || '' }} \
-              --network host \
-              kanbn:test bash -c "which make && make ci-test-all" \
-              || { echo "::warning::Some CI tests failed but continuing..."; }
+            # Option 1: Run appropriate CI tests based on available AI services
+            if [ "$OLLAMA_AVAILABLE" = "true" ]; then
+              echo "Running CI tests with Ollama..."
+              docker run --rm -v $(pwd):/app -w /app \
+                -e KANBN_ENV=development \
+                -e NODE_ENV=development \
+                $AI_CONFIG \
+                $NETWORK_CONFIG \
+                kanbn:test bash -c "which make && make ci-test-ollama" \
+                || {
+                  if [ "${{ github.event_name }}" = "release" ]; then
+                    echo "::error::CI Ollama tests failed - this is a release build, failing the workflow"
+                    exit 1
+                  else
+                    echo "::warning::CI Ollama tests failed but continuing...";
+                  fi
+                }
+            elif [ -n "${{ secrets.OPENROUTER_API_KEY }}" ]; then
+              echo "Running CI tests with OpenRouter..."
+              docker run --rm -v $(pwd):/app -w /app \
+                -e KANBN_ENV=development \
+                -e NODE_ENV=development \
+                $AI_CONFIG \
+                kanbn:test bash -c "which make && make ci-test-openrouter" \
+                || {
+                  if [ "${{ github.event_name }}" = "release" ]; then
+                    echo "::error::CI OpenRouter tests failed - this is a release build, failing the workflow"
+                    exit 1
+                  else
+                    echo "::warning::CI OpenRouter tests failed but continuing...";
+                  fi
+                }
+            else
+              if [ "${{ github.event_name }}" = "release" ]; then
+                echo "::error::Cannot run CI tests with real AI services - neither Ollama nor OpenRouter API key is available"
+                echo "For release testing, either Ollama or OpenRouter API key must be available"
+                exit 1
+              else
+                echo "Running CI tests in mock mode..."
+                docker run --rm -v $(pwd):/app -w /app \
+                  -e KANBN_ENV=development \
+                  -e NODE_ENV=development \
+                  $AI_CONFIG \
+                  kanbn:test bash -c "which make && make ci-test-mock" \
+                  || { echo "::warning::CI mock tests failed but continuing..."; }
+              fi
+            fi
 
             # Option 2: Run individual CI tests (uncomment if needed for debugging)
             # echo "Running CI tests in mock mode..."
@@ -249,16 +309,46 @@ jobs:
 
 
             # Additional repository context integration tests
-            echo "Testing repository context integration with Ollama..."
-            docker run --rm -v $TEST_DIR/repo-context:/workspace -w /workspace \
-              -e KANBN_ENV=test \
-              -e NODE_ENV=test \
-              -e USE_OLLAMA=true \
-              -e OLLAMA_HOST=http://host.docker.internal:11434 \
-              -e OLLAMA_MODEL=qwen3 \
-              --network host \
-              kanbn:test /bin/bash -c "chmod +x /app/examples/test_repository_context_integration.sh && /app/examples/test_repository_context_integration.sh" \
-              || { echo "::warning::Repository context integration test with Ollama failed but continuing..."; }
+            if [ "$OLLAMA_AVAILABLE" = "true" ]; then
+              echo "Testing repository context integration with Ollama..."
+              docker run --rm -v $TEST_DIR/repo-context:/workspace -w /workspace \
+                -e KANBN_ENV=test \
+                -e NODE_ENV=test \
+                $AI_CONFIG \
+                $NETWORK_CONFIG \
+                kanbn:test /bin/bash -c "chmod +x /app/examples/test_repository_context_integration.sh && /app/examples/test_repository_context_integration.sh" \
+                || {
+                  if [ "${{ github.event_name }}" = "release" ]; then
+                    echo "::error::Repository context integration test failed - this is a release build, failing the workflow"
+                    exit 1
+                  else
+                    echo "::warning::Repository context integration test failed but continuing...";
+                  fi
+                }
+            elif [ -n "${{ secrets.OPENROUTER_API_KEY }}" ]; then
+              echo "Testing repository context integration with OpenRouter..."
+              docker run --rm -v $TEST_DIR/repo-context:/workspace -w /workspace \
+                -e KANBN_ENV=test \
+                -e NODE_ENV=test \
+                $AI_CONFIG \
+                kanbn:test /bin/bash -c "chmod +x /app/examples/test_repository_context_integration.sh && /app/examples/test_repository_context_integration.sh" \
+                || {
+                  if [ "${{ github.event_name }}" = "release" ]; then
+                    echo "::error::Repository context integration test failed - this is a release build, failing the workflow"
+                    exit 1
+                  else
+                    echo "::warning::Repository context integration test failed but continuing...";
+                  fi
+                }
+            else
+              if [ "${{ github.event_name }}" = "release" ]; then
+                echo "::error::Cannot run repository context integration test - neither Ollama nor OpenRouter API key is available"
+                echo "For release testing, either Ollama or OpenRouter API key must be available"
+                exit 1
+              else
+                echo "Skipping repository context integration test - neither Ollama nor OpenRouter API key is available"
+              fi
+            fi
           fi
 
           echo "All container tests completed"
