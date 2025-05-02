@@ -136,10 +136,19 @@ async function handleChatMessage(options) {
       try {
         // Re-fetch context with integrations
         const projectContextManager = new ProjectContext(kanbn);
+
+        // Create an array with a special flag for using all integrations
+        let integrationParam = specificIntegrations;
+        if (useIntegrations) {
+          integrationParam = [];
+          // Add a special flag to indicate we want all integrations
+          integrationParam._useAllIntegrations = true;
+        }
+
         const contextWithIntegrations = await projectContextManager.getContext(
           true, // include references
           true, // include system tasks
-          useIntegrations ? [] : specificIntegrations // empty array means all integrations if useIntegrations is true
+          integrationParam // Either specific integrations or all integrations with flag
         );
 
         // Update the project context with integration content
@@ -189,7 +198,18 @@ async function handleChatMessage(options) {
         }
 
         // Create system message with memory context if available
-        systemMessage = contextManager.createSystemMessage(projectContext, memoryContext);
+        // Note: createSystemMessage is now async
+        try {
+          systemMessage = await contextManager.createSystemMessage(projectContext, memoryContext);
+          utility.debugLog('Successfully created system message with repository context');
+        } catch (systemMessageError) {
+          utility.debugLog(`Error creating system message: ${systemMessageError.message}`);
+          // Fallback to simple system message
+          systemMessage = {
+            role: 'system',
+            content: 'You are a helpful assistant for the Kanbn task management system.'
+          };
+        }
       } else {
         // Fallback to simple system message
         systemMessage = {
@@ -288,7 +308,7 @@ async function handleChatMessage(options) {
       };
 
       // Call AI service
-      const response = await aiService.chatCompletion(
+      let response = await aiService.chatCompletion(
         [systemMessage, ...history, userMessage],
         {
           logCallback: async (type, data) => {
@@ -296,6 +316,32 @@ async function handleChatMessage(options) {
           }
         }
       );
+
+      // Fix for duplicate responses: Check if the response is duplicated
+      // This can happen in some environments due to how the response is processed
+      if (response) {
+        // Check if the response contains a duplicate of itself
+        const firstHundredChars = response.substring(0, 100).trim();
+        if (firstHundredChars.length > 20) {
+          // Look for the same text pattern later in the response
+          const secondHalfIndex = response.indexOf(firstHundredChars, 100);
+          if (secondHalfIndex > 0) {
+            // Found a potential duplicate
+            utility.debugLog('Detected potential duplicated response');
+
+            // Check if the second half is a complete duplicate of the first half
+            const firstHalf = response.substring(0, secondHalfIndex).trim();
+            const secondHalf = response.substring(secondHalfIndex).trim();
+
+            // If the second half starts with the same content as the first half,
+            // it's likely a duplicate
+            if (secondHalf.startsWith(firstHalf.substring(0, Math.min(firstHalf.length, 100)))) {
+              utility.debugLog('Confirmed duplicated response, using only the first half');
+              response = firstHalf;
+            }
+          }
+        }
+      }
 
       // Save conversation history
       await aiService.saveConversationHistory(
@@ -652,7 +698,21 @@ module.exports = async args => {
       if (response) {
         // Display response without the prefix for a more natural CLI experience
         // This makes the output feel more like a direct answer rather than a chat interface
-        console.log(response);
+
+        // Fix for duplicate responses
+        // First, check if the response is duplicated
+        const halfLength = Math.floor(response.length / 2);
+        const firstHalf = response.substring(0, halfLength).trim();
+        const secondHalf = response.substring(halfLength).trim();
+
+        // If the first half and second half are very similar, only show the first half
+        if (firstHalf.length > 20 && secondHalf.startsWith(firstHalf.substring(0, Math.min(50, firstHalf.length)))) {
+          utility.debugLog('Detected duplicate response, showing only first half');
+          response = firstHalf;
+        }
+
+        // REMOVED: Direct console.log to avoid duplicate output
+        // Let the top-level index.js handle printing the result exactly once
       }
 
       return response || 'No response from chat handler';
