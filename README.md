@@ -40,7 +40,31 @@ kanbn board
 
 # Get help for any command
 kanbn help <command>
+
+## 🐳 Using Docker Container
+
+```bash
+# Pull the latest container image
+docker pull quay.io/takinosh/kanbn:latest
+
+# Run Kanbn commands using the container
+docker run -it --rm \
+  -v $(pwd):/workspace \
+  -e OPENROUTER_API_KEY=$OPENROUTER_API_KEY \
+  quay.io/takinosh/kanbn:latest kanbn <command>
+
+# For example, to initialize a new board:
+docker run -it --rm \
+  -v $(pwd):/workspace \
+  quay.io/takinosh/kanbn:latest kanbn init
+
+# Or to view your board:
+docker run -it --rm \
+  -v $(pwd):/workspace \
+  quay.io/takinosh/kanbn:latest kanbn board
 ```
+
+The container mounts your current directory as `/workspace`, allowing Kanbn to manage tasks in your local project. For detailed container usage instructions and advanced configurations, see [DOCKER.md](docs/DOCKER.md).
 
 ## 🧪 Example Scripts
 

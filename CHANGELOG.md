@@ -2,6 +2,30 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.12.0] - 2025-04-27
+
+### Added
+- Enhanced AI integration with OpenRouter and Ollama support
+- Improved test infrastructure and coverage
+- Added comprehensive test documentation
+- Added community contribution guidelines for testing
+- Added architecture diagrams and documentation improvements
+- Enhanced project memory system
+- Added RAG capabilities for improved AI interactions
+
+### Changed
+- Updated dependencies to latest versions
+- Improved error handling in AI service integrations
+- Enhanced test environment configuration
+- Improved documentation structure and organization
+
+### Fixed
+- Resolved AI service integration issues
+- Fixed test environment setup and cleanup
+- Improved task management function reliability
+- Enhanced project context handling
+- Fixed environment variable management
+
 ## [0.11.1] - 2023-06-20
 
 ### Added
