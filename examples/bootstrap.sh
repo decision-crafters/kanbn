@@ -1,24 +1,6 @@
 #!/bin/bash
-export PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
-set -x
-set -e
-
-# Bootstrap script for Kanbn
-# This script helps new users create their initial Kanbn board with AI assistance
-#
-# How AI Prompts Work:
-# 1. This script passes simple project descriptions to the Kanbn AI initialization system
-# 2. The AI system uses default prompts from src/data/default-init-prompts/ to:
-#    - Determine project type and suggest columns (project-type.md)
-#    - Generate initial tasks (initial-tasks.md)
-#    - Suggest Classes of Service (class-of-service.md)
-#    - Suggest timebox strategies (timebox-strategy.md)
-#
-# Advanced Users:
-# - To customize prompts, create a .kanbn/init-prompts/ directory in your project
-# - Copy and modify the default prompts from src/data/default-init-prompts/
-# - The system will use your custom prompts instead of the defaults
-# - This allows you to tailor the AI's behavior to your specific needs
+#export PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
+#set -x
 
 # Colors for better output
 GREEN='\033[0;32m'
@@ -61,11 +43,6 @@ print_error() {
   echo -e "${RED}❌ $1${NC}"
 }
 
-# Function to print a menu option
-print_option() {
-  echo -e "${YELLOW}$1)${NC} $2"
-}
-
 # Function to get user input with a prompt
 get_input() {
   local prompt="$1"
@@ -73,19 +50,19 @@ get_input() {
   local input
 
   if [ -n "$default" ]; then
-    printf "${YELLOW}%s [%s]:${NC} " "$prompt" "$default"
+      printf "${YELLOW}%s [%s]:${NC} " "$prompt" "$default"
   else
-    printf "${YELLOW}%s:${NC} " "$prompt"
+      printf "${YELLOW}%s:${NC} " "$prompt"
   fi
 
-  # Use read -r to preserve backslashes
   read -r input
+  # Trim whitespace from input
+  input=$(echo "$input" | xargs)
 
   if [ -z "$input" ] && [ -n "$default" ]; then
-    input="$default"
+      input="$default"
   fi
 
-  # Return just the clean input value, not the prompt
   echo "$input"
 }
 
@@ -95,9 +72,6 @@ check_kanbn_installed() {
     print_error "Kanbn is not installed or not in your PATH"
     print_info "Please install Kanbn first with:"
     print_command "npm install -g @tosin2013/kanbn"
-    echo ""
-    print_info "Or if you prefer to install it locally:"
-    print_command "npm install @tosin2013/kanbn"
     exit 1
   else
     print_success "Kanbn is installed ($(kanbn version | grep -o 'v[0-9.]*'))"
@@ -116,709 +90,625 @@ check_git_repo() {
       print_info "Initializing git repository..."
       git init
       print_success "Git repository initialized"
+      return 0  # Newly initialized
     else
       print_info "Continuing without git..."
+      return 2  # No git
     fi
   else
     print_success "Inside a git repository"
     # Show repository information
     REPO_NAME=$(basename -s .git $(git config --get remote.origin.url 2>/dev/null || echo "$(basename $(pwd))"))
     print_info "Repository: $REPO_NAME"
+    #return 1  # Existing repo
   fi
 }
 
-# Get the script directory
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+# Function to check if Ollama is installed and running
+check_ollama() {
+  if command -v ollama &> /dev/null; then
+    print_success "Ollama is installed"
 
-# Check if we're in the examples directory or in a user project
-if [[ "$SCRIPT_DIR" == *"/examples" ]]; then
-  # We're running from the examples directory
-  REPO_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-  IN_EXAMPLES=true
-else
-  # We're running from somewhere else
-  REPO_DIR="$(pwd)"
-  IN_EXAMPLES=false
-fi
-
-# Welcome message
-print_header "Kanbn Project Bootstrap"
-print_info "This script will help you set up a new Kanbn project board with AI assistance."
-print_info "Requirements:"
-echo "- Kanbn installed (will be checked)"
-echo "- Git repository (optional, will be checked)"
-echo "- OpenRouter API key (required, will be prompted if not found)"
-echo ""
-
-# Check if kanbn is installed
-check_kanbn_installed
-
-# Check if we're in a git repository
-check_git_repo
-
-# Check if kanbn is already initialized
-if [ -d ".kanbn" ]; then
-  print_warning "Kanbn is already initialized in this directory"
-  print_info "Would you like to reinitialize it? (y/n) [n]:"
-  read reinit
-
-  if [ "$reinit" != "y" ] && [ "$reinit" != "Y" ]; then
-    print_info "Exiting without changes."
-    exit 0
-  fi
-
-  print_header "Reinitializing Kanbn"
-  print_info "Cleaning up existing Kanbn board..."
-
-  # Backup the existing board
-  backup_dir=".kanbn_backup_$(date +%Y%m%d_%H%M%S)"
-  mkdir -p "$backup_dir"
-  cp -r .kanbn/* "$backup_dir"
-  print_info "Existing board backed up to $backup_dir"
-
-  # Remove the existing board
-  rm -rf .kanbn
-  print_success "Existing board removed, ready for reinitialization"
-fi
-
-# Check for .env file
-if [ ! -f ".env" ]; then
-  print_header "Environment Configuration Required"
-  print_warning ".env file not found"
-  print_info "The bootstrap script requires a .env file with your OpenRouter API key."
-  print_info "You can get a free API key at: https://openrouter.ai/"
-  echo ""
-
-  print_info "Would you like to create a .env file now? (y/n) [y]:"
-  read create_env
-
-  if [ "$create_env" != "n" ] && [ "$create_env" != "N" ]; then
-    print_header "Creating .env File"
-    print_info "Please enter your OpenRouter API key:"
-    echo -e "${YELLOW}API Key:${NC} "
-    read api_key_input
-
-    if [ -z "$api_key_input" ]; then
-      print_error "No API key provided. Cannot continue without an API key."
-      print_info "Please get an API key from https://openrouter.ai/ and run this script again."
-      exit 1
+    # Check if Ollama is running
+    if curl -s http://localhost:11434/api/tags >/dev/null 2>&1; then
+      print_success "Ollama is running"
+      return 0
     else
-      # Create .env file
-      echo "# OpenRouter API key for Kanbn" > .env
-      echo "OPENROUTER_API_KEY=$api_key_input" >> .env
-      echo "OPENROUTER_MODEL=google/gemma-3-4b-it:free" >> .env
-      print_success ".env file created successfully"
+      print_warning "Ollama is installed but not running"
+      print_info "Would you like to start Ollama now? (y/n) [y]:"
+      read start_ollama
+
+      if [ "$start_ollama" != "n" ] && [ "$start_ollama" != "N" ]; then
+        print_info "Starting Ollama..."
+        ollama serve &
+        sleep 5
+
+        # Check again if Ollama is running
+        if curl -s http://localhost:11434/api/tags >/dev/null 2>&1; then
+          print_success "Ollama started successfully"
+          return 0
+        else
+          print_error "Failed to start Ollama"
+          return 1
+        fi
+      else
+        print_info "Skipping Ollama start"
+        return 1
+      fi
     fi
   else
-    print_error "Cannot continue without a .env file."
-    print_info "Please create a .env file with your OpenRouter API key and run this script again."
-    print_info "Example .env file:"
-    echo "# OpenRouter API key for Kanbn"
-    echo "OPENROUTER_API_KEY=your-api-key"
-    echo "OPENROUTER_MODEL=google/gemma-3-4b-it:free"
-    exit 1
-  fi
-fi
-
-# Load environment variables from .env file
-print_info "Loading environment variables from .env file"
-# Use a safer way to load environment variables
-while IFS='=' read -r key value; do
-  # Skip comments and empty lines
-  if [[ ! $key =~ ^# && -n $key ]]; then
-    # Remove leading/trailing whitespace and quotes
-    value=$(echo $value | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' -e 's/^"\(.*\)"$/\1/' -e "s/^'\(.*\)'$/\1/")
-    # Export the variable
-    export $key="$value"
-
-    # For OPENROUTER_API_KEY, show a prefix for verification
-    if [ "$key" = "OPENROUTER_API_KEY" ]; then
-      KEY_PREFIX="${value:0:5}..."
-      echo -e "  ${GREEN}✅ Loaded: $key = $KEY_PREFIX (${#value} chars)${NC}"
-    else
-      echo -e "  ${GREEN}✅ Loaded: $key = $value${NC}"
-    fi
-  fi
-done < ".env"
-
-# Check if OpenRouter API key is set
-if [ -z "$OPENROUTER_API_KEY" ]; then
-  print_header "OpenRouter API Key Not Set"
-  print_error "OPENROUTER_API_KEY environment variable is not set."
-  print_info "This is unexpected since we already checked for the .env file."
-  print_info "Please check your .env file and make sure it contains a valid OpenRouter API key."
-  print_info "Example .env file:"
-  echo "# OpenRouter API key for Kanbn"
-  echo "OPENROUTER_API_KEY=your-api-key"
-  echo "OPENROUTER_MODEL=google/gemma-3-4b-it:free"
-  exit 1
-else
-  print_success "OpenRouter API key is set"
-
-  # Verify the API key works
-  print_info "Verifying OpenRouter API key..."
-
-  # Create a temporary file to store the API response
-  API_RESPONSE_FILE=$(mktemp)
-
-  # Test the API key with a simple request and save the response
-  echo -e "🌐 Sending test request to OpenRouter API..."
-  curl -s -X POST \
-    -H "Authorization: Bearer $OPENROUTER_API_KEY" \
-    -H "Content-Type: application/json" \
-    -d '{"model":"google/gemma-3-4b-it:free","messages":[{"role":"user","content":"Hello"}]}' \
-    https://openrouter.ai/api/v1/chat/completions > "$API_RESPONSE_FILE"
-
-  # Check if the response contains expected fields
-  if grep -q "choices" "$API_RESPONSE_FILE"; then
-    print_success "OpenRouter API key is valid!"
-
-    # Extract and validate the model name
-    MODEL_NAME=$(grep -o '"model":"[^"]*"' "$API_RESPONSE_FILE" | head -1 | cut -d '"' -f 4)
-    echo -e "📊 Model used: ${CYAN}$MODEL_NAME${NC}"
-
-    # Clean up temporary file
-    rm -f "$API_RESPONSE_FILE"
-  else
-    print_warning "API key verification failed. Response:"
-    cat "$API_RESPONSE_FILE"
-    echo ""
-    print_error "Cannot continue with an invalid API key."
-    print_info "Please check your OpenRouter API key and try again."
-
-    # Clean up temporary file
-    rm -f "$API_RESPONSE_FILE"
-    exit 1
-  fi
-
-  # Check if OPENROUTER_MODEL is set, otherwise use default
-  if [ -z "$OPENROUTER_MODEL" ]; then
-    export OPENROUTER_MODEL="google/gemma-3-4b-it:free"
-    print_info "Using default model: ${CYAN}$OPENROUTER_MODEL${NC}"
-  else
-    print_info "Using model: ${CYAN}$OPENROUTER_MODEL${NC}"
-  fi
-fi
-
-# Project setup
-print_header "Project Setup"
-print_info "Let's set up your Kanbn project board."
-echo ""
-
-# Get project name
-DEFAULT_PROJECT_NAME=$(basename $(pwd))
-print_info "Please enter a name for your project:"
-project_name=$(get_input "Project name" "$DEFAULT_PROJECT_NAME")
-
-# Extract just the project name without the prompt text
-# This removes the "Project name [xxx]: " prefix if present
-clean_project_name=$(echo "$project_name" | sed -E 's/^Project name \[[^]]+\]: //')
-
-# Project types menu
-print_header "Select a Project Type"
-print_info "Please select the type of project you want to create:"
-print_option "1" "Web Application"
-print_option "2" "Mobile App"
-print_option "3" "Data Science Project"
-print_option "4" "DevOps Project"
-print_option "5" "API Development"
-print_option "6" "Game Development"
-print_option "7" "Custom Project"
-print_option "8" "Documentation (GitHub Pages)"
-print_option "q" "Quit"
-echo ""
-
-# Get user selection
-user_input=$(get_input "Enter your choice" "1")
-selection=$(echo "$user_input" | grep -o '[0-9q]$' || echo "$user_input")
-
-if [ "$selection" = "q" ]; then
-  print_info "Exiting without creating a project."
-  exit 0
-fi
-
-# Function to get additional context from the user
-get_additional_context() {
-  local project_type="$1"
-  local additional_context=""
-
-  print_info "Would you like to provide a description for your $project_type project? (y/n) [y]:"
-  read provide_context
-
-  if [ "$provide_context" != "n" ] && [ "$provide_context" != "N" ]; then
-    print_info "Please provide a description with any specific requirements, features, or context for your project:"
-    print_info "(This will help the AI generate relevant tasks and columns, and serve as your project description)"
-    echo ""
-    additional_context=$(get_input "Project description" "")
-    echo "$additional_context"
-    return 0
-  else
-    echo ""
+    print_warning "Ollama is not installed"
     return 1
   fi
 }
 
-# Function to display the kanbn init command (for debugging)
-print_kanbn_debug_info() {
-  local name="$1"
-  local message="$2"
-  local model="$3"
+# Function to setup API configuration
+setup_api_key() {
+  # Check for .env file
+  if [ ! -f ".env" ]; then
+    print_header "Environment Configuration Required"
+    print_warning ".env file not found"
 
-  # Print debug info
-  print_info "Debug: Project name = \"$name\""
-  print_info "Debug: Message = \"$message\""
-  if [ -n "$model" ]; then
-    print_info "Debug: Model = \"$model\""
-    print_command "kanbn init --ai --name \"$name\" --message \"$message\" --model \"$model\""
+    print_info "Would you like to use Ollama (local) or OpenRouter (cloud) for AI capabilities?"
+    echo "1. Ollama (local, free, requires installation)"
+    echo "2. OpenRouter (cloud, requires API key)"
+    echo -e "${YELLOW}Select an option (1-2) [1]:${NC} "
+    read ai_option
+    ai_option=${ai_option:-1}
+
+    if [ "$ai_option" = "1" ]; then
+      # Check if Ollama is installed and running
+      if check_ollama; then
+        # Get available models
+        print_info "Checking available Ollama models..."
+        available_models=$(ollama list 2>/dev/null | awk 'NR>1 {print $1}')
+
+        if [ -z "$available_models" ]; then
+          print_warning "No Ollama models found"
+          print_info "Would you like to pull the recommended model (qwen3)? (y/n) [y]:"
+          read pull_model
+
+          if [ "$pull_model" != "n" ] && [ "$pull_model" != "N" ]; then
+            print_info "Pulling qwen3 model..."
+            ollama pull qwen3
+            print_success "Model pulled successfully"
+            default_model="qwen3"
+          else
+            print_info "Skipping model pull. Using default model."
+            default_model="qwen3"
+          fi
+        else
+          print_success "Available Ollama models:"
+          echo "$available_models" | nl
+
+          # Check if qwen3 is available
+          if echo "$available_models" | grep -q "qwen3"; then
+            default_model="qwen3"
+          else
+            # Use the first available model as default
+            default_model=$(echo "$available_models" | head -n 1)
+          fi
+
+          print_info "Please select a model to use (enter the number or model name):"
+          echo -e "${YELLOW}Model [${default_model}]:${NC} "
+          read model_input
+
+          if [ -n "$model_input" ]; then
+            # Check if input is a number
+            if [[ "$model_input" =~ ^[0-9]+$ ]]; then
+              # Get the model name from the number
+              selected_model=$(echo "$available_models" | sed -n "${model_input}p")
+              if [ -n "$selected_model" ]; then
+                default_model="$selected_model"
+              fi
+            else
+              # Use the input as the model name
+              default_model="$model_input"
+            fi
+          fi
+        fi
+
+        # Create .env file for Ollama
+        echo "# Ollama configuration for Kanbn" > .env
+        echo "USE_OLLAMA=true" >> .env
+        echo "OLLAMA_URL=http://localhost:11434" >> .env
+        echo "OLLAMA_MODEL=${default_model}" >> .env
+        print_success ".env file created successfully with Ollama configuration"
+      else
+        print_error "Ollama is not available. Please install Ollama or choose OpenRouter."
+        print_info "Would you like to use OpenRouter instead? (y/n) [y]:"
+        read use_openrouter
+
+        if [ "$use_openrouter" != "n" ] && [ "$use_openrouter" != "N" ]; then
+          ai_option="2"
+        else
+          print_error "Cannot continue without either Ollama or OpenRouter."
+          exit 1
+        fi
+      fi
+    fi
+
+    if [ "$ai_option" = "2" ]; then
+      print_info "This script requires a .env file with your OpenRouter API key."
+      print_info "You can get a free API key at: https://openrouter.ai/"
+      echo ""
+
+      print_info "Would you like to create a .env file now? (y/n) [y]:"
+      read create_env
+
+      if [ "$create_env" != "n" ] && [ "$create_env" != "N" ]; then
+        print_header "Creating .env File"
+        print_info "Please enter your OpenRouter API key:"
+        echo -e "${YELLOW}API Key:${NC} "
+        read api_key_input
+
+        if [ -z "$api_key_input" ]; then
+          print_error "No API key provided. Cannot continue without an API key."
+          print_info "Please get an API key from https://openrouter.ai/ and run this script again."
+          exit 1
+        else
+          # Create .env file
+          echo "# OpenRouter API key for Kanbn" > .env
+          echo "OPENROUTER_API_KEY=$api_key_input" >> .env
+          echo "OPENROUTER_MODEL=google/gemma-3-4b-it:free" >> .env
+          print_success ".env file created successfully"
+        fi
+      else
+        print_error "Cannot continue without a .env file."
+        print_info "Please create a .env file with your OpenRouter API key and run this script again."
+        print_info "Example .env file:"
+        echo "# OpenRouter API key for Kanbn"
+        echo "OPENROUTER_API_KEY=your-api-key"
+        echo "OPENROUTER_MODEL=google/gemma-3-4b-it:free"
+        exit 1
+      fi
+    fi
+  fi
+
+  # Load environment variables from .env file
+  print_info "Loading environment variables from .env file"
+  # Use a safer way to load environment variables
+  while IFS='=' read -r key value; do
+    # Skip comments and empty lines
+    if [[ ! $key =~ ^# && -n $key ]]; then
+      # Remove leading/trailing whitespace and quotes
+      value=$(echo $value | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' -e 's/^"\(.*\)"$/\1/' -e "s/^'\(.*\)'$/\1/")
+      # Export the variable
+      export $key="$value"
+
+      # For OPENROUTER_API_KEY, show a prefix for verification
+      if [ "$key" = "OPENROUTER_API_KEY" ]; then
+        KEY_PREFIX="${value:0:5}..."
+        echo -e "  ${GREEN}✅ Loaded: $key = $KEY_PREFIX (${#value} chars)${NC}"
+      else
+        echo -e "  ${GREEN}✅ Loaded: $key = $value${NC}"
+      fi
+    fi
+  done < ".env"
+
+  # Check if either OpenRouter API key or Ollama is configured
+  if [ -z "$OPENROUTER_API_KEY" ] && [ "$USE_OLLAMA" != "true" ]; then
+    print_header "API Configuration Not Set"
+    print_error "Neither OPENROUTER_API_KEY nor USE_OLLAMA environment variables are set."
+    print_info "Please check your .env file and make sure it contains either a valid OpenRouter API key or Ollama configuration."
+    exit 1
   else
-    print_info "Debug: Using default model from environment"
-    print_command "kanbn init --ai --name \"$name\" --message \"$message\""
+    if [ "$USE_OLLAMA" = "true" ]; then
+      print_success "Ollama configuration is set (Model: $OLLAMA_MODEL)"
+    else
+      print_success "OpenRouter API key is set"
+    fi
   fi
 }
 
-# Get custom model if user wants to specify one
-print_info "Would you like to use a specific AI model for generating tasks? (y/n) [n]:"
-read use_custom_model
+# Function to clone a GitHub repository
+clone_github_repo() {
+  print_header "GitHub Repository Cloning"
+  print_info "Please enter the GitHub repository URL to clone:"
+  repo_url=$(get_input "Repository URL" "")
 
-if [ "$use_custom_model" = "y" ] || [ "$use_custom_model" = "Y" ]; then
-  print_header "Select AI Model"
-  print_info "Please select one of the following AI models:"
-  print_info "Available models (free options don't require payment):"
-  print_option "1" "google/gemma-3-4b-it:free (Default, Free)"
-  print_option "2" "anthropic/claude-3-haiku-20240307 (Faster, Paid)"
-  print_option "3" "anthropic/claude-3-sonnet-20240229 (Better quality, Paid)"
-  print_option "4" "meta-llama/llama-3-8b-instruct (Free)"
-  print_option "5" "Custom model"
+  if [ -z "$repo_url" ]; then
+    print_error "No repository URL provided. Cannot continue."
+    exit 1
+  fi
+
+  # Extract repo name from URL
+  repo_name=$(basename -s .git "$repo_url")
+
+  # Check if directory already exists
+  if [ -d "$repo_name" ]; then
+    print_warning "Directory '$repo_name' already exists."
+    print_info "Would you like to remove it and clone again? (y/n) [n]:"
+    read remove_dir
+
+    if [ "$remove_dir" = "y" ] || [ "$remove_dir" = "Y" ]; then
+      print_info "Removing existing directory..."
+      rm -rf "$repo_name"
+    else
+      print_info "Please choose a different directory name:"
+      repo_name=$(get_input "Directory name" "$repo_name-new")
+
+      if [ -d "$repo_name" ]; then
+        print_error "Directory '$repo_name' already exists. Please run the script again with a different name."
+        exit 1
+      fi
+    fi
+  fi
+
+  print_info "Cloning repository into '$repo_name'..."
+  if git clone "$repo_url" "$repo_name"; then
+    print_success "Repository cloned successfully!"
+    # Change to the repository directory
+    cd "$repo_name"
+    return 0
+  else
+    print_error "Failed to clone repository."
+    exit 1
+  fi
+}
+
+# Function to initialize Kanbn in the repository
+init_kanbn() {
+  local project_name="$1"
+  local project_description="$2"
+
+  print_header "Initializing Kanbn Project"
+
+  # Check if kanbn is already initialized
+  if [ -d ".kanbn" ]; then
+    print_warning "Kanbn is already initialized in this directory"
+    print_info "Would you like to reinitialize it? (y/n) [n]:"
+    read reinit
+
+    if [ "$reinit" != "y" ] && [ "$reinit" != "Y" ]; then
+      print_info "Skipping initialization. Using existing Kanbn board."
+      return 0
+    fi
+
+    print_info "Reinitializing Kanbn..."
+
+    # Backup the existing board
+    backup_dir=".kanbn_backup_$(date +%Y%m%d_%H%M%S)"
+    mkdir -p "$backup_dir"
+    cp -r .kanbn/* "$backup_dir"
+    print_info "Existing board backed up to $backup_dir"
+
+    # Remove the existing board
+    rm -rf .kanbn
+    print_success "Existing board removed, ready for reinitialization"
+  fi
+
+  # Initialize kanbn with AI
+  print_info "Initializing Kanbn with AI-powered assistance..."
+  print_command "kanbn init --ai --name \"$project_name\" --message \"$project_description\""
+
+  # Set environment variable to indicate test mode to avoid interactive prompts
+  export KANBN_ENV="test"
+
+  # Run the command
+  kanbn init --ai --name "$project_name" --message "$project_description"
+
+  # Unset the environment variable
+  unset KANBN_ENV
+
+  print_success "Kanbn project initialized successfully!"
+  return 0
+}
+
+# Function to use kanbn chat to build a Kanban board
+build_kanban_with_chat() {
+  print_header "Building Kanban Board with AI"
+
+  # Predefined tasks for the Kanban board
+  print_info "Adding predefined tasks to the Kanban board..."
+
+  # 1 · Define Product Vision & End-User Goals
+  kanbn add --name "Describe primary user persona(s) and their top 3 pain points" --description "Add details to docs/VISION.md" --tags "Vision" --column "Backlog"
+  kanbn add --name "State the product mission in ≤ 2 sentences" --description "Summarize the mission in docs/VISION.md" --tags "Vision" --column "Backlog"
+  kanbn add --name "List 3 measurable success metrics" --description "Define metrics like time-to-X or adoption in docs/VISION.md" --tags "Vision" --column "Backlog"
+  kanbn add --name "Add 'User Story' + 'Acceptance Criteria' sections to feature request template" --description "Update .github/ISSUE_TEMPLATE/feature_request.md" --tags "Vision" --column "Backlog"
+
+  # 2 · Capture Architecture & Workflow Decisions
+  kanbn add --name "Create high-level component diagram" --description "Add diagram to docs/ARCHITECTURE.md" --tags "Architecture" --column "Backlog"
+  kanbn add --name "Document data/communication flow for a typical request" --description "Add details to docs/ARCHITECTURE.md" --tags "Architecture" --column "Backlog"
+  kanbn add --name "Record pipeline strategy decision" --description "Add ADR to adrs/0001-choose-pipeline-strategy.md" --tags "Architecture" --column "Backlog"
+
+  # 3 · Stand-up CI (Build + Unit Tests)
+  kanbn add --name "Set up CI workflow for PRs to main" --description "Add .github/workflows/ci.yml with build and test steps" --tags "CI/CD" --column "Backlog"
+  kanbn add --name "Ensure local test commands match CI" --description "Add make test or npm test to Makefile/package.json" --tags "CI/CD" --column "Backlog"
+
+  # 4 · Automate Deploy to Staging
+  kanbn add --name "Define staging environment infrastructure" --description "Add declarative IaC to infra/staging/" --tags "Deployment" --column "Backlog"
+  kanbn add --name "Automate deploy to staging on successful build" --description "Add .github/workflows/deploy.yml with Slack/Teams notifications" --tags "Deployment" --column "Backlog"
+
+  # 5 · Add E2E / Integration Test Skeleton
+  kanbn add --name "Add E2E test skeleton" --description "Create tests/e2e/ with a smoke test scenario" --tags "Testing" --column "Backlog"
+  kanbn add --name "Block merges on failed E2E tests" --description "Add CI job (e2e.yml) to enforce E2E test success" --tags "Testing" --column "Backlog"
+
+  # 6 · Observability & Security Baseline
+  kanbn add --name "Add structured logging with trace_id/request_id" --description "Update config/logging.yaml or code" --tags "Observability" --column "Backlog"
+  kanbn add --name "Enable weekly dependency-update PRs" --description "Add .github/dependabot.yml" --tags "Security" --column "Backlog"
+  kanbn add --name "Run security scans on every push" --description "Add .github/workflows/sec-scan.yml with Snyk/Trivy" --tags "Security" --column "Backlog"
+
+  # 7 · Contributor Workflow & Knowledge Sharing
+  kanbn add --name "Document contributor workflow" --description "Add branch naming conventions and PR checklist to docs/CONTRIBUTING.md" --tags "Collaboration" --column "Backlog"
+  kanbn add --name "Create one-command local setup" --description "Add ./scripts/bootstrap.sh and link in docs/README.md" --tags "Collaboration" --column "Backlog"
+  kanbn add --name "Link key documents in README" --description "Add links to VISION, ARCHITECTURE, and ADRs in docs/README.md" --tags "Collaboration" --column "Backlog"
+
+  # Use AI to analyze and enhance the board
+  print_info "Asking AI to analyze the board and suggest additional tasks..."
+  kanbn chat --with-integrations --message "Analyze the predefined tasks and suggest additional tasks or improvements for the project."
+
+  print_success "Kanban board built successfully with AI assistance!"
+}
+
+# Add this function definition after commit_changes (or near the end of main)
+
+ask_integration_context() {
+    while true; do
+        print_header "Kanbn Integrations Context"
+        print_info "To enhance AI assistance, you can add integration context. This lets you provide additional information (e.g., documentation, API specs) that the AI can reference using a Retrieval-Augmented Generation (RAG) approach."
+        echo "Would you like to:"
+        echo "1. Add an integration from a URL"
+        echo "2. Inject README.md content as an integration"
+        echo "3. Inject all files in the docs folder as integrations"
+        echo "4. Inject Kanbn commands and their help recursively as an integration"
+        echo "5. Exit"
+        echo -e "${YELLOW}Select an option (1-6):${NC} "
+        read integration_option
+
+        case "$integration_option" in
+            1)
+                print_info "Injecting a Git URL or standard URL as an integration..."
+                print_info "Please enter the URL to inject:"
+                read -r url_input
+
+                if [ -n "$url_input" ]; then
+                    integration_name=$(basename "$url_input")
+                    print_command "kanbn integrations --add --name \"$integration_name\" --url \"$url_input\""
+                    kanbn integrations --add --name "$integration_name" --url "$url_input"
+                    print_success "Injected $url_input as an integration."
+                else
+                    print_error "No URL provided. Skipping integration."
+                fi
+                ;;
+            2)
+                print_info "Injecting README.md content as integration by default..."
+                if [ -f "README.md" ]; then
+                    print_command "kanbn integrations --add --name readme --content \"$(cat README.md)\""
+                    kanbn integrations --add --name readme --content "$(cat README.md)"
+                    print_success "README.md content injected successfully as an integration."
+                    kanbn integrations --list
+                else
+                    print_error "README.md file not found in the current directory."
+                fi
+                ;;
+            3)
+                print_info "Injecting all files in the docs folder as integrations..."
+                if [ -d "docs" ]; then
+                    for file in docs/*; do
+                        if [ -f "$file" ]; then
+                            integration_name=$(basename "$file")
+                            print_command "kanbn integrations --add --name \"$integration_name\" --content \"$(cat "$file")\""
+                            kanbn integrations --add --name "$integration_name" --content "$(cat "$file")"
+                            print_success "Injected $file as an integration."
+                        fi
+                    done
+                    kanbn integrations --list
+                else
+                    print_error "Docs folder not found in the current directory."
+                fi
+                ;;
+            4)
+                print_info "Injecting Kanbn commands and their help recursively as an integration..."
+                kanbn_commands=$(kanbn help | grep -oP '^\s+\K\w+(?=\s+\.\.\.\.\.\.)')
+                if [ -n "$kanbn_commands" ]; then
+                    for command in $kanbn_commands; do
+                        command_help=$(kanbn help "$command")
+                        if [ -n "$command_help" ]; then
+                            integration_name="kanbn-$command-help"
+                            print_command "kanbn integrations --add --name \"$integration_name\" --content \"$command_help\""
+                            kanbn integrations --add --name "$integration_name" --content "$command_help"
+                            print_success "Injected help for command '$command' as an integration."
+                        else
+                            print_warning "No help available for command '$command'. Skipping."
+                        fi
+                    done
+                    kanbn integrations --list
+                else
+                    print_error "No Kanbn commands found to inject."
+                fi
+                ;;
+            5)
+                print_info "Exiting integrations setup."
+                break
+                ;;
+            6)
+                print_info "Exiting integrations setup."
+                break
+                ;;
+            *)
+                print_error "Invalid option. Please try again."
+                ;;
+        esac
+    done
+}
+
+# Function to commit changes to git
+commit_changes() {
+  if git rev-parse --is-inside-work-tree &> /dev/null; then
+    print_header "Committing Changes"
+    print_info "Would you like to commit the Kanbn board to git? (y/n) [y]:"
+    read commit_to_git
+
+    if [ "$commit_to_git" != "n" ] && [ "$commit_to_git" != "N" ]; then
+      print_info "Adding Kanbn files to git..."
+      git add .kanbn
+      print_info "Committing Kanbn files..."
+      git commit -m "Initialize Kanbn project board"
+      print_success "Kanbn files committed to git"
+
+      print_info "Would you like to push changes to the remote repository? (y/n) [n]:"
+      read push_changes
+
+      if [ "$push_changes" = "y" ] || [ "$push_changes" = "Y" ]; then
+        print_info "Pushing changes to remote repository..."
+        git push
+        print_success "Changes pushed successfully!"
+      else
+        print_info "Skipping push. You can push changes later with:"
+        print_command "git push"
+      fi
+    else
+      print_info "Skipping commit. You can commit your Kanbn files later with:"
+      print_command "git add .kanbn"
+      print_command "git commit -m \"Initialize Kanbn project board\""
+    fi
+  else
+    print_warning "Not in a git repository. Skipping commit."
+  fi
+}
+
+# Main function
+main() {
+  print_header "Kanbn GitHub Project Integration"
+  print_info "This script helps you initialize a Kanbn board for new or existing GitHub projects."
   echo ""
 
-  model_selection=$(get_input "Enter your choice" "1")
+  # Check if kanbn is installed
+  check_kanbn_installed
 
-  case $model_selection in
+  # Ask if user wants to work with a new or existing project
+  print_header "Project Selection"
+  print_info "Would you like to:"
+  echo "1. Clone and set up a new GitHub repository"
+  echo "2. Work with an existing local repository"
+  echo "3. Initialize a new project in the current directory"
+  echo -e "${YELLOW}Select an option (1-3):${NC} "
+  read project_option
+
+  local git_status=0
+  local project_dir=$(pwd)
+
+  case $project_option in
     1)
-       CUSTOM_MODEL="google/gemma-3-4b-it:free"
-       print_success "Using model: $CUSTOM_MODEL"
-       ;;
+      # Clone GitHub repository
+      clone_github_repo
+      project_dir=$(pwd)
+      git_status=1
+      ;;
     2)
-       CUSTOM_MODEL="anthropic/claude-3-haiku-20240307"
-       print_success "Using model: $CUSTOM_MODEL"
-       ;;
+      # Work with existing local repository
+      print_header "Local Repository Path"
+      print_info "Please enter the path to your local repository:"
+      read -e -p "Repository path [$(pwd)]: " local_repo_path
+      local_repo_path=${local_repo_path:-$(pwd)}
+
+      if [ ! -d "$local_repo_path" ]; then
+        print_error "Directory '$local_repo_path' does not exist."
+        exit 1
+      fi
+
+      cd "$local_repo_path"
+      project_dir=$(pwd)
+      check_git_repo
+      git_status=$?
+      ;;
     3)
-       CUSTOM_MODEL="anthropic/claude-3-sonnet-20240229"
-       print_success "Using model: $CUSTOM_MODEL"
-       ;;
-    4)
-       CUSTOM_MODEL="meta-llama/llama-3-8b-instruct"
-       print_success "Using model: $CUSTOM_MODEL"
-       ;;
-    5)
-       CUSTOM_MODEL=$(get_input "Enter custom model identifier" "")
-       if [ -n "$CUSTOM_MODEL" ]; then
-         print_success "Using model: $CUSTOM_MODEL"
-       else
-         print_warning "No custom model specified. Using default."
-         CUSTOM_MODEL=""
-       fi
-       ;;
+      # Initialize a new project in the current directory
+      print_info "Using current directory: $(pwd)"
+      project_dir=$(pwd)
+      check_git_repo
+      git_status=$?
+      ;;
     *)
-       print_warning "Invalid selection. Using default model."
-       CUSTOM_MODEL=""
-       ;;
-  esac
-else
-  CUSTOM_MODEL=""
-fi
-
-# Initialize project based on selection
-print_header "Initializing Project"
-
-case $selection in
-  1)
-    print_info "Initializing Web Application Project: $project_name"
-
-    # Get additional context if the user wants to provide it
-    additional_context=$(get_additional_context "Web Application")
-
-    # Create a simple message that describes the project type and any additional context
-    if [ -n "$additional_context" ]; then
-      message="Create a web application with user authentication, database integration, and responsive UI. Additional context: $additional_context"
-    else
-      message="Create a web application with user authentication, database integration, and responsive UI."
-    fi
-
-    print_info "Running AI initialization..."
-    # Print debug info
-    print_kanbn_debug_info "$clean_project_name" "$message" "$CUSTOM_MODEL"
-
-    # Set environment variable to indicate test mode
-    # This will make the AI initialization process use test mode responses
-    # and skip interactive prompts
-    export KANBN_ENV="test"
-
-    # Run the command
-    kanbn init --ai --name "$clean_project_name" --message "$message" ${CUSTOM_MODEL:+--model "$CUSTOM_MODEL"}
-
-    # Unset the environment variable
-    unset KANBN_ENV
-    ;;
-  2)
-    print_info "Initializing Mobile App Project: $project_name"
-
-    print_info "Getting a description for your project..."
-    project_context=$(get_additional_context "Mobile App")
-    
-    # Base prompt for mobile app
-    base_prompt="Create a mobile app project with user authentication, API integration, and native features"
-
-    # Combine base prompt with additional context
-    if [ -n "$project_context" ]; then
-      full_prompt="$base_prompt. Additional context: $project_context"
-    else
-      full_prompt="$base_prompt"
-      project_context="$base_prompt"
-    fi
-
-    print_info "Running AI initialization..."
-    # Print debug info
-    print_kanbn_debug_info "$clean_project_name" "$full_prompt" "$CUSTOM_MODEL"
-
-    # Set environment variable to indicate test mode
-    # Run kanbn init with AI and the project name
-    print_info "Running kanbn init..."
-    
-    # Set test environment to avoid interactive prompts
-    export KANBN_ENV=test
-
-    # Run the command with both message and description to avoid duplicate prompts
-    kanbn init --ai --name "$clean_project_name" --message "$full_prompt" --description "$project_context" ${CUSTOM_MODEL:+--model "$CUSTOM_MODEL"}
-
-    # Unset the environment variable
-    unset KANBN_ENV
-    ;;
-  3)
-    print_info "Initializing Data Science Project: $project_name"
-
-    print_info "Getting a description for your project..."
-    project_context=$(get_additional_context "Data Science")
-    
-    # Base prompt for data science project
-    base_prompt="Create a data science project with data collection, preprocessing, modeling, and visualization phases"
-
-    # Combine base prompt with additional context
-    if [ -n "$project_context" ]; then
-      full_prompt="$base_prompt. Additional context: $project_context"
-    else
-      full_prompt="$base_prompt"
-      project_context="$base_prompt"
-    fi
-
-    print_info "Running AI initialization..."
-    # Print debug info
-    print_kanbn_debug_info "$clean_project_name" "$full_prompt" "$CUSTOM_MODEL"
-
-    # Set environment variable to indicate test mode
-    # Run kanbn init with AI and the project name
-    print_info "Running kanbn init..."
-    
-    # Set test environment to avoid interactive prompts
-    export KANBN_ENV=test
-
-    # Run the command with both message and description to avoid duplicate prompts
-    kanbn init --ai --name "$clean_project_name" --message "$full_prompt" --description "$project_context" ${CUSTOM_MODEL:+--model "$CUSTOM_MODEL"}
-
-    # Unset the environment variable
-    unset KANBN_ENV
-    ;;
-  4)
-    print_info "Initializing DevOps Project: $project_name"
-    base_prompt="Create a DevOps project with CI/CD pipeline setup, infrastructure as code, and monitoring"
-
-    # Get additional context if the user wants to provide it
-    project_context=$(get_additional_context "DevOps")
-
-    if [ -n "$project_context" ]; then
-      full_prompt="$base_prompt. Additional context: $project_context"
-    else
-      full_prompt="$base_prompt"
-      # If no custom description was provided, use the base prompt as description
-      project_context="$base_prompt"
-    fi
-
-    print_info "Running AI initialization..."
-    # Print debug info
-    print_kanbn_debug_info "$clean_project_name" "$full_prompt" "$CUSTOM_MODEL"
-
-    # Set environment variable to indicate test mode
-    # Run kanbn init with AI and the project name
-    print_info "Running kanbn init..."
-    
-    # Set test environment to avoid interactive prompts
-    export KANBN_ENV=test
-
-    # Run the command with both message and description to avoid duplicate prompts
-    kanbn init --ai --name "$clean_project_name" --message "$full_prompt" --description "$project_context" ${CUSTOM_MODEL:+--model "$CUSTOM_MODEL"}
-
-    # Unset the environment variable
-    unset KANBN_ENV
-    ;;
-  5)
-    print_info "Initializing API Development Project: $project_name"
-    base_prompt="Create an API development project with endpoint design, authentication, documentation, and testing"
-
-    # Get additional context if the user wants to provide it
-    project_context=$(get_additional_context "API Development")
-
-    if [ -n "$project_context" ]; then
-      full_prompt="$base_prompt. Additional context: $project_context"
-    else
-      full_prompt="$base_prompt"
-      # If no custom description was provided, use the base prompt as description
-      project_context="$base_prompt"
-    fi
-
-    print_info "Running AI initialization..."
-    # Print debug info
-    print_kanbn_debug_info "$clean_project_name" "$full_prompt" "$CUSTOM_MODEL"
-
-    # Set environment variable to indicate test mode
-    # Run kanbn init with AI and the project name
-    print_info "Running kanbn init..."
-    
-    # Set test environment to avoid interactive prompts
-    export KANBN_ENV=test
-
-    # Run the command with both message and description to avoid duplicate prompts
-    kanbn init --ai --name "$clean_project_name" --message "$full_prompt" --description "$project_context" ${CUSTOM_MODEL:+--model "$CUSTOM_MODEL"}
-
-    # Unset the environment variable
-    unset KANBN_ENV
-    ;;
-  6)
-    print_info "Initializing Game Development Project: $project_name"
-    base_prompt="Create a game development project with game design, asset creation, programming, and testing phases"
-
-    # Get additional context if the user wants to provide it
-    project_context=$(get_additional_context "Game Development")
-
-    if [ -n "$project_context" ]; then
-      full_prompt="$base_prompt. Additional context: $project_context"
-    else
-      full_prompt="$base_prompt"
-      # If no custom description was provided, use the base prompt as description
-      project_context="$base_prompt"
-    fi
-
-    print_info "Running AI initialization..."
-    # Print debug info
-    print_kanbn_debug_info "$clean_project_name" "$full_prompt" "$CUSTOM_MODEL"
-
-    # Set environment variable to indicate test mode
-    # Run kanbn init with AI and the project name
-    print_info "Running kanbn init..."
-    
-    # Set test environment to avoid interactive prompts
-    export KANBN_ENV=test
-
-    # Run the command with both message and description to avoid duplicate prompts
-    kanbn init --ai --name "$clean_project_name" --message "$full_prompt" --description "$project_context" ${CUSTOM_MODEL:+--model "$CUSTOM_MODEL"}
-
-    # Unset the environment variable
-    unset KANBN_ENV
-    ;;
-  7)
-    print_info "Initializing Custom Project: $project_name"
-    print_info "For a custom project, please provide a detailed description of what you want to build."
-    print_info "This will help the AI generate appropriate tasks and columns for your project."
-    echo ""
-    project_context=$(get_input "Enter project description" "A custom project with specific requirements")
-
-    # Extract just the project description without the prompt text
-    # This removes the "Enter project description [xxx]: " prefix if present
-    clean_message=$(echo "$project_context" | sed -E 's/^Enter project description \[[^]]+\]: //')
-
-    # Extract just the project name without the prompt text
-    # This removes the "Project name [xxx]: " prefix if present
-    clean_project_name=$(echo "$project_name" | sed -E 's/^Project name \[[^]]+\]: //')
-    
-    # Clean up the clean_project_name further
-    clean_project_name="$(echo "$clean_project_name" | xargs)"
-
-    print_info "Running AI initialization..."
-    # Print the command with debug info
-    print_info "Debug: Clean project name = \"$clean_project_name\""
-    print_info "Debug: Clean message = \"$clean_message\""
-    if [ -n "$CUSTOM_MODEL" ]; then
-      print_info "Debug: Model = \"$CUSTOM_MODEL\""
-      print_command "kanbn init --ai --name \"$clean_project_name\" --message \"$clean_message\" --model \"$CUSTOM_MODEL\""
-    else
-      print_info "Debug: Using default model from environment"
-      print_command "kanbn init --ai --name \"$clean_project_name\" --message \"$clean_message\""
-    fi
-
-    # Add more debug info
-    print_info "Debug: Environment variables:"
-    print_info "Debug: OPENROUTER_API_KEY = ${OPENROUTER_API_KEY:0:5}... (${#OPENROUTER_API_KEY} chars)"
-    print_info "Debug: OPENROUTER_MODEL = $OPENROUTER_MODEL"
-
-    # Run the command with explicit parameters
-    print_info "Debug: Running kanbn init with explicit parameters"
-
-    # Set environment variable to indicate test mode
-    # This will make the AI initialization process use test mode responses
-    # and skip interactive prompts
-    export KANBN_ENV="test"
-
-    # Run kanbn init with the --message parameter
-    kanbn init --ai --name "$clean_project_name" --message "$clean_message" --description "$clean_message" ${CUSTOM_MODEL:+--model "$CUSTOM_MODEL"}
-
-    # Unset the environment variable
-    unset KANBN_ENV
-    ;;
-  8)
-    print_info "Initializing Documentation Project with GitHub Pages: $project_name"
-
-    # Check if this is a git repository
-    if ! git rev-parse --is-inside-work-tree &> /dev/null; then
-      print_error "This is not a git repository. GitHub Pages documentation requires a git repository."
-      print_info "Please initialize git first with: git init"
+      print_error "Invalid option. Exiting."
       exit 1
-    fi
+      ;;
+  esac
 
-    # Get repository information
-    repo_name=$(basename -s .git $(git config --get remote.origin.url 2>/dev/null || echo "$(basename $(pwd))"))
+  # Setup OpenRouter API key
+  setup_api_key
 
-    print_info "Repository: $repo_name"
-    print_info "This will create tasks for documenting your project using GitHub Pages."
+  # Get project information
+  print_header "Project Information"
+  DEFAULT_PROJECT_NAME=$(basename "$project_dir")
+  print_info "Please provide a name for your project."
+  project_name=$(get_input "Project name" "$DEFAULT_PROJECT_NAME")
 
-    # Get additional context about the repository
-    print_info "Please provide information about your repository:"
-    project_context=$(get_input "Repository description" "A project that needs documentation")
+  # Check if there's an existing Kanbn board
+  local has_existing_board=false
+  if [ -d ".kanbn" ]; then
+    has_existing_board=true
+    print_info "Existing Kanbn board found."
 
-    # Ask about existing documentation
-    print_info "Does your repository already have any documentation? (y/n) [n]:"
-    read has_docs
+    get_existing_tasks
 
-    if [ "$has_docs" = "y" ] || [ "$has_docs" = "Y" ]; then
-      docs_location=$(get_input "Where is your existing documentation located?" "docs/")
+    print_info "Would you like to:"
+    echo "1. Continue with the existing board"
+    echo "2. Reinitialize the board (backup will be created)"
+    echo -e "${YELLOW}Select an option (1-2):${NC} "
+    read board_option
 
-      # Create a simple message that describes the documentation project
-      prompt="Create a documentation project using GitHub Pages for the repository '$repo_name'. Repository description: $project_context. The repository already has documentation in '$docs_location'."
+    if [ "$board_option" = "1" ]; then
+      print_info "Continuing with existing board..."
     else
-      # Create a simple message that describes the documentation project
-      prompt="Create a documentation project using GitHub Pages for the repository '$repo_name'. Repository description: $project_context. The repository does not have any documentation yet."
+      # Get project description for reinitialization
+      print_info "Please provide a description of your project:"
+      project_description=$(get_input "Project description" "A software development project with multiple features and requirements.")
+
+      # Initialize Kanbn
+      init_kanbn "$project_name" "$project_description"
+
+      ask_integration_context
+      echo -e "${GREEN}Thank you for using Kanbn!${NC}"
+
+      # Build Kanban board with chat
+      build_kanban_with_chat
     fi
-
-    print_info "Running AI initialization..."
-    # Print debug info
-    print_kanbn_debug_info "$clean_project_name" "$prompt" "$CUSTOM_MODEL"
-
-    # Set environment variable to indicate test mode
-    # Run kanbn init with AI and the project name
-    print_info "Running kanbn init..."
-    
-    # Set test environment to avoid interactive prompts
-    export KANBN_ENV=test
-
-    # Run the command with both message and description to avoid duplicate prompts
-    kanbn init --ai --name "$clean_project_name" --message "$prompt" --description "$project_context" ${CUSTOM_MODEL:+--model "$CUSTOM_MODEL"}
-
-    # Unset the environment variable
-    unset KANBN_ENV
-    ;;
-  *)
-    print_error "Invalid selection. Exiting."
-    exit 1
-    ;;
-esac
-
-# Validate the Kanbn board
-print_header "Validating Project Board"
-print_info "Running validation to ensure all files are correctly formatted..."
-print_command "kanbn validate"
-
-if kanbn validate; then
-  print_success "Validation successful! All files are correctly formatted."
-else
-  print_error "Validation failed! There are issues with the Kanbn board."
-  print_info "Please check the errors above and fix them manually."
-  print_info "You can run 'kanbn validate' again to check if the issues are resolved."
-  print_warning "Continuing with the bootstrap process despite validation errors..."
-fi
-
-# Show the board
-print_header "Project Board"
-print_info "Run kanbn board to see your new board."
-print_info "Run kanbn chat to chat with your project assistant."
-
-# Note about API key requirement for chat
-print_info "IMPORTANT: To use the chat functionality, you need an OpenRouter API key."
-print_info "Your .env file has been set up with the API key, but you may need to:"
-print_info "  1. Source the .env file: source .env"
-print_info "  2. Or export the key directly: export OPENROUTER_API_KEY=your-key"
-print_header "Project Assistant"
-print_info "Would you like to chat with the project assistant? (y/n) [y]:"
-read chat_with_assistant
-
-if [ "$chat_with_assistant" != "n" ] && [ "$chat_with_assistant" != "N" ]; then
-  print_info "Starting chat with the project assistant..."
-  print_command "kanbn chat --message 'What are the next steps for this project?'"
-  kanbn chat --message "What are the next steps for this project?"
-fi
-
-# Show next steps
-print_header "Next Steps"
-print_success "Your Kanbn project has been successfully initialized!"
-print_info "You can now:"
-echo "1. View your board with: kanbn board"
-echo "2. Add more tasks with: kanbn add 'Task name'"
-echo "3. Move tasks between columns with: kanbn move task-id 'Column Name'"
-echo "4. Chat with the project assistant with: kanbn chat"
-echo "5. Decompose tasks into subtasks with: kanbn decompose --task task-id"
-echo ""
-
-print_header "AI Features Overview"
-print_info "Kanbn includes several AI-powered features:"
-echo "1. AI-Powered Initialization (kanbn init --ai)"
-echo "   - Creates a project board with appropriate columns"
-echo "   - Generates initial tasks based on project description"
-echo "   - Customizable with --message, --model, and other flags"
-echo ""
-echo "2. Project Assistant Chat (kanbn chat)"
-echo "   - Provides guidance and answers questions about your project"
-echo "   - Maintains context between sessions with memory persistence"
-echo "   - Can be used with --message flag for non-interactive mode"
-echo ""
-echo "3. Task Decomposition (kanbn decompose)"
-echo "   - Breaks down complex tasks into smaller, actionable subtasks"
-echo "   - Creates parent-child relationships between tasks"
-echo "   - Can add references to subtasks with --with-refs flag"
-echo ""
-echo "4. AI-Powered Task Creation (kanbn chat --create-task)"
-echo "   - Creates tasks based on natural language descriptions"
-echo "   - Automatically assigns appropriate metadata"
-echo ""
-
-# Git integration
-if git rev-parse --is-inside-work-tree &> /dev/null; then
-  print_header "Git Integration"
-  print_info "Would you like to commit your Kanbn board to git? (y/n) [y]:"
-  read commit_to_git
-
-  if [ "$commit_to_git" != "n" ] && [ "$commit_to_git" != "N" ]; then
-    print_info "Adding Kanbn files to git..."
-    git add .kanbn
-    print_info "Committing Kanbn files..."
-    git commit -m "Initialize Kanbn project board"
-    print_success "Kanbn files committed to git"
   else
-    print_info "You can commit your Kanbn files later with:"
-    print_command "git add .kanbn"
-    print_command "git commit -m \"Initialize Kanbn project board\""
+    # No existing board, initialize a new one
+    print_info "Please provide a description of your project:"
+    project_description=$(get_input "Project description" "A software development project with multiple features and requirements.")
+
+    # Initialize Kanbn
+    init_kanbn "$project_name" "$project_description"
+
+    ask_integration_context
+    echo -e "${GREEN}Thank you for using Kanbn!${NC}"
+
+    # Build Kanban board with chat
+    build_kanban_with_chat
   fi
-fi
 
-print_header "Documentation"
-print_info "For more information on using Kanbn, visit:"
-echo "https://decision-crafters.github.io/kanbn/"
-echo ""
+  # Commit changes to git if in a git repository
+  if [ "$git_status" -eq 0 ] || [ "$git_status" -eq 1 ]; then
+    commit_changes
+  fi
 
-echo -e "${GREEN}Thank you for using Kanbn!${NC}"
+  # Show next steps
+  print_header "Next Steps"
+  print_success "Your Kanbn project has been successfully set up!"
+  print_info "You can now:"
+  echo "1. View your board with: kanbn board"
+  echo "2. Add more tasks with: kanbn add"
+  echo "3. Move tasks between columns with: kanbn move task-id 'Column Name'"
+  echo "4. Chat with the project assistant with: kanbn chat"
+  echo "5. Decompose tasks into subtasks with: kanbn decompose --task task-id"
+  echo "6. Add integration context with: ask_integration_context"
+  echo ""
+
+  # Ask if user wants to view the board
+  print_info "Would you like to view your Kanban board now? (y/n) [y]:"
+  read view_board
+
+  if [ "$view_board" != "n" ] && [ "$view_board" != "N" ]; then
+    print_info "Displaying Kanban board..."
+    kanbn board
+  fi
+
+  echo -e "${GREEN}Thank you for using Kanbn!${NC}"
+}
+
+# Run the main function
+main
