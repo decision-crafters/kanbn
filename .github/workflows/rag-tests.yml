@@ -17,6 +17,7 @@ on:
         - ollama
         - openrouter
         - repository-context
+        - sno-quickstarts
       debug_mode:
         description: 'Enable debug mode'
         required: false
@@ -221,6 +222,38 @@ jobs:
         run: |
           # Use absolute path to the script
           SCRIPT_PATH="$(pwd)/examples/test_repository_context_integration.sh"
+
+          # Debug script path
+          echo "Script path: $SCRIPT_PATH"
+          ls -la "$SCRIPT_PATH" || echo "Script not found at $SCRIPT_PATH"
+
+          # Run the script
+          bash "$SCRIPT_PATH"
+
+      - name: Prepare SNO Quickstarts test script
+        run: |
+          # List contents of examples directory
+          echo "Contents of examples directory:"
+          ls -la ./examples/
+
+          # Make sure the script is executable
+          chmod +x ./examples/test_sno_quickstarts_integration.sh || echo "Failed to chmod script"
+
+          # Verify the script exists
+          ls -la ./examples/test_sno_quickstarts_integration.sh || echo "Script not found"
+
+      - name: Run SNO Quickstarts Integration Tests
+        if: github.event_name != 'workflow_dispatch' || github.event.inputs.test_type == 'all' || github.event.inputs.test_type == 'sno-quickstarts'
+        env:
+          KANBN_ENV: test
+          NODE_ENV: test
+          DEBUG: ${{ github.event.inputs.debug_mode == 'true' || 'true' }}
+          USE_OLLAMA: true
+          OLLAMA_HOST: http://localhost:11434
+          OLLAMA_MODEL: qwen3
+        run: |
+          # Use absolute path to the script
+          SCRIPT_PATH="$(pwd)/examples/test_sno_quickstarts_integration.sh"
 
           # Debug script path
           echo "Script path: $SCRIPT_PATH"

@@ -26,8 +26,8 @@ class OllamaClient {
    * @returns {Promise<boolean>} True if Ollama is available, false otherwise
    */
   async isAvailable() {
-    // If we're in test mode, pretend Ollama is available
-    if (process.env.KANBN_ENV === 'test') {
+    // If we're in test mode and not explicitly using Ollama, pretend Ollama is available
+    if (process.env.KANBN_ENV === 'test' && process.env.USE_OLLAMA !== 'true') {
       console.debug('Running in test mode, simulating Ollama availability');
       return true;
     }
@@ -70,8 +70,8 @@ class OllamaClient {
    */
   async chatCompletion(messages, streamCallback = null) {
     try {
-      // If we're in test mode, return a mock response
-      if (process.env.KANBN_ENV === 'test') {
+      // If we're in test mode and not explicitly using Ollama, return a mock response
+      if (process.env.KANBN_ENV === 'test' && process.env.USE_OLLAMA !== 'true') {
         console.debug('Running in test mode, returning mock response');
 
         // Extract the user's query from the messages

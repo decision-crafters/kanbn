@@ -4,7 +4,8 @@
  * Manages integration markdown files for enhancing AI context
  */
 
-const kanbnModule = require('../main');
+// Use dynamic import for main module to avoid circular dependency issues in container environments
+// This is more compatible with various module systems and environments
 const utility = require('../utility');
 const chalk = require('chalk');
 // Use a more compatible approach for terminal colors
@@ -24,8 +25,10 @@ const RAGManager = require('../lib/rag-manager');
  */
 module.exports = async args => {
   try {
+    // Dynamically import the main module to avoid circular dependency issues
+    const kanbnModule = await import('../main');
     // Create a Kanbn instance
-    const kanbn = typeof kanbnModule === 'function' ? kanbnModule() : kanbnModule;
+    const kanbn = typeof kanbnModule.default === 'function' ? kanbnModule.default() : kanbnModule.default;
 
     // Check if we're in a Kanbn board
     let boardFolder;

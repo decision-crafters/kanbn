@@ -1,6 +1,6 @@
 # AI Features in Kanbn
 
-Kanbn includes AI-powered features to help you manage your tasks more efficiently. Version 0.12.0 introduces enhanced AI capabilities with OpenRouter and Ollama support, along with improved project memory and RAG (Retrieval-Augmented Generation) features.
+Kanbn includes AI-powered features to help you manage your tasks more efficiently. Version 0.13.0 introduces enhanced AI capabilities with OpenRouter and Ollama support, along with improved project memory and RAG (Retrieval-Augmented Generation) features.
 
 > For detailed examples and usage instructions, check out the [Chat Demo](demos/chat-demo.md), [Decompose Demo](demos/decompose-demo.md), and [AI-Powered Initialization](ai-init.md).
 
@@ -36,7 +36,7 @@ OLLAMA_HOST=http://localhost:11434
 
 ## Enhanced Project Memory System
 
-Version 0.12.0 introduces an improved project memory system that provides:
+Version 0.13.0 introduces an improved project memory system that provides:
 
 1. **Persistent Context**: Better retention of project context across sessions
 2. **RAG Capabilities**: 
@@ -120,7 +120,7 @@ This feature helps you:
 
 ## Error Handling and Recovery
 
-Version 0.12.0 includes improved error handling for AI features:
+Version 0.13.0 includes improved error handling for AI features:
 1. Graceful fallback between AI services
 2. Better error messages and recovery options
 3. Automatic retry mechanisms

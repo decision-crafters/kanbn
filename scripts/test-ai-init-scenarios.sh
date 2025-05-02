@@ -42,14 +42,18 @@ if [ -f "$REPO_DIR/.env" ]; then
   done < "$REPO_DIR/.env"
 fi
 
-# Check if OpenRouter API key is available
-if [ -z "$OPENROUTER_API_KEY" ]; then
-  echo -e "${YELLOW}⚠️ OpenRouter API key is not set. Using test mode.${NC}"
+# Check if OpenRouter API key or Ollama is available
+if [ -z "$OPENROUTER_API_KEY" ] && [ "$USE_OLLAMA" != "true" ]; then
+  echo -e "${YELLOW}⚠️ Neither OpenRouter API key nor Ollama is set. Using test mode.${NC}"
   export KANBN_ENV="test"
 else
-  echo -e "${GREEN}✅ OpenRouter API key is set. Using real API calls.${NC}"
-  # Unset test mode if it was set
-  unset KANBN_ENV
+  if [ -n "$OPENROUTER_API_KEY" ]; then
+    echo -e "${GREEN}✅ OpenRouter API key is set. Using real API calls.${NC}"
+    export KANBN_ENV="development"
+  elif [ "$USE_OLLAMA" = "true" ]; then
+    echo -e "${GREEN}✅ Ollama is enabled. Using real API calls.${NC}"
+    export KANBN_ENV="development"
+  fi
 fi
 
 # Create a test directory

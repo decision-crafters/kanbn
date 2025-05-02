@@ -71,67 +71,113 @@ class RAGManager {
 
             // Initialize embeddings with Ollama if available
             try {
-                // Use the models we know are available based on 'ollama list'
-                // First try with llama3 which we know is available
-                try {
-                    this.embeddings = new OllamaEmbeddings({
-                        model: "llama3", // We confirmed this is available
-                        baseUrl: process.env.OLLAMA_URL || "http://127.0.0.1:11434"
-                    });
-                    utility.debugLog('Initialized Ollama embeddings with llama3 model');
-                } catch (modelError) {
-                    // If llama3 fails, try with qwen2.5-coder which is also available
+                // First try with the user-specified model from environment variable
+                const ollamaModel = process.env.OLLAMA_MODEL;
+                const ollamaUrl = process.env.OLLAMA_URL || process.env.OLLAMA_HOST || "http://127.0.0.1:11434";
+
+                // Try to initialize embeddings with the appropriate model
+                if (ollamaModel) {
+                    // Try user-specified model first
                     try {
                         this.embeddings = new OllamaEmbeddings({
-                            model: "qwen2.5-coder", // Another available model
-                            baseUrl: process.env.OLLAMA_URL || "http://127.0.0.1:11434"
+                            model: ollamaModel,
+                            baseUrl: ollamaUrl
                         });
-                        utility.debugLog('Initialized Ollama embeddings with qwen2.5-coder model');
-                    } catch (embedModelError) {
-                        // If that fails too, try with qwen-repo-assistant
-                        try {
-                            this.embeddings = new OllamaEmbeddings({
-                                model: "qwen-repo-assistant", // Another available model
-                                baseUrl: process.env.OLLAMA_URL || "http://127.0.0.1:11434"
-                            });
-                            utility.debugLog('Initialized Ollama embeddings with qwen-repo-assistant model');
-                        } catch (repoAssistantError) {
-                            // Last resort: try with default model
-                            this.embeddings = new OllamaEmbeddings({
-                                baseUrl: process.env.OLLAMA_URL || "http://127.0.0.1:11434"
-                            });
-                            utility.debugLog('Initialized Ollama embeddings with default model');
-                        }
+                        utility.debugLog(`Initialized Ollama embeddings with user-specified model: ${ollamaModel}`);
+                    } catch (userModelError) {
+                        utility.debugLog(`Failed to use user-specified model ${ollamaModel}: ${userModelError.message}`);
+
+                        // Fall back to known models
+                        this.initializeFallbackEmbeddings(ollamaUrl);
                     }
+                } else {
+                    // No user-specified model, try with known models
+                    utility.debugLog("No OLLAMA_MODEL specified, falling back to known models");
+                    this.initializeFallbackEmbeddings(ollamaUrl);
                 }
             } catch (error) {
                 utility.debugLog(`Ollama embeddings not available: ${error.message}, using fallback method`);
                 // Use a simple fallback embedding method if Ollama isn't available
-                this.embeddings = {
-                    embedDocuments: async (texts) => {
-                        // Simple fallback embedding (not robust but prevents crashes)
-                        return texts.map(text => {
-                            // Create a simple hash-based embedding (very basic)
-                            const hash = Array.from(text)
-                                .reduce((acc, char) => acc + char.charCodeAt(0), 0);
-                            // Create a 10-dimensional "embedding" (just for structure)
-                            return Array(10).fill(0).map((_, i) => (hash % (i + 1)) / 100);
-                        });
-                    },
-                    embedQuery: async (text) => {
-                        // Simple fallback query embedding (should match document embedding format)
-                        const hash = Array.from(text)
-                            .reduce((acc, char) => acc + char.charCodeAt(0), 0);
-                        return Array(10).fill(0).map((_, i) => (hash % (i + 1)) / 100);
-                    }
-                };
-
+                this.embeddings = this.createHashBasedEmbeddings();
                 utility.debugLog('Using fallback hash-based embeddings');
             }
         } catch (error) {
             utility.error(`Error initializing RAG manager: ${error.message}`);
             throw error;
         }
+    }
+
+    /**
+     * Initialize fallback embeddings with known models
+     * @param {string} baseUrl - The Ollama API URL
+     * @private
+     */
+    initializeFallbackEmbeddings(baseUrl) {
+        try {
+            // Try with llama3 which is often available
+            try {
+                this.embeddings = new OllamaEmbeddings({
+                    model: "llama3",
+                    baseUrl: baseUrl
+                });
+                utility.debugLog('Initialized Ollama embeddings with llama3 model (fallback)');
+            } catch (modelError) {
+                // If llama3 fails, try with qwen2.5-coder which is also available
+                try {
+                    this.embeddings = new OllamaEmbeddings({
+                        model: "qwen2.5-coder",
+                        baseUrl: baseUrl
+                    });
+                    utility.debugLog('Initialized Ollama embeddings with qwen2.5-coder model (fallback)');
+                } catch (embedModelError) {
+                    // If that fails too, try with qwen-repo-assistant
+                    try {
+                        this.embeddings = new OllamaEmbeddings({
+                            model: "qwen-repo-assistant",
+                            baseUrl: baseUrl
+                        });
+                        utility.debugLog('Initialized Ollama embeddings with qwen-repo-assistant model (fallback)');
+                    } catch (repoAssistantError) {
+                        // Last resort: try with default model
+                        this.embeddings = new OllamaEmbeddings({
+                            baseUrl: baseUrl
+                        });
+                        utility.debugLog('Initialized Ollama embeddings with default model (fallback)');
+                    }
+                }
+            }
+        } catch (fallbackError) {
+            utility.debugLog(`All fallback models failed: ${fallbackError.message}`);
+            // Create hash-based embeddings as a last resort
+            this.embeddings = this.createHashBasedEmbeddings();
+            utility.debugLog('Using hash-based embeddings after all fallback models failed');
+        }
+    }
+
+    /**
+     * Create simple hash-based embeddings as a fallback
+     * @returns {Object} A simple embeddings object
+     * @private
+     */
+    createHashBasedEmbeddings() {
+        return {
+            embedDocuments: async (texts) => {
+                // Simple fallback embedding (not robust but prevents crashes)
+                return texts.map(text => {
+                    // Create a simple hash-based embedding (very basic)
+                    const hash = Array.from(text)
+                        .reduce((acc, char) => acc + char.charCodeAt(0), 0);
+                    // Create a 10-dimensional "embedding" (just for structure)
+                    return Array(10).fill(0).map((_, i) => (hash % (i + 1)) / 100);
+                });
+            },
+            embedQuery: async (text) => {
+                // Simple fallback query embedding (should match document embedding format)
+                const hash = Array.from(text)
+                    .reduce((acc, char) => acc + char.charCodeAt(0), 0);
+                return Array(10).fill(0).map((_, i) => (hash % (i + 1)) / 100);
+            }
+        };
     }
 
     /**

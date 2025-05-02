@@ -61,7 +61,7 @@
     "asciichart": "^1.5.25",
     "auto-load": "^3.0.4",
     "axios": "^1.8.4",
-    "chalk": "^5.4.1",
+    "chalk": "^4.1.2",
     "cheerio": "^1.0.0",
     "chrono-node": "^2.1.10",
     "dateformat": "^4.3.1",
