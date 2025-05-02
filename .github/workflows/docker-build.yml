@@ -293,7 +293,7 @@ jobs:
               -e USE_OLLAMA=true \
               -e OLLAMA_MODEL=qwen3 \
               --network host \
-              kanbn:test make ci-test-ollama \
+              kanbn:test bash -c "which make && make ci-test-ollama" \
               || {
                 echo "::error::CI Ollama tests failed - failing the workflow"
                 exit 1
