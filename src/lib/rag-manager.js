@@ -432,12 +432,92 @@ class RAGManager {
                 }
             }
 
+            // FALLBACK APPROACH: If we have few integrations, just return all content
+            // This ensures we at least provide some context even if vector search fails
+            try {
+                const integrations = await this.listIntegrations();
+                if (integrations.length <= 5) {
+                    utility.debugLog(`Using fallback approach: returning all integration content for ${integrations.length} integrations`);
+
+                    // Get content of all integrations
+                    let allContent = '';
+                    for (const integration of integrations) {
+                        const content = await this.getIntegrationContent(integration);
+                        if (content) {
+                            allContent += `\n\n## From ${integration}\n\n${content}`;
+                        }
+                    }
+
+                    if (allContent) {
+                        utility.debugLog(`Retrieved all content from ${integrations.length} integrations`);
+                        return allContent;
+                    }
+                }
+            } catch (fallbackError) {
+                utility.debugLog(`Fallback approach failed: ${fallbackError.message}`);
+            }
+
             // Perform a similarity search to find relevant content
             let results = [];
             try {
                 results = await this.vectorStore.similaritySearch(query, count);
             } catch (searchError) {
                 utility.error(`Error during similarity search: ${searchError.message}`);
+
+                // Try direct keyword matching as a fallback
+                try {
+                    utility.debugLog('Trying keyword matching as fallback');
+
+                    // Get all integrations
+                    const integrations = await this.listIntegrations();
+                    let allContent = '';
+
+                    // Simple keyword extraction from query
+                    const keywords = query.toLowerCase()
+                        .split(/\s+/)
+                        .filter(word => word.length > 3)
+                        .filter(word => !['this', 'that', 'with', 'from', 'what', 'when', 'where', 'which', 'about'].includes(word));
+
+                    utility.debugLog(`Extracted keywords: ${keywords.join(', ')}`);
+
+                    // Check each integration for keyword matches
+                    for (const integration of integrations) {
+                        const content = await this.getIntegrationContent(integration);
+                        if (content) {
+                            // Check if content contains any keywords
+                            const contentLower = content.toLowerCase();
+                            const matchingKeywords = keywords.filter(keyword => contentLower.includes(keyword));
+
+                            if (matchingKeywords.length > 0) {
+                                allContent += `\n\n## From ${integration} (matched keywords: ${matchingKeywords.join(', ')})\n\n${content}`;
+                            }
+                        }
+                    }
+
+                    if (allContent) {
+                        utility.debugLog(`Retrieved content using keyword matching`);
+                        return allContent;
+                    }
+
+                    // If no matches, return all content from a limited number of integrations
+                    if (integrations.length <= 5) {
+                        allContent = '';
+                        for (const integration of integrations) {
+                            const content = await this.getIntegrationContent(integration);
+                            if (content) {
+                                allContent += `\n\n## From ${integration}\n\n${content}`;
+                            }
+                        }
+
+                        if (allContent) {
+                            utility.debugLog(`No keyword matches, returning all content from ${integrations.length} integrations`);
+                            return allContent;
+                        }
+                    }
+                } catch (keywordError) {
+                    utility.debugLog(`Keyword matching failed: ${keywordError.message}`);
+                }
+
                 // Return a helpful message about the error
                 return `\n\nError retrieving integration content: ${searchError.message}\n\nPlease ensure Ollama is running with a compatible embedding model.`;
             }
@@ -457,8 +537,30 @@ class RAGManager {
                     sources.add(result.metadata.source);
                 }
             } else {
-                // If no results, provide a helpful message
-                content = '\n\nNo relevant integration content found for your query.';
+                // If no results from similarity search, try to get all content
+                try {
+                    utility.debugLog('No results from similarity search, trying to get all content');
+
+                    // Get all integrations
+                    const integrations = await this.listIntegrations();
+                    if (integrations.length <= 5) {
+                        for (const integration of integrations) {
+                            const integrationContent = await this.getIntegrationContent(integration);
+                            if (integrationContent) {
+                                content += `\n\n## From ${integration}\n\n${integrationContent}`;
+                                sources.add(integration);
+                            }
+                        }
+                    }
+
+                    if (content === '') {
+                        // If still no content, provide a helpful message
+                        content = '\n\nNo relevant integration content found for your query.';
+                    }
+                } catch (allContentError) {
+                    utility.debugLog(`Error getting all content: ${allContentError.message}`);
+                    content = '\n\nNo relevant integration content found for your query.';
+                }
             }
 
             utility.debugLog(`Retrieved relevant content from ${sources.size} sources: ${Array.from(sources).join(', ')}`);
