@@ -34,7 +34,14 @@ jobs:
 
       - name: Install dependencies and link package
         run: |
-          npm ci
+          # First try to use the lock file
+          npm ci || {
+            echo "::warning::npm ci failed, falling back to npm install to update lock file"
+            # If npm ci fails, update the lock file and try again
+            npm install
+            # Now that the lock file is updated, try npm ci again
+            npm ci
+          }
           npm link
           # Verify kanbn is available
           which kanbn || echo "kanbn not found in PATH"
