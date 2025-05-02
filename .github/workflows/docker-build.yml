@@ -126,7 +126,26 @@ jobs:
               -v $(pwd):/app \
               -e USE_OLLAMA=false \
               kanbn:test /bin/bash -c "$(cat ./examples/test_openrouter_rag_integrations.sh)"
-            
+
+            docker run --rm -v $TEST_DIR:/workspace -w /workspace \
+              -e KANBN_ENV=test \
+              -e NODE_ENV=test \
+              -e KANBN_ROOT=/app \
+              -v $(pwd):/app \
+              -e USE_OLLAMA=false \
+              kanbn:test /bin/bash -c "$(cat ./examples/test_repository_context_integration.sh)"
+
+            docker run --rm -v $TEST_DIR:/workspace -w /workspace \
+              -e KANBN_ENV=test \
+              -e NODE_ENV=test \
+              -e KANBN_ROOT=/app \
+              -v $(pwd):/app \
+              -e USE_OLLAMA=true \
+              -e OLLAMA_HOST=http://host.docker.internal:11434 \
+              -e OLLAMA_MODEL=qwen3 \
+              --network host \
+              kanbn:test /bin/bash -c "$(cat ./examples/test_repository_context_integration.sh)"
+
             rm -f $TEST_DIR/.env
           fi
           fi
