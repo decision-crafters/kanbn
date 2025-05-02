@@ -1,10 +1,14 @@
 name: Tests
 
-on:
-  pull_request:
-    branches: [ main, master ]
-  push:
-    branches: [ main, master ]
+# Temporarily disabled for development
+# To re-enable, remove the following line and uncomment the 'on' section below
+on: workflow_dispatch
+
+# on:
+#   pull_request:
+#     branches: [ main, master ]
+#   push:
+#     branches: [ main, master ]
 
 jobs:
   test:

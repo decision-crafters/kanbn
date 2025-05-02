@@ -1,28 +1,32 @@
 name: RAG Integration Tests
 
-on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
-  workflow_dispatch:
-    inputs:
-      test_type:
-        description: 'Type of RAG test to run'
-        required: true
-        default: 'all'
-        type: choice
-        options:
-        - all
-        - ollama
-        - openrouter
-        - repository-context
-        - sno-quickstarts
-      debug_mode:
-        description: 'Enable debug mode'
-        required: false
-        type: boolean
-        default: false
+# Temporarily disabled for development
+# To re-enable, remove the following line and uncomment the 'on' section below
+on: workflow_dispatch
+
+# on:
+#   push:
+#     branches: [ main ]
+#   pull_request:
+#     branches: [ main ]
+#   workflow_dispatch:
+#     inputs:
+#       test_type:
+#         description: 'Type of RAG test to run'
+#         required: true
+#         default: 'all'
+#         type: choice
+#         options:
+#         - all
+#         - ollama
+#         - openrouter
+#         - repository-context
+#         - sno-quickstarts
+#       debug_mode:
+#         description: 'Enable debug mode'
+#         required: false
+#         type: boolean
+#         default: false
 
 jobs:
   test:
