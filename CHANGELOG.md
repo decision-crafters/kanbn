@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.13.0] - 2025-05-05
+
+### Added
+- Added Ollama as a model option in the bootstrap process with qwen3 as the default model
+- Added repository context integration test script for better testing of AI context awareness
+- Added repository context test to GitHub workflow for automated testing
+
+### Fixed
+- Fixed duplicate response issue in chat-controller.js by removing direct console.log
+- Improved integration testing scripts to properly test repository context awareness
+- Enhanced test scripts for Docker, Ollama, and OpenRouter RAG integrations
+
+### Changed
+- Updated bootstrap.sh to offer Ollama as an alternative to OpenRouter
+- Improved test scripts to add repository content as integrations
+- Enhanced GitHub workflow to include repository context testing
+
 ## [0.12.0] - 2025-04-27
 
 ### Added
