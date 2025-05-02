@@ -28,7 +28,7 @@ kanbn init
 kanbn init --ai
 
 # Or bootstrap a new project with our script (requires OpenRouter API key)
-curl -O https://raw.githubusercontent.com/decision-crafters/kanbn/main/examples/bootstrap.sh
+curl -O https://raw.githubusercontent.com/decision-crafters/kanbn/refs/heads/master/examples/bootstrap.sh
 chmod +x bootstrap.sh
 ./bootstrap.sh
 
