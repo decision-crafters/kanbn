@@ -250,40 +250,14 @@ jobs:
 
             # Additional repository context integration tests
             echo "Testing repository context integration with Ollama..."
-
-            # Ensure the test script is executable and copy it to the test directory
-            if [ -f "./examples/test_repository_context_integration.sh" ]; then
-              echo "Using existing repository context test script..."
-              chmod +x ./examples/test_repository_context_integration.sh
-              cp ./examples/test_repository_context_integration.sh $TEST_DIR/
-              echo "✅ Copied test script to test directory"
-            else
-              echo "::warning::Repository context test script not found at ./examples/test_repository_context_integration.sh"
-              # Create a simple test script in the test directory
-              cat > $TEST_DIR/test_repository_context_integration.sh << 'EOF'
-#!/bin/bash
-set -e
-echo "This is a simple repository context integration test"
-echo "Creating a test kanbn project..."
-mkdir -p test-repo
-cd test-repo
-echo "# Test Repository" > README.md
-kanbn init --name "Test Project" --description "Testing repository context"
-echo "Test completed successfully"
-EOF
-              chmod +x $TEST_DIR/test_repository_context_integration.sh
-              echo "✅ Created simple test script in test directory"
-            fi
-
-            # Run the test script from the test directory
-            docker run --rm -v $TEST_DIR:/workspace -w /workspace \
+            docker run --rm -v $TEST_DIR/repo-context:/workspace -w /workspace \
               -e KANBN_ENV=test \
               -e NODE_ENV=test \
               -e USE_OLLAMA=true \
               -e OLLAMA_HOST=http://host.docker.internal:11434 \
               -e OLLAMA_MODEL=qwen3 \
               --network host \
-              kanbn:test /bin/bash -c "bash /workspace/test_repository_context_integration.sh" \
+              kanbn:test /bin/bash -c "chmod +x /app/examples/test_repository_context_integration.sh && /app/examples/test_repository_context_integration.sh" \
               || { echo "::warning::Repository context integration test with Ollama failed but continuing..."; }
           fi
 
