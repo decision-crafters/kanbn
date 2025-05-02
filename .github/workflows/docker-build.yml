@@ -251,22 +251,12 @@ jobs:
             # Additional repository context integration tests
             echo "Testing repository context integration with Ollama..."
 
-            # Create a simple test script if it doesn't exist
-            if [ ! -f "./examples/test_repository_context_integration.sh" ]; then
-              echo "Creating simple repository context test script..."
-              mkdir -p ./examples
-              cat > ./examples/test_repository_context_integration.sh << 'EOF'
-              #!/bin/bash
-              set -e
-              echo "This is a simple repository context integration test"
-              echo "Creating a test kanbn project..."
-              mkdir -p /workspace/test-repo
-              cd /workspace/test-repo
-              echo "# Test Repository" > README.md
-              kanbn init --name "Test Project" --description "Testing repository context"
-              echo "Test completed successfully"
-              EOF
+            # Ensure the test script is executable
+            if [ -f "./examples/test_repository_context_integration.sh" ]; then
+              echo "Using existing repository context test script..."
               chmod +x ./examples/test_repository_context_integration.sh
+            else
+              echo "::warning::Repository context test script not found at ./examples/test_repository_context_integration.sh"
             fi
 
             docker run --rm -v $TEST_DIR:/workspace -w /workspace \
