@@ -295,12 +295,8 @@ jobs:
               --network host \
               kanbn:test make ci-test-ollama \
               || {
-                if [ "${{ github.event_name }}" = "release" ]; then
-                  echo "::error::CI Ollama tests failed - this is a release build, failing the workflow"
-                  exit 1
-                else
-                  echo "::warning::CI Ollama tests failed but continuing...";
-                fi
+                echo "::error::CI Ollama tests failed - failing the workflow"
+                exit 1
               }
 
             # Return to the original directory

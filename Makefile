@@ -245,9 +245,15 @@ docker-test-sno: build-docker docker-network
 .PHONY: docker-test-container-all
 docker-test-container-all: build-docker docker-network
 	@echo "Running all container tests with KANBN_ENV=$(KANBN_ENV)..."
-	@make docker-test-rag || echo "⚠️ RAG integration tests failed but continuing..."
-	@make docker-test-bootstrap || echo "⚠️ Bootstrap test failed but continuing..."
-	@make docker-test-sno || echo "⚠️ SNO Quickstarts test failed but continuing..."
+	@if [ "$(KANBN_ENV)" = "test" ]; then \
+		make docker-test-rag || echo "⚠️ RAG integration tests failed but continuing in test mode..."; \
+		make docker-test-bootstrap || echo "⚠️ Bootstrap test failed but continuing in test mode..."; \
+		make docker-test-sno || echo "⚠️ SNO Quickstarts test failed but continuing in test mode..."; \
+	else \
+		make docker-test-rag || { echo "❌ RAG integration tests failed"; exit 1; }; \
+		make docker-test-bootstrap || { echo "❌ Bootstrap test failed"; exit 1; }; \
+		make docker-test-sno || { echo "❌ SNO Quickstarts test failed"; exit 1; }; \
+	fi
 	@echo "All container tests completed."
 
 .PHONY: docker-test-container-test
@@ -257,13 +263,13 @@ docker-test-container-test:
 
 .PHONY: docker-test-container-qa
 docker-test-container-qa:
-	@echo "Running container tests in QA mode (real responses using OpenRouter)..."
-	@KANBN_ENV=development make docker-test-container-all
+	@echo "Running container tests in QA mode (real responses using Ollama)..."
+	@KANBN_ENV=development make docker-test-container-all || exit 1
 
 .PHONY: docker-test-container-prod
 docker-test-container-prod:
 	@echo "Running container tests in PRODUCTION mode (real responses using OpenRouter)..."
-	@KANBN_ENV=production make docker-test-container-all
+	@KANBN_ENV=production make docker-test-container-all || exit 1
 
 #-------------------------------------------------------------------------------
 # CI/CD specific test targets
@@ -283,23 +289,24 @@ ci-test-ollama:
 	@echo "Trying multiple Ollama host configurations..."
 	@if curl -s http://localhost:11434/api/tags > /dev/null 2>&1; then \
 		echo "✅ Ollama is reachable at http://localhost:11434"; \
-		KANBN_ENV=development USE_OLLAMA=true OLLAMA_HOST=http://localhost:11434 make docker-test-container-qa; \
+		KANBN_ENV=development USE_OLLAMA=true OLLAMA_HOST=http://localhost:11434 make docker-test-container-qa || exit 1; \
 	elif curl -s http://host.docker.internal:11434/api/tags > /dev/null 2>&1; then \
 		echo "✅ Ollama is reachable at http://host.docker.internal:11434"; \
-		KANBN_ENV=development USE_OLLAMA=true OLLAMA_HOST=http://host.docker.internal:11434 make docker-test-container-qa; \
+		KANBN_ENV=development USE_OLLAMA=true OLLAMA_HOST=http://host.docker.internal:11434 make docker-test-container-qa || exit 1; \
 	elif curl -s http://127.0.0.1:11434/api/tags > /dev/null 2>&1; then \
 		echo "✅ Ollama is reachable at http://127.0.0.1:11434"; \
-		KANBN_ENV=development USE_OLLAMA=true OLLAMA_HOST=http://127.0.0.1:11434 make docker-test-container-qa; \
+		KANBN_ENV=development USE_OLLAMA=true OLLAMA_HOST=http://127.0.0.1:11434 make docker-test-container-qa || exit 1; \
 	else \
-		echo "⚠️ Ollama is not reachable at any standard host, using mock mode"; \
-		KANBN_ENV=test USE_MOCK=true USE_OLLAMA=false make docker-test-container-test; \
+		echo "❌ ERROR: Ollama is not reachable at any standard host"; \
+		echo "Ollama must be available for CI Ollama tests to pass"; \
+		exit 1; \
 	fi
 
 .PHONY: ci-test-openrouter
 ci-test-openrouter:
 	@echo "Running CI tests with OpenRouter..."
 	@if [ -n "$$OPENROUTER_API_KEY" ]; then \
-		KANBN_ENV=production make docker-test-container-prod; \
+		KANBN_ENV=production make docker-test-container-prod || exit 1; \
 	else \
 		echo "OpenRouter API key not available, skipping OpenRouter tests"; \
 	fi
