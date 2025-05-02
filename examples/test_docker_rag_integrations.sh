@@ -3,7 +3,7 @@
 # Test script for RAG-based integrations
 
 # Set environment variables for testing
-export KANBN_ENV=test 
+export KANBN_ENV=test
 export DEBUG=true
 
 # Function to print info message
@@ -35,7 +35,7 @@ print_info "Testing in: $TEST_DIR"
 print_info "Checking for Ollama..."
 if command -v ollama >/dev/null 2>&1; then
   print_success "Ollama is installed"
-  
+
   # Check if Ollama is running
   if curl -s http://localhost:11434/api/tags >/dev/null 2>&1; then
     print_success "Ollama is running"
@@ -45,7 +45,7 @@ if command -v ollama >/dev/null 2>&1; then
     sleep 5
     print_success "Ollama started"
   fi
-  
+
   # Check for an embedding model
   if ollama list | grep -q "llama3"; then
     print_success "Embedding model found: llama3"
@@ -151,6 +151,30 @@ fi
 print_info "Listing integrations after adding..."
 NODE_OPTIONS=--no-deprecation kanbn integrations --list
 
+# Add repository content as integrations
+print_info "Adding repository content as integrations..."
+
+# Add README.md as integration
+if [ -f "README.md" ]; then
+  NODE_OPTIONS=--no-deprecation kanbn integrations --add --name readme-content --content "$(cat README.md)"
+  print_success "Added README.md as integration"
+fi
+
+# Add repository structure as integration
+repo_structure=$(find . -type f -not -path "*/\.*" | sort | head -n 50)
+NODE_OPTIONS=--no-deprecation kanbn integrations --add --name "repo-structure" --content "$repo_structure"
+print_success "Added repository structure as integration"
+
+# Add key JavaScript files as integrations
+for file in $(find . -name "*.js" -type f | grep -v "node_modules" | head -n 3); do
+  if [ -f "$file" ]; then
+    filename=$(basename "$file")
+    integration_name="code-${filename}"
+    NODE_OPTIONS=--no-deprecation kanbn integrations --add --name "$integration_name" --content "$(cat "$file")"
+    print_success "Added source code file $filename as integration"
+  fi
+done
+
 # Test the RAG functionality with a specific query
 print_info "Testing chat with game systems integration (simple query)..."
 NODE_OPTIONS=--no-deprecation kanbn chat --message "Describe D&D 5E." --integration game-systems --quiet
@@ -158,6 +182,14 @@ NODE_OPTIONS=--no-deprecation kanbn chat --message "Describe D&D 5E." --integrat
 # Check chat with multiple integrations
 print_info "Testing chat with all integrations (complex query)..."
 NODE_OPTIONS=--no-deprecation kanbn chat --message "What are some interesting character personality traits?" --with-integrations --quiet
+
+# Test repository context awareness
+print_info "Testing repository context awareness..."
+NODE_OPTIONS=--no-deprecation kanbn chat --message "What files are in this repository?" --with-integrations --quiet
+
+# Test README content awareness
+print_info "Testing README content awareness..."
+NODE_OPTIONS=--no-deprecation kanbn chat --message "What does the README.md file contain?" --with-integrations --quiet
 
 # Test vector search with specific query
 print_info "Testing direct vector search with RAGManager..."
@@ -169,16 +201,16 @@ const util = require('util');
 async function testRagSearch() {
   console.log('Creating RAG Manager instance...');
   const ragManager = new RAGManager({paths: {kanbn: '${TEST_DIR}/.kanbn'}});
-  
+
   console.log('Initializing RAG Manager...');
   await ragManager.initialize();
-  
+
   console.log('Loading integrations...');
   await ragManager.loadIntegrations();
-  
+
   console.log('Performing vector search for: "character stats in D&D"');
   const results = await ragManager.getRelevantContent('character stats in D&D', 3);
-  
+
   console.log('Search results:');
   console.log(results);
 }

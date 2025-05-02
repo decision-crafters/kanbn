@@ -222,6 +222,31 @@ fi
 print_info "Listing integrations after adding..."
 NODE_OPTIONS=--no-deprecation kanbn integrations --list
 
+# Add repository content as integrations
+print_info "Adding repository content as integrations..."
+print_debug "Starting repository content integration setup..."
+
+# Add README.md as integration
+if [ -f "README.md" ]; then
+  NODE_OPTIONS=--no-deprecation kanbn integrations --add --name readme-content --content "$(cat README.md)"
+  print_success "Added README.md as integration"
+fi
+
+# Add repository structure as integration
+repo_structure=$(find . -type f -not -path "*/\.*" | sort | head -n 50)
+NODE_OPTIONS=--no-deprecation kanbn integrations --add --name "repo-structure" --content "$repo_structure"
+print_success "Added repository structure as integration"
+
+# Add key JavaScript files as integrations
+for file in $(find . -name "*.js" -type f | grep -v "node_modules" | head -n 3); do
+  if [ -f "$file" ]; then
+    filename=$(basename "$file")
+    integration_name="code-${filename}"
+    NODE_OPTIONS=--no-deprecation kanbn integrations --add --name "$integration_name" --content "$(cat "$file")"
+    print_success "Added source code file $filename as integration"
+  fi
+done
+
 # [DEBUG POINT 5] - RAG testing
 print_info "Testing chat with game systems integration..."
 print_debug "Starting RAG test with game systems integration..."
@@ -230,6 +255,16 @@ KANBN_ENV=test NODE_OPTIONS=--no-deprecation kanbn chat --message "What stats ar
 # Check chat with multiple integrations
 print_info "Testing chat with all integrations..."
 KANBN_ENV=test NODE_OPTIONS=--no-deprecation kanbn chat --message "What combinations of D&D 5E character stats and personality traits make for interesting NPCs?" --with-integrations --quiet
+
+# Test repository context awareness
+print_info "Testing repository context awareness..."
+print_debug "Starting repository context awareness test..."
+KANBN_ENV=test NODE_OPTIONS=--no-deprecation kanbn chat --message "What files are in this repository?" --with-integrations --quiet
+
+# Test README content awareness
+print_info "Testing README content awareness..."
+print_debug "Starting README content awareness test..."
+KANBN_ENV=test NODE_OPTIONS=--no-deprecation kanbn chat --message "What does the README.md file contain?" --with-integrations --quiet
 
 # Clean up if not needed for further inspection
 # rm -rf "$TEST_DIR"

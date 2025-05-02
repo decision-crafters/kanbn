@@ -251,6 +251,30 @@ fi
 print_info "Listing integrations after adding..."
 NODE_OPTIONS=--no-deprecation kanbn integrations --list
 
+# Add repository content as integrations
+print_info "Adding repository content as integrations..."
+
+# Add README.md as integration
+if [ -f "README.md" ]; then
+  NODE_OPTIONS=--no-deprecation kanbn integrations --add --name readme-content --content "$(cat README.md)"
+  print_success "Added README.md as integration"
+fi
+
+# Add repository structure as integration
+repo_structure=$(find . -type f -not -path "*/\.*" | sort | head -n 50)
+NODE_OPTIONS=--no-deprecation kanbn integrations --add --name "repo-structure" --content "$repo_structure"
+print_success "Added repository structure as integration"
+
+# Add key JavaScript files as integrations
+for file in $(find . -name "*.js" -type f | grep -v "node_modules" | head -n 3); do
+  if [ -f "$file" ]; then
+    filename=$(basename "$file")
+    integration_name="code-${filename}"
+    NODE_OPTIONS=--no-deprecation kanbn integrations --add --name "$integration_name" --content "$(cat "$file")"
+    print_success "Added source code file $filename as integration"
+  fi
+done
+
 # Test the RAG functionality with a specific query using OpenRouter
 print_info "Testing chat with game systems integration using OpenRouter..."
 NODE_OPTIONS=--no-deprecation kanbn chat --message="What stats are used in D&D 5E?" --integration=game-systems
@@ -262,6 +286,14 @@ NODE_OPTIONS=--no-deprecation kanbn chat --message="What combinations of D&D 5E 
 # Check chat with multiple specific integrations using OpenRouter (using multiple --integration flags)
 print_info "Testing chat with multiple specific integrations using OpenRouter..."
 NODE_OPTIONS=--no-deprecation kanbn chat --message="How can personality traits influence a character's behavior in D&D?" --integration=game-systems --integration=personality-traits
+
+# Test repository context awareness
+print_info "Testing repository context awareness..."
+NODE_OPTIONS=--no-deprecation kanbn chat --message="What files are in this repository?" --with-integrations
+
+# Test README content awareness
+print_info "Testing README content awareness..."
+NODE_OPTIONS=--no-deprecation kanbn chat --message="What does the README.md file contain?" --with-integrations
 
 # Clean up if not needed for further inspection
 # rm -rf "$TEST_DIR"
