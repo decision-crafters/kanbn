@@ -25,10 +25,10 @@ const RAGManager = require('../lib/rag-manager');
  */
 module.exports = async args => {
   try {
-    // Dynamically import the main module to avoid circular dependency issues
-    const kanbnModule = await import('../main');
+    // Use CommonJS require instead of ES module import to avoid compatibility issues
+    const kanbnModule = require('../main');
     // Create a Kanbn instance
-    const kanbn = typeof kanbnModule.default === 'function' ? kanbnModule.default() : kanbnModule.default;
+    const kanbn = typeof kanbnModule === 'function' ? kanbnModule() : kanbnModule;
 
     // Check if we're in a Kanbn board
     let boardFolder;

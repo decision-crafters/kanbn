@@ -51,6 +51,49 @@ print_header "Cloning Test Repository"
 git clone https://github.com/tosin2013/codex.git .
 print_success "Cloned repository"
 
+# Check for Ollama connectivity and set up environment variables
+print_header "Checking Ollama Connectivity"
+OLLAMA_HOST=${OLLAMA_HOST:-"http://localhost:11434"}
+print_info "Using Ollama at: $OLLAMA_HOST"
+
+# Try multiple Ollama host options if the default doesn't work
+if ! curl -s "$OLLAMA_HOST/api/tags" >/dev/null 2>&1; then
+  print_warning "Ollama not reachable at $OLLAMA_HOST - trying alternative hosts"
+
+  # Try host.docker.internal
+  if curl -s "http://host.docker.internal:11434/api/tags" >/dev/null 2>&1; then
+    print_success "Ollama is reachable at http://host.docker.internal:11434"
+    OLLAMA_HOST="http://host.docker.internal:11434"
+    export OLLAMA_HOST="http://host.docker.internal:11434"
+  # Try localhost
+  elif curl -s "http://localhost:11434/api/tags" >/dev/null 2>&1; then
+    print_success "Ollama is reachable at http://localhost:11434"
+    OLLAMA_HOST="http://localhost:11434"
+    export OLLAMA_HOST="http://localhost:11434"
+  # Try 127.0.0.1
+  elif curl -s "http://127.0.0.1:11434/api/tags" >/dev/null 2>&1; then
+    print_success "Ollama is reachable at http://127.0.0.1:11434"
+    OLLAMA_HOST="http://127.0.0.1:11434"
+    export OLLAMA_HOST="http://127.0.0.1:11434"
+  else
+    print_warning "Ollama not reachable at any standard host - tests will use fallback embedding method"
+    # Set USE_MOCK=true to use mock responses instead of failing
+    export USE_MOCK=true
+    export USE_OLLAMA=false
+  fi
+fi
+
+# If Ollama is reachable, check for models
+if curl -s "$OLLAMA_HOST/api/tags" >/dev/null 2>&1; then
+  print_success "Ollama is reachable at $OLLAMA_HOST"
+  export USE_OLLAMA=true
+else
+  print_warning "Ollama not reachable at any standard host - tests will use fallback embedding method"
+  # Set USE_MOCK=true to use mock responses instead of failing
+  export USE_MOCK=true
+  export USE_OLLAMA=false
+fi
+
 # Initialize Kanbn
 print_header "Initializing Kanbn"
 kanbn init --name "Codex Project" --message "A repository for the Codex project"

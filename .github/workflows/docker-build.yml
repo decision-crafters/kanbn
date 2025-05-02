@@ -153,8 +153,10 @@ jobs:
             if curl -s http://localhost:11434/api/tags > /dev/null; then
               echo "✅ Ollama is available, using Ollama for tests"
               OLLAMA_AVAILABLE=true
-              AI_CONFIG="-e USE_OLLAMA=true -e OLLAMA_HOST=http://host.docker.internal:11434 -e OLLAMA_MODEL=qwen3"
-              NETWORK_CONFIG="--add-host=host.docker.internal:host-gateway"
+              # When using host network, use localhost instead of host.docker.internal
+              AI_CONFIG="-e USE_OLLAMA=true -e OLLAMA_HOST=http://localhost:11434 -e OLLAMA_MODEL=qwen3"
+              # Use host network mode for direct access to host services
+              NETWORK_CONFIG="--network=host"
             elif [ -n "${{ secrets.OPENROUTER_API_KEY }}" ]; then
               echo "⚠️ Ollama is not available, using OpenRouter for tests"
               OLLAMA_AVAILABLE=false
@@ -283,25 +285,23 @@ jobs:
               fi
             fi
 
-            # Option 2: Run individual CI tests (uncomment if needed for debugging)
-            # echo "Running CI tests in mock mode..."
-            # docker run --rm -v $TEST_DIR:/app -w /app \
-            #   -e KANBN_ENV=test \
-            #   -e NODE_ENV=test \
-            #   --network host \
-            #   kanbn:test make ci-test-mock \
-            #   || { echo "::warning::CI mock tests failed but continuing..."; }
-            #
-            # echo "Running CI tests with Ollama..."
-            # docker run --rm -v $TEST_DIR:/app -w /app \
-            #   -e KANBN_ENV=development \
-            #   -e NODE_ENV=development \
-            #   -e USE_OLLAMA=true \
-            #   -e OLLAMA_HOST=http://host.docker.internal:11434 \
-            #   -e OLLAMA_MODEL=qwen3 \
-            #   --network host \
-            #   kanbn:test make ci-test-ollama \
-            #   || { echo "::warning::CI Ollama tests failed but continuing..."; }
+            # Run CI tests with Ollama directly
+            echo "Running CI tests with Ollama directly..."
+            docker run --rm -v $TEST_DIR:/app -w /app \
+              -e KANBN_ENV=development \
+              -e NODE_ENV=development \
+              -e USE_OLLAMA=true \
+              -e OLLAMA_MODEL=qwen3 \
+              --network host \
+              kanbn:test make ci-test-ollama \
+              || {
+                if [ "${{ github.event_name }}" = "release" ]; then
+                  echo "::error::CI Ollama tests failed - this is a release build, failing the workflow"
+                  exit 1
+                else
+                  echo "::warning::CI Ollama tests failed but continuing...";
+                fi
+              }
 
             # Return to the original directory
             cd $(pwd)
