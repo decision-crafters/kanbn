@@ -75,12 +75,12 @@ jobs:
           echo "✓ Ollama service is running"
           
           # Pull the model
-          ollama pull llama2
+          ollama pull qwen3
           echo "✓ Model pulled successfully"
           
           # Verify model is available
-          if ! ollama list | grep -q "llama2"; then
-            echo "Error: llama2 model not found after pulling"
+          if ! ollama list | grep -q "qwen3"; then
+            echo "Error: qwen3 model not found after pulling"
             exit 1
           fi
           echo "✓ Model verified"
