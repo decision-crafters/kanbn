@@ -1,6 +1,7 @@
 - Getting Started
   - [Introduction](/)
   - [Installation & Setup](getting-started.md)
+  - [Docker Usage](DOCKER.md)
   - [Project Setup Demo](demos/setup-demo.md)
   - [Workflow Examples](demos/workflow-demo.md)
 

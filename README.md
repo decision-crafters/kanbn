@@ -64,6 +64,32 @@ docker run -it --rm \
   quay.io/takinosh/kanbn:latest kanbn board
 ```
 
+### Using Ollama with Docker (v0.14.0+)
+
+```bash
+# Run Kanbn with Ollama (running on the host)
+docker run -it --rm \
+  -v $(pwd):/workspace \
+  -e USE_OLLAMA=true \
+  -e OLLAMA_HOST=http://host.docker.internal:11434 \
+  -e OLLAMA_MODEL=qwen3 \
+  --add-host=host.docker.internal:host-gateway \
+  quay.io/takinosh/kanbn:latest kanbn chat
+```
+
+### Container Bootstrap Script
+
+For a complete containerized setup, use our bootstrap script:
+
+```bash
+docker run --rm -v $(pwd):/workspace -w /workspace \
+  -e PROJECT_NAME="My Container Project" \
+  -e USE_OLLAMA=true \
+  -e OLLAMA_HOST=http://host.docker.internal:11434 \
+  --add-host=host.docker.internal:host-gateway \
+  quay.io/takinosh/kanbn:latest ./examples/bootstrap_container.sh
+```
+
 The container mounts your current directory as `/workspace`, allowing Kanbn to manage tasks in your local project. For detailed container usage instructions and advanced configurations, see [DOCKER.md](docs/DOCKER.md).
 
 ## 🧪 Example Scripts
@@ -72,6 +98,7 @@ Check out the `examples` directory for interactive scripts that demonstrate Kanb
 
 - `interactive-demo.sh` - A comprehensive demo of Kanbn's features
 - `bootstrap.sh` - Quickly set up a new Kanbn project with AI assistance
+- `bootstrap_container.sh` - Set up a Kanbn project in a container environment
 - `github-repo-init.sh` - How to use Kanbn with existing GitHub repositories
 
 Run any example with:
