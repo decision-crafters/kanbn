@@ -29,6 +29,8 @@ ENV OLLAMA_MODEL=llama3:latest
 # Force use of Ollama
 ENV USE_OLLAMA=true
 ENV OPENROUTER_API_KEY=
+# Enable debugging by default to help diagnose issues
+ENV DEBUG=true
 
 # Command to run when container starts
 CMD ["bash"]

@@ -302,12 +302,34 @@ add_integrations() {
 build_kanban_board() {
   print_header "Building Kanban Board"
 
+  # Set up standard columns by updating the index.md file
+  print_info "Setting up standard columns..."
+  
+  # Create the .kanbn directory if it doesn't exist
+  mkdir -p .kanbn
+  
+  # Update the index.md file with standard columns
+  cat > .kanbn/index.md << EOF
+# Kanban Board
+
+## Backlog
+
+## To Do
+
+## In Progress
+
+## Done
+
+EOF
+  
+  print_success "Created standard columns: Backlog, To Do, In Progress, Done"
+
   # Add predefined tasks
   print_info "Adding predefined tasks..."
 
   # Add a few example tasks
   kanbn add --name "Setup project infrastructure" --description "Set up the basic project structure and dependencies" --column "Backlog" || print_warning "Failed to add task"
-  kanbn add --name "Create documentation" --description "Write comprehensive documentation for the project" --column "Backlog" || print_warning "Failed to add task"
+  kanbn add --name "Create documentation" --description "Write comprehensive documentation for the project" --column "To Do" || print_warning "Failed to add task"
   kanbn add --name "Implement core features" --description "Develop the core functionality of the application" --column "Backlog" || print_warning "Failed to add task"
 
   # Show the board

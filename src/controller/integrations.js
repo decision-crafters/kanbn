@@ -25,6 +25,20 @@ const RAGManager = require('../lib/rag-manager');
  */
 module.exports = async args => {
   try {
+    // Debug the args object to help diagnose issues
+    if (process.env.DEBUG === 'true') {
+      console.log('[DEBUG] Integrations controller args:', JSON.stringify(args));
+    }
+    
+    // Fix for Docker container: Check if this is the 'list' command based on args._ 
+    // This handles the case when args.list isn't properly set
+    if (args._.includes('list') && !args.list) {
+      args.list = true;
+      if (process.env.DEBUG === 'true') {
+        console.log('[DEBUG] Fixed args.list flag based on args._');
+      }
+    }
+
     // Use CommonJS require instead of ES module import to avoid compatibility issues
     const kanbnModule = require('../main');
     // Create a Kanbn instance
@@ -40,7 +54,11 @@ module.exports = async args => {
 
       // Get the main folder
       boardFolder = await kanbn.getMainFolder();
+      if (process.env.DEBUG === 'true') {
+        console.log(`[DEBUG] Board folder: ${boardFolder}`);
+      }
     } catch (error) {
+      console.error(`[ERROR] Failed to get board folder: ${error.message}`);
       return 'Not in a Kanbn board. Initialize a board with `kanbn init` first.';
     }
 

@@ -579,13 +579,37 @@ class RAGManager {
      */
     async listIntegrations() {
         try {
+            // Add debugging for Docker container issues
+            if (process.env.DEBUG === 'true') {
+                console.log(`[DEBUG] Listing integrations from path: ${this.integrationsPath}`);
+                console.log(`[DEBUG] Path exists: ${fs.existsSync(this.integrationsPath)}`);
+            }
+            
             // Get all markdown files in the integrations directory
             const files = await readdir(this.integrationsPath);
+            
+            if (process.env.DEBUG === 'true') {
+                console.log(`[DEBUG] Found ${files.length} files in integrations directory`);
+                console.log(`[DEBUG] Files: ${files.join(', ')}`);
+            }
+            
             const markdownFiles = files.filter(file => file.endsWith('.md'));
+            
+            if (process.env.DEBUG === 'true') {
+                console.log(`[DEBUG] Found ${markdownFiles.length} markdown files`);
+                console.log(`[DEBUG] Markdown files: ${markdownFiles.join(', ')}`);
+            }
 
             // Extract names from filenames
-            return markdownFiles.map(file => path.basename(file, '.md'));
+            const integrationNames = markdownFiles.map(file => path.basename(file, '.md'));
+            
+            if (process.env.DEBUG === 'true') {
+                console.log(`[DEBUG] Integration names: ${integrationNames.join(', ')}`);
+            }
+            
+            return integrationNames;
         } catch (error) {
+            console.error(`[ERROR] Error listing integrations: ${error.message}`);
             utility.error(`Error listing integrations: ${error.message}`);
             return [];
         }

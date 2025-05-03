@@ -390,6 +390,28 @@ init_kanbn() {
 
   # Unset the environment variable
   unset KANBN_ENV
+  
+  # Set up standard columns by updating the index.md file
+  print_info "Setting up standard columns..."
+  
+  # Create the .kanbn directory if it doesn't exist
+  mkdir -p .kanbn
+  
+  # Update the index.md file with standard columns
+  cat > .kanbn/index.md << EOF
+# Kanban Board
+
+## Backlog
+
+## To Do
+
+## In Progress
+
+## Done
+
+EOF
+  
+  print_success "Created standard columns: Backlog, To Do, In Progress, Done"
 
   print_success "Kanbn project initialized successfully!"
   return 0

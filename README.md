@@ -41,7 +41,11 @@ kanbn board
 # Get help for any command
 kanbn help <command>
 
-## 🐳 Using Docker Container
+## 🐳 Using Containers (Docker & Podman)
+
+Kanbn can be run in containers using either Docker or Podman.
+
+### Using Docker
 
 ```bash
 # Pull the latest container image
@@ -64,7 +68,31 @@ docker run -it --rm \
   quay.io/takinosh/kanbn:latest kanbn board
 ```
 
-### Using Ollama with Docker (v0.14.0+)
+### Using Podman
+
+```bash
+# Pull the latest container image
+podman pull quay.io/takinosh/kanbn:latest
+
+# Run Kanbn commands using the container
+podman run -it --rm \
+  -v $(pwd):/workspace:Z \
+  -w /workspace \
+  -e OPENROUTER_API_KEY=$OPENROUTER_API_KEY \
+  quay.io/takinosh/kanbn:latest kanbn <command>
+
+# For example, to initialize a new board:
+podman run -it --rm \
+  -v $(pwd):/workspace:Z \
+  -w /workspace \
+  quay.io/takinosh/kanbn:latest kanbn init
+```
+
+Note the `:Z` flag on the volume mount when using Podman, which is necessary on SELinux-enabled systems.
+
+### Using Ollama with Containers
+
+#### With Docker:
 
 ```bash
 # Run Kanbn with Ollama (running on the host)
@@ -72,8 +100,22 @@ docker run -it --rm \
   -v $(pwd):/workspace \
   -e USE_OLLAMA=true \
   -e OLLAMA_HOST=http://host.docker.internal:11434 \
-  -e OLLAMA_MODEL=qwen3 \
+  -e OLLAMA_MODEL=llama3:latest \
   --add-host=host.docker.internal:host-gateway \
+  quay.io/takinosh/kanbn:latest kanbn chat
+```
+
+#### With Podman:
+
+```bash
+# Run Kanbn with Ollama (running on the host)
+podman run -it --rm \
+  --network=host \
+  -v $(pwd):/workspace:Z \
+  -w /workspace \
+  -e USE_OLLAMA=true \
+  -e OLLAMA_HOST=http://localhost:11434 \
+  -e OLLAMA_MODEL=llama3:latest \
   quay.io/takinosh/kanbn:latest kanbn chat
 ```
 
@@ -82,15 +124,28 @@ docker run -it --rm \
 For a complete containerized setup, use our bootstrap script:
 
 ```bash
+# With Docker
 docker run --rm -v $(pwd):/workspace -w /workspace \
   -e PROJECT_NAME="My Container Project" \
   -e USE_OLLAMA=true \
   -e OLLAMA_HOST=http://host.docker.internal:11434 \
   --add-host=host.docker.internal:host-gateway \
   quay.io/takinosh/kanbn:latest ./examples/bootstrap_container.sh
+
+# With Podman
+podman run --rm \
+  --network=host \
+  -v $(pwd):/workspace:Z \
+  -w /workspace \
+  -e PROJECT_NAME="My Container Project" \
+  -e USE_OLLAMA=true \
+  -e OLLAMA_HOST=http://localhost:11434 \
+  quay.io/takinosh/kanbn:latest ./examples/bootstrap_container.sh
 ```
 
-The container mounts your current directory as `/workspace`, allowing Kanbn to manage tasks in your local project. For detailed container usage instructions and advanced configurations, see [DOCKER.md](docs/DOCKER.md).
+The container mounts your current directory as `/workspace`, allowing Kanbn to manage tasks in your local project. For detailed container usage instructions and advanced configurations, see:
+- [Docker Guide](docs/DOCKER.md)
+- [Podman Guide](docs/PODMAN.md)
 
 ## 🧪 Example Scripts
 
