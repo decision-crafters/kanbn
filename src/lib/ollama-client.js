@@ -34,8 +34,14 @@ class OllamaClient {
 
     try {
       // Check if Ollama is running by making a simple request
-      const response = await axios.get(`${this.baseUrl}/api/tags`, {
-        timeout: 2000 // 2 second timeout
+      // Force IPv4 by replacing localhost with 127.0.0.1
+      const url = this.baseUrl.replace('localhost', '127.0.0.1');
+      console.debug(`Checking Ollama availability at: ${url}/api/tags`);
+
+      const response = await axios.get(`${url}/api/tags`, {
+        timeout: 2000, // 2 second timeout
+        // Force IPv4
+        family: 4
       });
 
       // If we get a response, check if the requested model is available
@@ -125,13 +131,19 @@ class OllamaClient {
         stream: !!streamCallback
       };
 
+      // Force IPv4 by replacing localhost with 127.0.0.1
+      const url = this.baseUrl.replace('localhost', '127.0.0.1');
+      console.debug(`Sending chat request to: ${url}/api/chat`);
+
       if (streamCallback) {
         // If streaming is requested, handle it with a proper stream
         const response = await axios.post(
-          `${this.baseUrl}/api/chat`,
+          `${url}/api/chat`,
           requestBody,
           {
-            responseType: 'stream'
+            responseType: 'stream',
+            // Force IPv4
+            family: 4
           }
         );
 
@@ -168,7 +180,10 @@ class OllamaClient {
         });
       } else {
         // For non-streaming requests
-        const response = await axios.post(`${this.baseUrl}/api/chat`, requestBody);
+        const response = await axios.post(`${url}/api/chat`, requestBody, {
+          // Force IPv4
+          family: 4
+        });
 
         if (response.data && response.data.message && response.data.message.content) {
           // Update memory if available
@@ -193,7 +208,15 @@ class OllamaClient {
    */
   async getAvailableModels() {
     try {
-      const response = await axios.get(`${this.baseUrl}/api/tags`);
+      // Force IPv4 by replacing localhost with 127.0.0.1
+      const url = this.baseUrl.replace('localhost', '127.0.0.1');
+      console.debug(`Getting available models from: ${url}/api/tags`);
+
+      const response = await axios.get(`${url}/api/tags`, {
+        // Force IPv4
+        family: 4
+      });
+
       if (response.status === 200 && response.data && response.data.models) {
         return response.data.models.map(m => m.name);
       }

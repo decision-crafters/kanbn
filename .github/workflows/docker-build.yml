@@ -153,8 +153,8 @@ jobs:
             if curl -s http://localhost:11434/api/tags > /dev/null; then
               echo "✅ Ollama is available, using Ollama for tests"
               OLLAMA_AVAILABLE=true
-              # When using host network, use localhost instead of host.docker.internal
-              AI_CONFIG="-e USE_OLLAMA=true -e OLLAMA_HOST=http://localhost:11434 -e OLLAMA_MODEL=qwen3"
+              # Force IPv4 by using 127.0.0.1 instead of localhost
+              AI_CONFIG="-e USE_OLLAMA=true -e OLLAMA_HOST=http://127.0.0.1:11434 -e OLLAMA_MODEL=qwen3 -e DEBUG=true"
               # Use host network mode for direct access to host services
               NETWORK_CONFIG="--network=host"
             elif [ -n "${{ secrets.OPENROUTER_API_KEY }}" ]; then
