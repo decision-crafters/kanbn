@@ -69,31 +69,80 @@ class RAGManager {
                 utility.debugLog(`Integrations directory already exists: ${this.integrationsPath}`);
             }
 
-            // Initialize embeddings with Ollama if available
+            // Check if OpenRouter is configured - if so, prefer hash-based embeddings
+            // This avoids trying to use Ollama when OpenRouter is the primary service
+            if (process.env.OPENROUTER_API_KEY && !process.env.USE_OLLAMA) {
+                utility.debugLog('OpenRouter API key is set and USE_OLLAMA is not true, using hash-based embeddings');
+                this.embeddings = this.createHashBasedEmbeddings();
+                utility.debugLog('Using hash-based embeddings with OpenRouter');
+                return;
+            }
+
+            // If USE_OLLAMA is explicitly set to false, use hash-based embeddings
+            if (process.env.USE_OLLAMA === 'false') {
+                utility.debugLog('USE_OLLAMA is set to false, using hash-based embeddings');
+                this.embeddings = this.createHashBasedEmbeddings();
+                utility.debugLog('Using hash-based embeddings (USE_OLLAMA=false)');
+                return;
+            }
+
+            // Initialize embeddings with Ollama if available and preferred
             try {
                 // First try with the user-specified model from environment variable
                 const ollamaModel = process.env.OLLAMA_MODEL;
-                const ollamaUrl = process.env.OLLAMA_URL || process.env.OLLAMA_HOST || "http://127.0.0.1:11434";
 
-                // Try to initialize embeddings with the appropriate model
-                if (ollamaModel) {
-                    // Try user-specified model first
-                    try {
-                        this.embeddings = new OllamaEmbeddings({
-                            model: ollamaModel,
-                            baseUrl: ollamaUrl
-                        });
-                        utility.debugLog(`Initialized Ollama embeddings with user-specified model: ${ollamaModel}`);
-                    } catch (userModelError) {
-                        utility.debugLog(`Failed to use user-specified model ${ollamaModel}: ${userModelError.message}`);
+                // Ensure we're using IPv4 address format for Ollama URL
+                let ollamaUrl = process.env.OLLAMA_URL || process.env.OLLAMA_HOST || "http://127.0.0.1:11434";
+                // Force IPv4 by replacing localhost with 127.0.0.1
+                ollamaUrl = ollamaUrl.replace('localhost', '127.0.0.1');
+                utility.debugLog(`Using Ollama URL for embeddings: ${ollamaUrl}`);
 
-                        // Fall back to known models
-                        this.initializeFallbackEmbeddings(ollamaUrl);
+                // Check if Ollama is actually available before trying to use it
+                try {
+                    // Test connection to Ollama
+                    utility.debugLog(`Testing Ollama connection at ${ollamaUrl}/api/tags`);
+                    const response = await axios.get(`${ollamaUrl}/api/tags`, {
+                        timeout: 3000, // 3 second timeout
+                        // Force IPv4
+                        family: 4
+                    });
+
+                    if (response.status !== 200) {
+                        throw new Error(`Ollama returned status ${response.status}`);
                     }
-                } else {
-                    // No user-specified model, try with known models
-                    utility.debugLog("No OLLAMA_MODEL specified, falling back to known models");
-                    this.initializeFallbackEmbeddings(ollamaUrl);
+
+                    utility.debugLog('Ollama is available for embeddings');
+
+                    // Try to initialize embeddings with the appropriate model
+                    if (ollamaModel) {
+                        // Check if the specified model is available
+                        const availableModels = response.data.models.map(m => m.name);
+                        utility.debugLog(`Available Ollama models: ${availableModels.join(', ')}`);
+
+                        // Try user-specified model first
+                        try {
+                            this.embeddings = new OllamaEmbeddings({
+                                model: ollamaModel,
+                                baseUrl: ollamaUrl
+                            });
+                            utility.debugLog(`Initialized Ollama embeddings with user-specified model: ${ollamaModel}`);
+                        } catch (userModelError) {
+                            utility.debugLog(`Failed to use user-specified model ${ollamaModel}: ${userModelError.message}`);
+
+                            // Fall back to known models
+                            this.initializeFallbackEmbeddings(ollamaUrl, availableModels);
+                        }
+                    } else {
+                        // No user-specified model, try with known models
+                        const availableModels = response.data.models.map(m => m.name);
+                        utility.debugLog(`No OLLAMA_MODEL specified, using available models: ${availableModels.join(', ')}`);
+                        this.initializeFallbackEmbeddings(ollamaUrl, availableModels);
+                    }
+                } catch (connectionError) {
+                    utility.debugLog(`Ollama connection failed: ${connectionError.message}`);
+                    // Use hash-based embeddings since Ollama is not available
+                    this.embeddings = this.createHashBasedEmbeddings();
+                    utility.debugLog('Using hash-based embeddings due to Ollama connection failure');
                 }
             } catch (error) {
                 utility.debugLog(`Ollama embeddings not available: ${error.message}, using fallback method`);
@@ -110,10 +159,56 @@ class RAGManager {
     /**
      * Initialize fallback embeddings with known models
      * @param {string} baseUrl - The Ollama API URL
+     * @param {string[]} availableModels - List of available models (optional)
      * @private
      */
-    initializeFallbackEmbeddings(baseUrl) {
+    initializeFallbackEmbeddings(baseUrl, availableModels = []) {
         try {
+            // Preferred models in order of preference
+            const preferredModels = ["qwen3", "qwen3:latest", "llama3", "llama3:latest", "qwen2.5-coder", "qwen-repo-assistant"];
+
+            // If we have available models, try to use one of our preferred models
+            if (availableModels && availableModels.length > 0) {
+                utility.debugLog(`Selecting from available models: ${availableModels.join(', ')}`);
+
+                // Find the first preferred model that's available
+                for (const model of preferredModels) {
+                    if (availableModels.some(m => m === model || m.startsWith(model + ':'))) {
+                        // Find the exact match or the first model that starts with our preferred model name
+                        const exactMatch = availableModels.find(m => m === model);
+                        const versionedMatch = availableModels.find(m => m.startsWith(model + ':'));
+                        const selectedModel = exactMatch || versionedMatch;
+
+                        try {
+                            this.embeddings = new OllamaEmbeddings({
+                                model: selectedModel,
+                                baseUrl: baseUrl
+                            });
+                            utility.debugLog(`Initialized Ollama embeddings with available model: ${selectedModel}`);
+                            return; // Successfully initialized
+                        } catch (modelError) {
+                            utility.debugLog(`Failed to use model ${selectedModel}: ${modelError.message}`);
+                            // Continue to the next preferred model
+                        }
+                    }
+                }
+
+                // If none of our preferred models are available, use the first available model
+                try {
+                    const firstModel = availableModels[0];
+                    this.embeddings = new OllamaEmbeddings({
+                        model: firstModel,
+                        baseUrl: baseUrl
+                    });
+                    utility.debugLog(`Initialized Ollama embeddings with first available model: ${firstModel}`);
+                    return; // Successfully initialized
+                } catch (firstModelError) {
+                    utility.debugLog(`Failed to use first available model ${availableModels[0]}: ${firstModelError.message}`);
+                    // Fall through to try with known models
+                }
+            }
+
+            // If we don't have available models or couldn't use any of them, try with known models
             // Try with llama3 which is often available
             try {
                 this.embeddings = new OllamaEmbeddings({
@@ -121,28 +216,31 @@ class RAGManager {
                     baseUrl: baseUrl
                 });
                 utility.debugLog('Initialized Ollama embeddings with llama3 model (fallback)');
+                return; // Successfully initialized
             } catch (modelError) {
-                // If llama3 fails, try with qwen2.5-coder which is also available
+                utility.debugLog(`Failed to use llama3: ${modelError.message}`);
+
+                // If llama3 fails, try with qwen3 which is also commonly available
                 try {
                     this.embeddings = new OllamaEmbeddings({
-                        model: "qwen2.5-coder",
+                        model: "qwen3",
                         baseUrl: baseUrl
                     });
-                    utility.debugLog('Initialized Ollama embeddings with qwen2.5-coder model (fallback)');
-                } catch (embedModelError) {
-                    // If that fails too, try with qwen-repo-assistant
+                    utility.debugLog('Initialized Ollama embeddings with qwen3 model (fallback)');
+                    return; // Successfully initialized
+                } catch (qwen3Error) {
+                    utility.debugLog(`Failed to use qwen3: ${qwen3Error.message}`);
+
+                    // Last resort: try with default model (no model specified)
                     try {
-                        this.embeddings = new OllamaEmbeddings({
-                            model: "qwen-repo-assistant",
-                            baseUrl: baseUrl
-                        });
-                        utility.debugLog('Initialized Ollama embeddings with qwen-repo-assistant model (fallback)');
-                    } catch (repoAssistantError) {
-                        // Last resort: try with default model
                         this.embeddings = new OllamaEmbeddings({
                             baseUrl: baseUrl
                         });
                         utility.debugLog('Initialized Ollama embeddings with default model (fallback)');
+                        return; // Successfully initialized
+                    } catch (defaultModelError) {
+                        utility.debugLog(`Failed to use default model: ${defaultModelError.message}`);
+                        throw new Error('All model attempts failed');
                     }
                 }
             }
@@ -220,19 +318,69 @@ class RAGManager {
 
             // Create the vector store with the documents
             try {
-                this.vectorStore = await MemoryVectorStore.fromDocuments(
-                    documents,
-                    this.embeddings
-                );
+                utility.debugLog(`Attempting to create vector store with ${documents.length} documents`);
+
+                // Check if embeddings are available
+                if (!this.embeddings) {
+                    utility.debugLog('No embeddings available, creating hash-based embeddings');
+                    this.embeddings = this.createHashBasedEmbeddings();
+                }
+
+                // Check if OpenRouter is configured - if so, ensure we're using hash-based embeddings
+                // This avoids trying to use Ollama when OpenRouter is the primary service
+                if (process.env.OPENROUTER_API_KEY && !process.env.USE_OLLAMA) {
+                    utility.debugLog('OpenRouter API key is set and USE_OLLAMA is not true, ensuring hash-based embeddings');
+                    this.embeddings = this.createHashBasedEmbeddings();
+                }
+
+                // Create the vector store
+                try {
+                    utility.debugLog('Creating vector store with embeddings...');
+                    this.vectorStore = await MemoryVectorStore.fromDocuments(
+                        documents,
+                        this.embeddings
+                    );
+                    utility.debugLog('Successfully created vector store');
+                } catch (innerError) {
+                    utility.error(`Error in vector store creation: ${innerError.message}`);
+                    // If we get a fetch error, it's likely an Ollama connectivity issue
+                    if (innerError.message.includes('fetch failed') ||
+                        innerError.message.includes('Failed to fetch') ||
+                        innerError.message.includes('ECONNREFUSED')) {
+                        utility.debugLog('Detected fetch/connection error, switching to hash-based embeddings');
+                        this.embeddings = this.createHashBasedEmbeddings();
+
+                        // Try again with hash-based embeddings
+                        utility.debugLog('Retrying vector store creation with hash-based embeddings');
+                        this.vectorStore = await MemoryVectorStore.fromDocuments(
+                            documents,
+                            this.embeddings
+                        );
+                        utility.debugLog('Successfully created vector store with hash-based embeddings');
+                    } else {
+                        // Re-throw if it's not a fetch error
+                        throw innerError;
+                    }
+                }
             } catch (vectorStoreError) {
                 utility.error(`Error creating vector store: ${vectorStoreError.message}`);
+                utility.debugLog(`Vector store error details: ${vectorStoreError.toString()}`);
+
+                // Log more details about the embeddings
+                if (this.embeddings) {
+                    utility.debugLog(`Embeddings type: ${typeof this.embeddings}`);
+                    utility.debugLog(`Embeddings methods: ${Object.keys(this.embeddings).join(', ')}`);
+                } else {
+                    utility.debugLog('Embeddings object is null or undefined');
+                }
 
                 // Create a simple in-memory store that doesn't rely on embeddings
                 // This is a very basic fallback that will at least allow the system to function
+                utility.debugLog('Creating fallback keyword-based vector store');
                 this.vectorStore = {
                     similaritySearch: async (query, k) => {
                         // Very simple keyword matching as fallback
-                        utility.debugLog('Using fallback similarity search');
+                        utility.debugLog('Using fallback keyword-based similarity search');
 
                         // Convert query to lowercase for case-insensitive matching
                         const queryLower = query.toLowerCase();
@@ -258,11 +406,20 @@ class RAGManager {
                             .slice(0, k)
                             .map(item => item.doc);
 
+                        utility.debugLog(`Fallback search returned ${topDocs.length} results`);
                         return topDocs;
+                    },
+
+                    // Add support for addDocuments method to avoid errors
+                    addDocuments: async (newDocs) => {
+                        utility.debugLog(`Adding ${newDocs.length} documents to fallback vector store`);
+                        // Just add the documents to our existing array
+                        documents.push(...newDocs);
+                        return true;
                     }
                 };
 
-                utility.debugLog('Created fallback vector store');
+                utility.debugLog('Created fallback vector store successfully');
             }
 
             utility.debugLog(`Loaded ${documents.length} chunks from ${markdownFiles.length} integration files`);
