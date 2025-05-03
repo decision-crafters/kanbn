@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.14.0] - 2025-05-03
+
+### Added
+- Added IPv4 compatibility mode for Ollama connections to improve container environment reliability
+- Added detailed debugging for Ollama connectivity in container environments
+- Enhanced test scripts with better error handling and diagnostic output
+
+### Fixed
+- Fixed IPv6/IPv4 connectivity issues with Ollama in container environments
+- Fixed module import error in integrations controller
+- Improved Docker network configuration for better host-container communication
+- Enhanced error handling in CI/CD workflows to properly fail on test errors
+
+### Changed
+- Updated Ollama client to explicitly use IPv4 addresses for all API calls
+- Improved test scripts to better handle Ollama connectivity issues
+- Enhanced CI/CD workflow to provide more detailed diagnostic information
+
 ## [0.13.0] - 2025-05-05
 
 ### Added
