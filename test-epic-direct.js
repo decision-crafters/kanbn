@@ -6,8 +6,18 @@ const EpicHandler = require('./src/lib/epic-handler');
 
 async function testEpicDecomposition() {
   try {
-    // Environment info
-    console.log('=== Environment Variables ===');
+    // Log environment configuration
+    console.log('=== Environment Configuration ===');
+    console.log('USE_OLLAMA:', process.env.USE_OLLAMA === 'true' ? 'true' : 'false');
+    console.log('AI Service:', process.env.USE_OLLAMA === 'true' ? 'Ollama' : 'OpenRouter');
+    if (process.env.USE_OLLAMA === 'true') {
+      console.log('OLLAMA_MODEL:', process.env.OLLAMA_MODEL || '(using first available)');
+      console.log('OLLAMA_HOST:', process.env.OLLAMA_HOST);
+    } else {
+      console.log('OPENROUTER_MODEL:', process.env.OPENROUTER_MODEL);
+      console.log('OPENROUTER_API_KEY:', process.env.OPENROUTER_API_KEY ? '(set)' : '(not set)');
+    }
+    console.log('\n=== Environment Variables ===');
     console.log('OpenRouter API Key:', process.env.OPENROUTER_API_KEY ? `Set (${process.env.OPENROUTER_API_KEY.substring(0, 5)}...)` : 'Not set');
     console.log('OpenRouter Model:', process.env.OPENROUTER_MODEL || 'Not set');
     console.log('Use Ollama:', process.env.USE_OLLAMA === 'true' ? 'Enabled' : 'Disabled');

@@ -128,12 +128,26 @@ jobs:
           TEST_DIR=$(mktemp -d)
           echo "Created test directory: $TEST_DIR"
 
-          # Test epic functionality
-          echo "Testing epic functionality..."
-          docker run --rm \
-            -e OPENROUTER_API_KEY="${{ secrets.OPENROUTER_API_KEY }}" \
-            -e USE_OLLAMA=false \
-            kanbn:test node /app/test-epic-direct.js
+          # Test with OpenRouter first
+          if [ -n "${{ secrets.OPENROUTER_API_KEY }}" ]; then
+            echo "Testing epic functionality with OpenRouter..."
+            docker run --rm \
+              -e OPENROUTER_API_KEY="${{ secrets.OPENROUTER_API_KEY }}" \
+              -e USE_OLLAMA=false \
+              -e OPENROUTER_MODEL="google/gemma-3-4b-it:free" \
+              kanbn:test node /app/test-epic-direct.js
+          fi
+
+          # Test with Ollama
+          if [ "${{ github.event.inputs.run_rag_tests == 'true' }}" = "true" ]; then
+            echo "Testing epic functionality with Ollama..."
+            docker run --rm \
+              -e USE_OLLAMA=true \
+              -e OLLAMA_MODEL=qwen3 \
+              -e OLLAMA_HOST=http://host.docker.internal:11434 \
+              --add-host=host.docker.internal:host-gateway \
+              kanbn:test node /app/test-epic-direct.js
+          fi
 
           # Test basic kanbn functionality
           echo "Testing basic kanbn functionality..."
