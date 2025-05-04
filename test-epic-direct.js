@@ -79,9 +79,15 @@ async function testEpicDecomposition() {
       const epicTask = await kanbn.getTask(epicId);
       console.log('Epic task:', epicTask.name);
 
+      // Decompose epic with Firecrawl if enabled
+      const useFirecrawl = process.env.KANBN_USE_FIRECRAWL === 'true';
+      console.log(`Using Firecrawl: ${useFirecrawl ? 'Yes' : 'No'}`);
+
       // Decompose epic
       console.log('Starting decomposition...');
-      const results = await epicHandler.decomposeEpic(epicTask.description);
+      const results = await epicHandler.decomposeEpic(epicTask.description, null, {
+        useFirecrawl
+      });
       console.log('Decomposition results:', JSON.stringify(results, null, 2));
 
       // Create child tasks
