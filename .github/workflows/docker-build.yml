@@ -345,13 +345,19 @@ jobs:
 
             # Additional repository context integration tests
             if [ "$OLLAMA_AVAILABLE" = "true" ]; then
-              echo "Testing repository context integration with Ollama..."
+              echo "Testing repository integrations with OpenRouter..."
               docker run --rm -v $TEST_DIR/repo-context:/workspace -w /workspace \
                 -e KANBN_ENV=test \
                 -e NODE_ENV=test \
-                $AI_CONFIG \
-                $NETWORK_CONFIG \
-                kanbn:test /bin/bash -c "chmod +x /app/examples/test_repository_context_integration.sh && /app/examples/test_repository_context_integration.sh" \
+                -e OPENROUTER_API_KEY="${{ secrets.OPENROUTER_API_KEY }}" \
+                -e FIRECRAWL_API_KEY="${{ secrets.FIRECRAWL_API_KEY }}" \
+                -e USE_OLLAMA=false \
+                -e KANBN_USE_FIRECRAWL=true \
+                -e OPENROUTER_MODEL="google/gemma-3-4b-it:free" \
+                kanbn:test /bin/bash -c '
+                  /app/examples/test_repository_context_integration.sh && \
+                  /app/examples/test_repository_epic_integration.sh
+                ' \
                 || {
                   if [ "${{ github.event_name }}" = "release" ]; then
                     echo "::error::Repository context integration test failed - this is a release build, failing the workflow"
