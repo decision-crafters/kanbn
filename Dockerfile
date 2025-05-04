@@ -52,8 +52,12 @@ RUN echo '#!/bin/bash' > /usr/local/bin/kanbn && \
     echo 'export DEBUG=${DEBUG:-true}' >> /usr/local/bin/kanbn && \
     echo 'export OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-""}' >> /usr/local/bin/kanbn && \
     echo 'export OPENROUTER_MODEL=${OPENROUTER_MODEL:-"google/gemma-3-4b-it:free"}' >> /usr/local/bin/kanbn && \
+    echo 'export KANBN_USE_FIRECRAWL=${KANBN_USE_FIRECRAWL:-false}' >> /usr/local/bin/kanbn && \
+    echo 'export KANBN_FIRECRAWL_DEPTH=${KANBN_FIRECRAWL_DEPTH:-3}' >> /usr/local/bin/kanbn && \
+    echo 'export KANBN_FIRECRAWL_MAX_URLS=${KANBN_FIRECRAWL_MAX_URLS:-10}' >> /usr/local/bin/kanbn && \
+    echo 'export KANBN_FIRECRAWL_TIMEOUT=${KANBN_FIRECRAWL_TIMEOUT:-120}' >> /usr/local/bin/kanbn && \
     echo 'export USE_OLLAMA=${USE_OLLAMA:-false}' >> /usr/local/bin/kanbn && \
-    echo 'env | grep -E "OPEN|OLLAMA|DEBUG" || true' >> /usr/local/bin/kanbn && \
+    echo 'env | grep -E "OPEN|OLLAMA|DEBUG|KANBN" || true' >> /usr/local/bin/kanbn && \
     echo 'exec node /app/index.js "$@"' >> /usr/local/bin/kanbn && \
     chmod +x /usr/local/bin/kanbn
 

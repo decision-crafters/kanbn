@@ -128,23 +128,33 @@ jobs:
           TEST_DIR=$(mktemp -d)
           echo "Created test directory: $TEST_DIR"
 
-          # Test with OpenRouter first
-          if [ -n "${{ secrets.OPENROUTER_API_KEY }}" ]; then
-            echo "Testing epic functionality with OpenRouter..."
+          # Test with OpenRouter and Firecrawl
+          if [ -n "${{ secrets.OPENROUTER_API_KEY }}" ] && [ -n "${{ secrets.FIRECRAWL_API_KEY }}" ]; then
+            echo "Testing epic functionality with OpenRouter and Firecrawl..."
             docker run --rm \
               -e OPENROUTER_API_KEY="${{ secrets.OPENROUTER_API_KEY }}" \
+              -e FIRECRAWL_API_KEY="${{ secrets.FIRECRAWL_API_KEY }}" \
               -e USE_OLLAMA=false \
+              -e KANBN_USE_FIRECRAWL=true \
+              -e KANBN_FIRECRAWL_DEPTH=3 \
+              -e KANBN_FIRECRAWL_MAX_URLS=10 \
+              -e KANBN_FIRECRAWL_TIMEOUT=120 \
               -e OPENROUTER_MODEL="google/gemma-3-4b-it:free" \
               kanbn:test node /app/test-epic-direct.js
           fi
 
-          # Test with Ollama
+          # Test with Ollama and Firecrawl
           if [ "${{ github.event.inputs.run_rag_tests == 'true' }}" = "true" ]; then
-            echo "Testing epic functionality with Ollama..."
+            echo "Testing epic functionality with Ollama and Firecrawl..."
             docker run --rm \
               -e USE_OLLAMA=true \
               -e OLLAMA_MODEL=qwen3 \
               -e OLLAMA_HOST=http://host.docker.internal:11434 \
+              -e FIRECRAWL_API_KEY="${{ secrets.FIRECRAWL_API_KEY }}" \
+              -e KANBN_USE_FIRECRAWL=true \
+              -e KANBN_FIRECRAWL_DEPTH=3 \
+              -e KANBN_FIRECRAWL_MAX_URLS=10 \
+              -e KANBN_FIRECRAWL_TIMEOUT=120 \
               --add-host=host.docker.internal:host-gateway \
               kanbn:test node /app/test-epic-direct.js
           fi
