@@ -28,7 +28,7 @@ class AIService {
     this.options = {
       apiKey: options.apiKey || process.env.OPENROUTER_API_KEY || null,
       model: options.model || process.env.OPENROUTER_MODEL || 'openai/gpt-3.5-turbo',
-      ollamaModel: options.ollamaModel || process.env.OLLAMA_MODEL || 'llama3',
+      ollamaModel: options.ollamaModel || process.env.OLLAMA_MODEL || '',
       ollamaUrl: ollamaUrl
     };
 

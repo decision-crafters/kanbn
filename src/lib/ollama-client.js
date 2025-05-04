@@ -15,7 +15,9 @@ class OllamaClient {
    * @param {string} baseUrl The base URL for the Ollama API
    * @param {MemoryManager} memoryManager Optional memory manager
    */
-  constructor(model = 'llama3', baseUrl = 'http://localhost:11434', memoryManager = null) {
+  constructor(model = '', baseUrl = 'http://localhost:11434', memoryManager = null) {
+    // If no model specified, try to get from env or use first available model
+    this.model = model || process.env.OLLAMA_MODEL || '';
     this.model = model;
     this.baseUrl = baseUrl;
     this.memoryManager = memoryManager;
@@ -44,18 +46,22 @@ class OllamaClient {
         family: 4
       });
 
-      // If we get a response, check if the requested model is available
+      // If we get a response, check available models
       if (response.status === 200 && response.data && response.data.models) {
-        const modelAvailable = response.data.models.some(m => m.name === this.model);
-        if (!modelAvailable) {
-          // Only show warning if not in quiet mode
+        // If no model specified or model not available, show available models
+        if (!this.model || !response.data.models.some(m => m.name === this.model)) {
           if (process.env.KANBN_QUIET !== 'true') {
-            console.warn(`Ollama is available but model '${this.model}' is not installed. Using default model.`);
+            const availableModels = response.data.models.map(m => m.name).join(', ');
+            console.info(`Available Ollama models: ${availableModels}`);
           }
-          // Find the first available model
-          if (response.data.models.length > 0) {
+          
+          // If no model specified, use first available
+          if (!this.model && response.data.models.length > 0) {
             this.model = response.data.models[0].name;
-            console.info(`Using model: ${this.model}`);
+            console.info(`No model specified. Using default model: ${this.model}`);
+          } else if (this.model) {
+            console.warn(`Model '${this.model}' not found. Using first available model: ${response.data.models[0].name}`);
+            this.model = response.data.models[0].name;
           }
         }
         return true;
