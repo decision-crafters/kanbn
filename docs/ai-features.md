@@ -72,6 +72,30 @@ The `kanbn chat` command provides an intelligent project management assistant th
 - **Project Insights**: Get AI-powered insights about project progress and bottlenecks
 - **Documentation Help**: Generate and update project documentation with AI assistance
 
+## Epic Management
+
+Version 0.14.0 introduces AI-powered epic management to help organize complex features or major project initiatives using a structured approach:
+
+1. **Create Epics**: Define high-level tasks or user stories via chat interface
+2. **Decompose Epics**: Automatically break down epics into smaller, actionable tasks
+3. **Track Epic Progress**: Monitor completion of all epic-related tasks
+4. **Manage Task Relationships**: Maintain parent-child relationships between epics and subtasks
+
+> For detailed instructions and examples, see [Epic Management](epic-management.md).
+
+Quick example:
+
+```bash
+# Create an epic
+kanbn chat "createEpic: Create a user authentication system"
+
+# Decompose an epic into subtasks
+kanbn chat "decomposeEpic: epic-123"
+
+# List all epics
+kanbn chat "listEpics"
+```
+
 ## AI Task Decomposition
 
 Break down complex tasks into manageable subtasks using `kanbn decompose --task <task-id>`. The AI will:

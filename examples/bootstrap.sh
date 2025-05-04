@@ -28,6 +28,59 @@ print_info() {
   echo -e "${BOLD}$1${NC}"
 }
 
+# Function to show script usage
+show_usage() {
+  echo -e "\nUsage: $0 [options]"
+  echo -e "\nOptions:"
+  echo -e "  --project-name <name>    Set project name"
+  echo -e "  --project-desc <desc>    Set project description"
+  echo -e "  --epic <description>     Create an epic from description"
+  echo -e "  --api-key <key>          Set OpenRouter API key"
+  echo -e "  --use-ollama            Use Ollama for local LLM instead of OpenRouter"
+  echo -e "  --help                   Show this help message"
+  echo -e "\nExample: $0 --project-name \"My Project\" --epic \"Create a user authentication system\""
+  exit 1
+}
+
+# Parse command line arguments
+PROJECT_NAME=""
+PROJECT_DESC=""
+EPIC_DESCRIPTION=""
+API_KEY=""
+USE_OLLAMA=false
+
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    --project-name)
+      PROJECT_NAME="$2"
+      shift 2
+      ;;
+    --project-desc)
+      PROJECT_DESC="$2"
+      shift 2
+      ;;
+    --epic)
+      EPIC_DESCRIPTION="$2"
+      shift 2
+      ;;
+    --api-key)
+      API_KEY="$2"
+      shift 2
+      ;;
+    --use-ollama)
+      USE_OLLAMA=true
+      shift
+      ;;
+    --help)
+      show_usage
+      ;;
+    *)
+      echo -e "${RED}Unknown option: $1${NC}"
+      show_usage
+      ;;
+  esac
+done
+
 # Function to print success
 print_success() {
   echo -e "${GREEN}✅ $1${NC}"
@@ -419,19 +472,26 @@ EOF
 
 # Function to use kanbn chat to build a Kanban board
 build_kanban_with_chat() {
-  print_header "Building Kanban Board with AI"
+  print_header "Building Kanban Board with Chat"
+  print_info "Using Kanbn Chat to create initial tasks..."
 
-  # Predefined tasks for the Kanban board
-  print_info "Adding predefined tasks to the Kanban board..."
+  # Ask for project scope if not provided
+  if [ -z "$PROJECT_DESC" ]; then
+    print_info "Please provide a brief description of your project's scope (for AI task generation):"
+    read -e project_scope
+    PROJECT_DESC="$project_scope"
+  else
+    project_scope="$PROJECT_DESC"
+  fi
 
-  # 1 · Define Product Vision & End-User Goals
-  kanbn add --name "Describe primary user persona(s) and their top 3 pain points" --description "Add details to docs/VISION.md" --tags "Vision" --column "Backlog"
-  kanbn add --name "State the product mission in ≤ 2 sentences" --description "Summarize the mission in docs/VISION.md" --tags "Vision" --column "Backlog"
-  kanbn add --name "List 3 measurable success metrics" --description "Define metrics like time-to-X or adoption in docs/VISION.md" --tags "Vision" --column "Backlog"
-  kanbn add --name "Add 'User Story' + 'Acceptance Criteria' sections to feature request template" --description "Update .github/ISSUE_TEMPLATE/feature_request.md" --tags "Vision" --column "Backlog"
+  # Initialize tasks using kanbn chat
+  print_info "Initializing tasks based on project description..."
+  print_command "kanbn chat 'Create initial tasks based on the following project: $project_scope'"
+  kanbn chat "Create initial tasks based on the following project: $project_scope"
 
-  # 2 · Capture Architecture & Workflow Decisions
-  kanbn add --name "Create high-level component diagram" --description "Add diagram to docs/ARCHITECTURE.md" --tags "Architecture" --column "Backlog"
+  # Success message
+  print_success "Initial Kanban board tasks created!"
+  echo ""
   kanbn add --name "Document data/communication flow for a typical request" --description "Add details to docs/ARCHITECTURE.md" --tags "Architecture" --column "Backlog"
   kanbn add --name "Record pipeline strategy decision" --description "Add ADR to adrs/0001-choose-pipeline-strategy.md" --tags "Architecture" --column "Backlog"
 
@@ -459,6 +519,37 @@ build_kanban_with_chat() {
 
   # Use AI to analyze and enhance the board
   print_info "Asking AI to analyze the board and suggest additional tasks..."
+  kanbn chat --with-integrations --message "Analyze the predefined tasks and suggest additional tasks or improvements for the project."
+
+  print_success "Kanban board built successfully with AI assistance!"
+  echo ""
+}
+
+# Function to create an epic with kanbn chat
+create_epic() {
+  local epic_description="$1"
+  
+  print_header "Creating Epic"
+  print_info "Creating an epic with AI-powered decomposition..."
+  
+  print_command "kanbn chat 'createEpic: $epic_description'"
+  kanbn chat "createEpic: $epic_description"
+  
+  # Now decompose the epic
+  print_info "Decomposing the epic into subtasks..."
+  
+  # Get the most recently created epic ID
+  local epic_id=$(kanbn list --json | jq -r '.tasks[0].id')
+  
+  if [ -n "$epic_id" ]; then
+    print_command "kanbn chat 'decomposeEpic: $epic_id'"
+    kanbn chat "decomposeEpic: $epic_id"
+    print_success "Epic created and decomposed successfully!"
+  else
+    print_error "Failed to get epic ID. Epic may not have been created properly."
+  fi
+  
+  echo ""
   kanbn chat --with-integrations --message "Analyze the predefined tasks and suggest additional tasks or improvements for the project."
 
   print_success "Kanban board built successfully with AI assistance!"
@@ -701,9 +792,14 @@ main() {
 
     # Build Kanban board with chat
     build_kanban_with_chat
+
+    # Create epic if provided
+    if [ -n "$EPIC_DESCRIPTION" ]; then
+      create_epic "$EPIC_DESCRIPTION"
+    fi
   fi
 
-  # Commit changes to git if in a git repository
+  # Commit changes to git
   if [ "$git_status" -eq 0 ] || [ "$git_status" -eq 1 ]; then
     commit_changes
   fi
@@ -717,7 +813,10 @@ main() {
   echo "3. Move tasks between columns with: kanbn move task-id 'Column Name'"
   echo "4. Chat with the project assistant with: kanbn chat"
   echo "5. Decompose tasks into subtasks with: kanbn decompose --task task-id"
-  echo "6. Add integration context with: ask_integration_context"
+  echo "6. Create an epic with: kanbn chat 'createEpic: <epic description>'"
+  echo "7. Decompose an epic into tasks with: kanbn chat 'decomposeEpic: <epic-id>'"
+  echo "8. List all epics with: kanbn chat 'listEpics'"
+  echo "9. Add integration context with: ask_integration_context"
   echo ""
 
   # Ask if user wants to view the board

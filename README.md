@@ -4,7 +4,7 @@
 
 ## ✨ Key Features
 
-- 🤖 AI-powered task decomposition
+- 🤖 AI-powered task decomposition and epic management
 - 💬 Interactive project management assistant
 - 📊 Visual progress tracking and burndown charts
 - 🔄 Git-friendly markdown-based task management
@@ -27,10 +27,21 @@ kanbn init
 # Or use AI-powered initialization
 kanbn init --ai
 
-# Or bootstrap a new project with our script (requires OpenRouter API key)
+# Or bootstrap a new project with our script (supports both OpenRouter and Ollama)
 curl -O https://raw.githubusercontent.com/decision-crafters/kanbn/refs/heads/master/examples/bootstrap.sh
 chmod +x bootstrap.sh
+
+# Basic usage
 ./bootstrap.sh
+
+# Create project with a specific name and description
+./bootstrap.sh --project-name "My Project" --project-desc "A detailed project description"
+
+# Create project with an epic (automatically decomposed into tasks)
+./bootstrap.sh --project-name "Auth System" --epic "Create a user authentication system with registration and login capabilities"
+
+# Use Ollama instead of OpenRouter
+./bootstrap.sh --use-ollama
 
 # Add a task
 kanbn add
@@ -124,7 +135,7 @@ podman run -it --rm \
 For a complete containerized setup, use our bootstrap script:
 
 ```bash
-# With Docker
+# With Docker - Basic Usage
 docker run --rm -v $(pwd):/workspace -w /workspace \
   -e PROJECT_NAME="My Container Project" \
   -e USE_OLLAMA=true \
@@ -132,12 +143,34 @@ docker run --rm -v $(pwd):/workspace -w /workspace \
   --add-host=host.docker.internal:host-gateway \
   quay.io/takinosh/kanbn:latest ./examples/bootstrap_container.sh
 
-# With Podman
+# With Docker - Create Project with Epic
+docker run --rm -v $(pwd):/workspace -w /workspace \
+  -e PROJECT_NAME="Auth System" \
+  -e PROJECT_DESCRIPTION="A secure authentication system" \
+  -e EPIC_DESCRIPTION="Create a user authentication system with registration and login" \
+  -e USE_OLLAMA=true \
+  -e OLLAMA_HOST=http://host.docker.internal:11434 \
+  --add-host=host.docker.internal:host-gateway \
+  quay.io/takinosh/kanbn:latest ./examples/bootstrap_container.sh
+
+# With Podman - Basic Usage
 podman run --rm \
   --network=host \
   -v $(pwd):/workspace:Z \
   -w /workspace \
   -e PROJECT_NAME="My Container Project" \
+  -e USE_OLLAMA=true \
+  -e OLLAMA_HOST=http://localhost:11434 \
+  quay.io/takinosh/kanbn:latest ./examples/bootstrap_container.sh
+
+# With Podman - Create Project with Epic
+podman run --rm \
+  --network=host \
+  -v $(pwd):/workspace:Z \
+  -w /workspace \
+  -e PROJECT_NAME="Auth System" \
+  -e PROJECT_DESCRIPTION="A secure authentication system" \
+  -e EPIC_DESCRIPTION="Create a user authentication system with registration and login" \
   -e USE_OLLAMA=true \
   -e OLLAMA_HOST=http://localhost:11434 \
   quay.io/takinosh/kanbn:latest ./examples/bootstrap_container.sh
@@ -205,27 +238,67 @@ Where <command> is one of:
 ### AI Features
 
 ```bash
-kanbn decompose  # Use AI to break down tasks
+# Task Decomposition
+kanbn decompose --task task-id  # Use AI to break down tasks into subtasks
+
+# Epic Management
+kanbn chat "createEpic: Create a user authentication system"  # Create a new epic
+kanbn chat "decomposeEpic: epic-id"  # Decompose an epic into subtasks
+kanbn chat "listEpics"  # List all epics in the project
+kanbn chat "showEpicDetails: epic-id"  # Show details of a specific epic
+kanbn chat "listEpicTasks: epic-id"  # List all tasks belonging to an epic
+
+# AI Assistant
 kanbn chat       # Chat with AI project assistant
 kanbn task task-id --prompt  # Generate AI-friendly prompt from task data
+
+# RAG Integrations
 kanbn integrations --add --name docs --url https://example.com/docs  # Add web content as context
 kanbn chat --integration docs  # Chat with context from integrations
 ```
 
+#### Epic Management
+
+Epics are high-level tasks that can be broken down into smaller, actionable subtasks. Use epics to organize complex features or major project initiatives.
+
+- **Creating Epics**: Create epics through the chat interface with a descriptive name
+- **Decomposing Epics**: AI automatically breaks down epics into smaller tasks
+- **Viewing Epics**: List all epics or details of specific epics
+- **Managing Epic Tasks**: View all tasks associated with a specific epic
+
 #### Environment Variables for AI Features
 
+You can use either OpenRouter (cloud) or Ollama (local) for AI features including epic management. Configure via `.env` file or environment variables:
+
 ```bash
-# Required for AI features
+# Option 1: OpenRouter (cloud-based AI)
 OPENROUTER_API_KEY=your_api_key_here
+OPENROUTER_MODEL=google/gemma-3-4b-it:free  # Optional, default is shown
 
-# Optional: Specify a different model (defaults to google/gemma-3-4b-it:free)
-OPENROUTER_MODEL=google/gemma-3-4b-it:free
+# Option 2: Ollama (local AI)
+USE_OLLAMA=true  # Enable Ollama instead of OpenRouter
+OLLAMA_HOST=http://localhost:11434  # Ollama API URL
+OLLAMA_MODEL=qwen3  # Recommended model for epic decomposition
 
-# Optional: Force real API calls in test environment
-USE_REAL_API=true
+# Testing
+USE_REAL_API=true  # Optional: Force real API calls in test environment
 ```
 
 You can add these to a `.env` file in your project root. A `.env.example` file is provided as a template.
+
+#### Command Reference
+
+```bash
+# Epics
+kanbn chat "createEpic: <epic description>"   # Create a new epic with description
+kanbn chat "decomposeEpic: <epic-id>"        # Decompose epic into child tasks
+kanbn chat "listEpics"                       # Show all epics in the project
+kanbn chat "showEpicDetails: <epic-id>"      # Show details of a specific epic
+kanbn chat "listEpicTasks: <epic-id>"        # List all tasks in an epic
+
+# Project Bootstrap with Epics
+./bootstrap.sh --epic "Create an authentication system"  # Create project with epic
+```
 
 ## 🤝 Contributing
 

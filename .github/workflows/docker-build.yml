@@ -128,6 +128,13 @@ jobs:
           TEST_DIR=$(mktemp -d)
           echo "Created test directory: $TEST_DIR"
 
+          # Test epic functionality
+          echo "Testing epic functionality..."
+          docker run --rm \
+            -e OPENROUTER_API_KEY="${{ secrets.OPENROUTER_API_KEY }}" \
+            -e USE_OLLAMA=false \
+            kanbn:test node /app/test-epic-direct.js
+
           # Test basic kanbn functionality
           echo "Testing basic kanbn functionality..."
           docker run --rm -v $TEST_DIR:/workspace -w /workspace \

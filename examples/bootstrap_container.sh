@@ -337,6 +337,33 @@ EOF
   kanbn board
 }
 
+# Function to create an epic with kanbn chat
+create_epic() {
+  local epic_description="$1"
+  
+  print_header "Creating Epic"
+  print_info "Creating an epic with AI-powered decomposition..."
+  
+  print_command "kanbn chat 'createEpic: $epic_description'"
+  kanbn chat "createEpic: $epic_description"
+  
+  # Now decompose the epic
+  print_info "Decomposing the epic into subtasks..."
+  
+  # Get the most recently created epic ID
+  local epic_id=$(kanbn list --json | jq -r '.tasks[0].id')
+  
+  if [ -n "$epic_id" ]; then
+    print_command "kanbn chat 'decomposeEpic: $epic_id'"
+    kanbn chat "decomposeEpic: $epic_id"
+    print_success "Epic created and decomposed successfully!"
+  else
+    print_error "Failed to get epic ID. Epic may not have been created properly."
+  fi
+  
+  echo ""
+}
+
 # Function to handle project initialization based on environment variables
 setup_project() {
   print_header "Project Setup"
@@ -473,6 +500,11 @@ main() {
 
   # Build Kanban board
   build_kanban_board
+  
+  # Create epic if provided
+  if [ -n "$EPIC_DESCRIPTION" ]; then
+    create_epic "$EPIC_DESCRIPTION"
+  fi
 
   # Commit changes if in a git repository and GIT_COMMIT is true
   if [ "$GIT_COMMIT" = "true" ] && git rev-parse --is-inside-work-tree &> /dev/null; then
