@@ -1,22 +1,49 @@
 /**
  * Kanbn Integrations Controller
  *
- * Manages integration markdown files for enhancing AI context
+ * Manages integration markdown files and MCP servers for enhancing AI context
  */
 
-// Use dynamic import for main module to avoid circular dependency issues in container environments
-// This is more compatible with various module systems and environments
 const utility = require('../utility');
 const chalk = require('chalk');
+const path = require('path');
+const RAGManager = require('../lib/rag-manager');
+const MCPClient = require('../lib/mcp/client');
+
 // Use a more compatible approach for terminal colors
 const colors = {
   green: (text) => `\x1b[32m${text}\x1b[0m`,
   gray: (text) => `\x1b[90m${text}\x1b[0m`,
   red: (text) => `\x1b[31m${text}\x1b[0m`,
-  yellow: (text) => `\x1b[33m${text}\x1b[0m`
+  yellow: (text) => `\x1b[33m${text}\x1b[0m`,
+  blue: (text) => `\x1b[34m${text}\x1b[0m`
 };
-const path = require('path');
-const RAGManager = require('../lib/rag-manager');
+
+// MCP server instance
+let mcpClient = null;
+
+/**
+ * Get or create MCP client
+ * @param {string} boardFolder Path to Kanbn board folder
+ * @returns {Promise<MCPClient>} MCP client instance
+ */
+async function getMCPClient(boardFolder) {
+  if (!mcpClient) {
+    mcpClient = new MCPClient();
+    
+    // Load config from kanbn.json
+    const configPath = path.join(boardFolder, 'kanbn.json');
+    let config;
+    try {
+      config = require(configPath);
+    } catch (error) {
+      config = { mcpServers: {} };
+    }
+    
+    await mcpClient.loadConfig(config);
+  }
+  return mcpClient;
+}
 
 /**
  * Main integrations controller module
@@ -70,32 +97,80 @@ module.exports = async args => {
 
     // Handle different subcommands
     if (args.list) {
-      // List all integrations
+      let result = '';
+      
+      // List markdown integrations
       const integrations = await ragManager.listIntegrations();
+      if (integrations.length > 0) {
+        result += 'Markdown Integrations:\n';
+        for (const integration of integrations) {
+          result += `- ${colors.green(integration)}: ${colors.gray(`${integration}.md`)}\n`;
+        }
+        result += '\n';
+      }
 
-      if (integrations.length === 0) {
-        const message = 'No integrations found. Add integrations with `kanbn integrations add <n> <url-or-content>`.';
-        // Print directly to console to ensure visibility
+      // List MCP servers
+      const mcpClient = await getMCPClient(boardFolder);
+      const mcpServers = mcpClient.config?.mcpServers || {};
+      if (Object.keys(mcpServers).length > 0) {
+        result += 'MCP Servers:\n';
+        for (const [name, config] of Object.entries(mcpServers)) {
+          const isRunning = mcpClient.servers.has(name);
+          const status = isRunning ? colors.green('running') : colors.gray('stopped');
+          result += `- ${colors.blue(name)}: ${status} (${config.command} ${config.args.join(' ')})\n`;
+        }
+        result += '\n';
+      }
+
+      if (!result) {
+        const message = 'No integrations found. Add integrations with:\n' +
+          '- Markdown: kanbn integrations add --name <n> --url <url>\n' +
+          '- MCP Server: kanbn integrations add --type mcp --name <n> --command <cmd> --args <args>';
         console.log(message);
         return message;
       }
 
-      let result = 'Available integrations:\n';
-      for (const integration of integrations) {
-        result += `- ${colors.green(integration)}: ${colors.gray(`${integration}.md`)}\n`;
-      }
-
-      // Print directly to console to ensure visibility
       console.log(result);
       return result;
     } else if (args.add) {
       // Add a new integration
       if (!args.name) {
-        return 'Missing integration name. Usage: `kanbn integrations add --name <name> [--url <url>] [--content <content>]`';
+        return 'Missing integration name. Usage:\n' +
+          '- Markdown: kanbn integrations add --name <n> [--url <url>] [--content <content>]\n' +
+          '- MCP Server: kanbn integrations add --type mcp --name <n> --command <cmd> --args <args>';
       }
 
-      if (args.url) {
-        // Add integration from URL
+      if (args.type === 'mcp') {
+        // Add MCP server configuration
+        if (!args.command) {
+          return 'Missing command for MCP server. Usage: kanbn integrations add --type mcp --name <n> --command <cmd> --args <args>';
+        }
+
+        // Parse args string into array
+        const serverArgs = args.args ? args.args.split(' ') : [];
+
+        // Update kanbn.json
+        const configPath = path.join(boardFolder, 'kanbn.json');
+        let config;
+        try {
+          config = require(configPath);
+        } catch (error) {
+          config = {};
+        }
+
+        // Add MCP server configuration
+        config.mcpServers = config.mcpServers || {};
+        config.mcpServers[args.name] = {
+          command: args.command,
+          args: serverArgs,
+          env: {}
+        };
+
+        // Save config
+        await utility.writeJson(configPath, config);
+        return `Added MCP server integration: ${colors.blue(args.name)}`;
+      } else if (args.url) {
+        // Add markdown integration from URL
         const { isLikelyHtmlUrl } = require('../utils/html-to-markdown');
         const isHtml = isLikelyHtmlUrl(args.url);
 
@@ -140,37 +215,105 @@ module.exports = async args => {
     } else if (args.remove) {
       // Remove an integration
       if (!args.name) {
-        return 'Missing integration name. Usage: `kanbn integrations remove --name <name>`';
+        return 'Missing integration name. Usage: `kanbn integrations remove --name <n>`';
       }
 
-      const success = await ragManager.removeIntegration(args.name);
+      // Check if it's an MCP server
+      const mcpClient = await getMCPClient(boardFolder);
+      if (mcpClient.config?.mcpServers?.[args.name]) {
+        // Stop server if running
+        if (mcpClient.servers.has(args.name)) {
+          await mcpClient.stopServer(args.name);
+        }
 
-      if (success) {
-        // Print directly to console to ensure visibility
-        console.log(`Integration '${args.name}' removed successfully`);
-        return `Integration '${args.name}' removed successfully`;
-      } else {
-        // Print directly to console to ensure visibility
-        console.error(`Failed to remove integration '${args.name}'`);
-        return `Failed to remove integration '${args.name}'`;
+        // Remove from config
+        const configPath = path.join(boardFolder, 'kanbn.json');
+        const config = require(configPath);
+        delete config.mcpServers[args.name];
+        await utility.writeJson(configPath, config);
+        return `Removed MCP server: ${colors.blue(args.name)}`;
       }
+
+      // Try removing markdown integration
+      try {
+        await ragManager.removeIntegration(args.name);
+        return `Removed integration: ${colors.green(args.name)}`;
+      } catch (error) {
+        return `Failed to remove integration: ${error.message}`;
+      }
+    } else if (args.start) {
+      // Start MCP server
+      if (!args.name) {
+        return 'Missing server name. Usage: `kanbn integrations start --name <n>`';
+      }
+
+      const mcpClient = await getMCPClient(boardFolder);
+      if (!mcpClient.config?.mcpServers?.[args.name]) {
+        return `MCP server not found: ${colors.blue(args.name)}`;
+      }
+
+      try {
+        await mcpClient.startServer(args.name);
+        return `Started MCP server: ${colors.blue(args.name)}`;
+      } catch (error) {
+        return `Failed to start MCP server: ${error.message}`;
+      }
+    } else if (args.stop) {
+      // Stop MCP server
+      if (!args.name) {
+        return 'Missing server name. Usage: `kanbn integrations stop --name <n>`';
+      }
+
+      const mcpClient = await getMCPClient(boardFolder);
+      try {
+        await mcpClient.stopServer(args.name);
+        return `Stopped MCP server: ${colors.blue(args.name)}`;
+      } catch (error) {
+        return `Failed to stop MCP server: ${error.message}`;
+      }
+    } else if (args.status) {
+      // Show MCP server status
+      const mcpClient = await getMCPClient(boardFolder);
+      const mcpServers = mcpClient.config?.mcpServers || {};
+      
+      if (Object.keys(mcpServers).length === 0) {
+        return 'No MCP servers configured';
+      }
+
+      let result = 'MCP Server Status:\n';
+      for (const [name, config] of Object.entries(mcpServers)) {
+        const isRunning = mcpClient.servers.has(name);
+        const status = isRunning ? colors.green('running') : colors.gray('stopped');
+        result += `- ${colors.blue(name)}: ${status}\n`;
+        if (isRunning) {
+          result += `  Command: ${config.command} ${config.args.join(' ')}\n`;
+        }
+      }
+      return result;
     } else {
-      // Show help information by default
-      return `
-${chalk.bold('Kanbn Integrations Commands')}
+      // Show help
+      return `${chalk.bold('Kanbn Integrations Commands')}
 
-Manage context integrations for AI assistance:
+Manage context integrations and MCP servers:
 
-- ${chalk.yellow('kanbn integrations list')} - List all available integrations
-- ${chalk.yellow('kanbn integrations add --name <name> --url <url>')} - Add integration from URL
-- ${chalk.yellow('kanbn integrations add --name <name> --content <content>')} - Add integration with content
-- ${chalk.yellow('kanbn integrations remove --name <name>')} - Remove an integration
-- ${chalk.yellow('kanbn integrations --help')} - Show this help message
+Markdown Integrations:
+- ${chalk.yellow('kanbn integrations list')} - List all integrations and servers
+- ${chalk.yellow('kanbn integrations add --name <n> --url <url>')} - Add integration from URL
+- ${chalk.yellow('kanbn integrations add --name <n> --content <text>')} - Add integration from text
+- ${chalk.yellow('kanbn integrations remove --name <n>')} - Remove an integration
 
-Use integrations with the chat command:
-- ${chalk.yellow('kanbn chat --with-integrations')} - Use all integrations in the chat context
-- ${chalk.yellow('kanbn chat --integration <name>')} - Use specific integration(s) by name
-`;
+MCP Servers:
+- ${chalk.yellow('kanbn integrations add --type mcp --name <n> --command <cmd> --args <args>')} - Add MCP server
+- ${chalk.yellow('kanbn integrations start --name <n>')} - Start MCP server
+- ${chalk.yellow('kanbn integrations stop --name <n>')} - Stop MCP server
+- ${chalk.yellow('kanbn integrations status')} - Show MCP server status
+
+Examples:
+  kanbn integrations list
+  kanbn integrations add --name docs --url https://example.com/docs
+  kanbn integrations add --type mcp --name firecrawl --command npx --args "-y firecrawl-mcp"
+  kanbn integrations start --name firecrawl
+  kanbn integrations status`;
     }
   } catch (error) {
     utility.error(`Error handling integrations: ${error.message}`, true);

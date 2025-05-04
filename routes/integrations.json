@@ -9,12 +9,18 @@
       "help",
       "list",
       "add",
-      "remove"
+      "remove",
+      "start",
+      "stop",
+      "status"
     ],
     "string": [
       "name",
       "url",
-      "content"
+      "content",
+      "type",
+      "command",
+      "args"
     ],
     "alias": {
       "help": ["h"],
@@ -23,7 +29,11 @@
       "remove": ["r", "delete", "rm"],
       "name": ["n"],
       "url": ["u", "source"],
-      "content": ["c", "text"]
+      "content": ["c", "text"],
+      "type": ["t"],
+      "start": ["s", "run"],
+      "stop": ["x", "kill"],
+      "status": ["stat"]
     }
   },
   "controller": "./src/controller/integrations",
