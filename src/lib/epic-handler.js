@@ -9,6 +9,12 @@ const AIService = require('./ai-service');
 const PromptLoader = require('./prompt-loader');
 const AILogging = require('./ai-logging');
 const utility = require('../utility');
+const path = require('path');
+const fs = require('fs');
+const debug = require('debug')('kanbn:epic-handler');
+const OpenRouterClient = require('./openrouter-client');
+const OllamaClient = require('./ollama-client');
+const FirecrawlClient = require('./firecrawl-client');
 
 /**
  * Handle epic decomposition and creation
@@ -60,6 +66,46 @@ class EpicHandler {
       
       console.log('[DEBUG] AI service initialized successfully');
 
+      // Use Firecrawl if enabled
+      let researchResults = null;
+      if (options.useFirecrawl) {
+        console.log('[DEBUG] Using Firecrawl for research');
+        const firecrawlClient = new FirecrawlClient();
+
+        // If repository URL is provided, analyze it
+        if (options.repository) {
+          console.log('[DEBUG] Analyzing repository:', options.repository);
+          try {
+            const repoResearch = await firecrawlClient.deepResearch({
+              query: `Analyze the GitHub repository: ${options.repository}`,
+              maxDepth: process.env.KANBN_FIRECRAWL_DEPTH || 3,
+              maxUrls: process.env.KANBN_FIRECRAWL_MAX_URLS || 10,
+              timeLimit: process.env.KANBN_FIRECRAWL_TIMEOUT || 120
+            });
+            researchResults = repoResearch;
+          } catch (error) {
+            console.log('[DEBUG] Error analyzing repository:', error);
+          }
+        }
+
+        // Research the epic topic
+        try {
+          const topicResearch = await firecrawlClient.deepResearch({
+            query: epicDescription,
+            maxDepth: process.env.KANBN_FIRECRAWL_DEPTH || 3,
+            maxUrls: process.env.KANBN_FIRECRAWL_MAX_URLS || 10,
+            timeLimit: process.env.KANBN_FIRECRAWL_TIMEOUT || 120
+          });
+          researchResults = researchResults ? {
+            ...researchResults,
+            insights: [...(researchResults.insights || []), ...(topicResearch.insights || [])],
+            references: [...(researchResults.references || []), ...(topicResearch.references || [])]
+          } : topicResearch;
+        } catch (error) {
+          console.log('[DEBUG] Error researching topic:', error);
+        }
+      }
+
       // Load the epic prompt template
       let epicPrompt = await this.promptLoader.loadPrompt('epic-decomposition');
       
@@ -67,6 +113,18 @@ class EpicHandler {
         // Fallback prompt if the file doesn't exist
         epicPrompt = this.getDefaultEpicPrompt();
       }
+
+      // Add research results to context
+      let context = {};
+      if (researchResults) {
+        context.research = {
+          references: researchResults.references || [],
+          insights: researchResults.insights || [],
+          summary: researchResults.summary || ''
+        };
+        debug('Added research results to context:', context.research);
+      }
+      epicPrompt = `${epicPrompt}\n\n## Research Results\n${JSON.stringify(context, null, 2)}`;
 
       // Create system message with project context
       const systemMessage = {
@@ -153,20 +211,69 @@ class EpicHandler {
       // Create child tasks
       const childTaskIds = [];
       
-      for (const taskData of tasksData) {
-        // Prepare child task data
+      for (const task of tasksData) {
+        // Create task data
         const childTaskData = {
-          name: taskData.name,
-          description: taskData.description || "",
+          name: task.name,
+          description: task.description || task.name,
           metadata: {
-            ...(taskData.metadata || {}),
             parent: epicId,
             created: new Date(),
-            tags: [...(taskData.metadata?.tags || []), "story"]
+            tags: task.metadata?.tags || ['subtask'],
+            sprintSuggestion: task.sprintSuggestion,
+            estimatedWorkload: task.estimatedWorkload
           }
         };
-        
-        // Create the child task
+
+        // Add references from research if available
+        if (context?.research?.references?.length > 0) {
+          const relevantRefs = context.research.references.filter(ref => {
+            const lowerTitle = ref.title?.toLowerCase() || '';
+            const lowerDesc = ref.description?.toLowerCase() || '';
+            const lowerTaskName = task.name.toLowerCase();
+            const lowerTaskDesc = task.description?.toLowerCase() || '';
+            return lowerTitle.includes(lowerTaskName) ||
+                   lowerDesc.includes(lowerTaskName) ||
+                   lowerTitle.includes(lowerTaskDesc) ||
+                   lowerDesc.includes(lowerTaskDesc);
+          });
+
+          if (relevantRefs.length > 0) {
+            childTaskData.metadata.references = {
+              research: relevantRefs.map(ref => ({
+                title: ref.title || ref.url,
+                url: ref.url,
+                description: ref.description
+              }))
+            };
+            debug('Added references to task:', task.name, childTaskData.metadata.references);
+          }
+        }
+
+        // Add references from research if available
+        if (epicData.research?.references) {
+          const relevantRefs = epicData.research.references.filter(ref => {
+            const lowerTitle = ref.title?.toLowerCase() || '';
+            const lowerDesc = ref.description?.toLowerCase() || '';
+            const lowerTaskName = task.name.toLowerCase();
+            const lowerTaskDesc = task.description?.toLowerCase() || '';
+            return lowerTitle.includes(lowerTaskName) ||
+                   lowerDesc.includes(lowerTaskName) ||
+                   lowerTitle.includes(lowerTaskDesc) ||
+                   lowerDesc.includes(lowerTaskDesc);
+          });
+
+          if (relevantRefs.length > 0) {
+            childTaskData.metadata.references = {
+              research: relevantRefs.map(ref => ({
+                title: ref.title || ref.url,
+                url: ref.url,
+                description: ref.description
+              }))
+            };
+          }
+        }
+
         const childTaskId = await this.kanbn.createTask(childTaskData, columnName);
         childTaskIds.push(childTaskId);
         
