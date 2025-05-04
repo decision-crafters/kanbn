@@ -1,0 +1,38 @@
+FROM node:18-slim
+
+# Install runtime dependencies
+RUN apt-get update && apt-get install -y \
+    git \
+    curl \
+    jq \
+    vim \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+
+# Install all dependencies (including dev dependencies for testing)
+RUN npm install
+
+# Copy source code 
+COPY . .
+
+# Create a proper wrapper script for kanbn
+RUN echo '#!/bin/bash' > /usr/local/bin/kanbn && \
+    echo 'cd "$PWD" && node /app/index.js "$@"' >> /usr/local/bin/kanbn && \
+    chmod +x /usr/local/bin/kanbn
+
+# Set environment variables with defaults
+ENV NODE_ENV=production
+ENV DEBUG=true
+ENV USE_OLLAMA=false
+ENV OPENROUTER_MODEL="google/gemma-3-4b-it:free"
+
+# Create test directory
+RUN mkdir -p /test
+WORKDIR /test
+
+# Run the direct test script
+CMD ["node", "/app/test-epic-direct.js"]

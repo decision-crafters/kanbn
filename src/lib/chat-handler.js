@@ -4,16 +4,21 @@ const utility = require('../utility');
 const eventBus = require('./event-bus');
 const PromptLoader = require('./prompt-loader');
 const MemoryManager = require('./memory-manager');
+const EpicHandler = require('./epic-handler');
 
 class ChatHandler {
   /**
    * Create a new ChatHandler
    * @param {Object} kanbn The Kanbn instance
+   * @param {Object} boardFolder Optional board folder path
+   * @param {Object} projectContext Optional project context
    * @param {MemoryManager} memoryManager Optional memory manager instance
    * @param {PromptLoader} promptLoader Optional prompt loader instance
    */
-  constructor(kanbn, memoryManager = null, promptLoader = null) {
+  constructor(kanbn, boardFolder = null, projectContext = null, memoryManager = null, promptLoader = null) {
     this.kanbn = kanbn;
+    this.boardFolder = boardFolder;
+    this.projectContext = projectContext;
     this.context = new ChatContext();
     this.memoryManager = memoryManager;
     this.promptLoader = promptLoader;
@@ -54,7 +59,22 @@ class ChatHandler {
    * @throws {Error} When no command matches and fallback should be triggered
    */
   async handleMessage(message) {
+    console.log(`[DEBUG] ChatHandler received message: "${message}"`);
     const { intent, params } = chatParser.parseMessage(message);
+    console.log(`[DEBUG] Parsed intent: ${intent}, params: ${JSON.stringify(params)}`);
+
+    // Check for special epic command cases with more flexible matching
+    if (message.startsWith('epic ') || message.startsWith('createEpic:') || message.match(/^(create|add|new)\s+epic/i)) {
+      console.log(`[DEBUG] Epic command detected: ${message}`);
+      // Handle different epic command formats
+      if (message.startsWith('createEpic:')) {
+        return await this.handleCreateEpic([message.substring('createEpic:'.length).trim()]);
+      } else if (message.startsWith('epic ')) {
+        return await this.handleEpicCommand(message.substring(5).trim());
+      } else {
+        // Let the normal intent matching handle it
+      }
+    }
 
     // Different error handling strategy based on intent type
     if (intent === 'chat') {
@@ -79,6 +99,18 @@ class ChatHandler {
           return await this.handleListTasksInColumn(params);
         case 'status':
           return await this.handleStatus();
+
+        // Epic commands
+        case 'createEpic':
+          return await this.handleCreateEpic(params);
+        case 'decomposeEpic':
+          return await this.handleDecomposeEpic(params);
+        case 'listEpics':
+          return await this.handleListEpics();
+        case 'showEpicDetails':
+          return await this.handleShowEpicDetails(params);
+        case 'listEpicTasks':
+          return await this.handleListEpicTasks(params);
 
         // New commands
         case 'deleteTask':
@@ -1231,6 +1263,421 @@ class ChatHandler {
     // In production, throw an error to trigger the fallback to OpenRouter API
     throw new Error('Suggesting initial tasks requires AI, falling back to OpenRouter API');
   }
+  
+  /**
+   * Handle the special 'epic' command which creates and decomposes an epic in one step
+   * @param {string} epicDescription The epic description
+   * @return {Promise<string>} Response message
+   */
+  async handleEpicCommand(epicDescription) {
+    try {
+      // Get project context and integrations
+      const integrations = this.projectContext && this.projectContext.integrationsContent 
+        ? this.projectContext.integrationsContent 
+        : null;
+
+      utility.debugLog(`Processing epic command with description: ${epicDescription.substring(0, 50)}...`);
+
+      // Create an instance of EpicHandler
+      const epicHandler = new EpicHandler(this.kanbn, this.projectContext, {
+        promptLoader: this.promptLoader
+      });
+
+      // Log the start of epic decomposition
+      console.log('Decomposing epic into tasks...');
+
+      // Decompose the epic
+      const epicData = await epicHandler.decomposeEpic(epicDescription, integrations);
+
+      if (!epicData || !epicData.epic || !epicData.tasks) {
+        throw new Error('Failed to decompose epic: Invalid response format');
+      }
+
+      // Log the epic data for debugging
+      utility.debugLog(`Epic decomposed: ${epicData.epic.name} with ${epicData.tasks.length} tasks`);
+
+      // Create the epic and child tasks
+      const result = await epicHandler.createEpicWithTasks(epicData.epic, epicData.tasks);
+
+      // Emit event
+      eventBus.emit('epicCreated', {
+        epicId: result.epicId,
+        childTaskIds: result.childTaskIds,
+        source: 'chat'
+      });
+
+      // Return success message
+      return `Created epic "${epicData.epic.name}" with ${epicData.tasks.length} child tasks.\n\nEpic Details:\n${epicData.epic.description.substring(0, 150)}${epicData.epic.description.length > 150 ? '...' : ''}\n\nChild Tasks:\n${epicData.tasks.map((task, index) => `${index + 1}. ${task.name}`).join('\n')}`;
+    } catch (error) {
+      console.error('Error in epic command:', error);
+      return `Error creating epic: ${error.message}`;
+    }
+  }
+
+  /**
+   * Create an epic task
+   * @param {string[]} params Command parameters
+   * @return {Promise<string>} Response message
+   */
+  async handleCreateEpic(params) {
+    try {
+      console.log(`[DEBUG] handleCreateEpic called with params: ${JSON.stringify(params)}`);
+      
+      // Handle different input formats more robustly
+      let epicName;
+      if (!params || params.length === 0) {
+        console.log('[DEBUG] No parameters provided for epic creation');
+        return 'Error: Epic name is required';
+      } else if (params.length === 1 && typeof params[0] === 'string') {
+        // If only one parameter, treat it as the epic name
+        epicName = params[0].trim();
+        console.log(`[DEBUG] Using single parameter as epic name: "${epicName}"`);
+      } else {
+        // Take the last parameter as the epic name (consistent with original code)
+        epicName = params[params.length - 1];
+        console.log(`[DEBUG] Using last parameter as epic name: "${epicName}"`);
+      }
+      
+      // Validate the epic name
+      if (!epicName || epicName.length < 2) {
+        console.log(`[DEBUG] Invalid epic name: "${epicName}"`);
+        return 'Error: Epic name must be at least 2 characters long';
+      }
+      
+      console.log(`[DEBUG] Creating epic with name: "${epicName}"`);
+      
+      // Create the epic task
+      const epicTaskData = {
+        name: epicName,
+        description: '',
+        metadata: {
+          type: 'epic',
+          created: new Date(),
+          tags: ['epic']
+        }
+      };
+      
+      console.log(`[DEBUG] Epic task data: ${JSON.stringify(epicTaskData)}`);
+
+      // Get index to find the first column if Backlog doesn't exist
+      const index = await this.kanbn.getIndex();
+      const columnNames = Object.keys(index.columns);
+      const targetColumn = columnNames.includes('Backlog') ? 'Backlog' : columnNames[0];
+      
+      console.log(`[DEBUG] Creating epic in column: ${targetColumn}`);
+
+      // Create the epic task in the appropriate column
+      const epicId = await this.kanbn.createTask(epicTaskData, targetColumn);
+      console.log(`[DEBUG] Created epic with ID: ${epicId}`);
+      
+      // Update context
+      this.context.setLastTask(epicId, epicName);
+      console.log(`[DEBUG] Updated context with last task ID: ${epicId}`);
+      
+      // Emit event
+      eventBus.emit('epicCreated', {
+        epicId,
+        childTaskIds: [],
+        source: 'chat'
+      });
+      console.log(`[DEBUG] Emitted epicCreated event for ID: ${epicId}`);
+      
+      return `Created epic with ID: ${epicId} named "${epicName}" in ${targetColumn}. You can now add child tasks to this epic.`;
+    } catch (error) {
+      console.error('[ERROR] Error creating epic:', error);
+      return `Error creating epic: ${error.message}`;
+    }
+  }
+
+  /**
+   * Decompose an existing epic into child tasks
+   * @param {string[]} params Command parameters
+   * @return {Promise<string>} Response message
+   */
+  async handleDecomposeEpic(params) {
+    try {
+      const epicName = params[params.length - 1];
+      
+      // Find the epic by name
+      const epicId = await this.findTaskByName(epicName);
+      if (!epicId) {
+        return `Epic "${epicName}" not found.`;
+      }
+      
+      // Get the epic task
+      const epicTask = await this.kanbn.getTask(epicId);
+      
+      // Check if it's actually an epic
+      if (!epicTask.metadata || epicTask.metadata.type !== 'epic') {
+        // If not marked as epic, mark it now
+        epicTask.metadata = epicTask.metadata || {};
+        epicTask.metadata.type = 'epic';
+        epicTask.metadata.tags = epicTask.metadata.tags || [];
+        if (!epicTask.metadata.tags.includes('epic')) {
+          epicTask.metadata.tags.push('epic');
+        }
+        
+        await this.kanbn.updateTask(epicId, epicTask);
+      }
+      
+      // Get integrations context
+      const integrations = this.projectContext && this.projectContext.integrationsContent 
+        ? this.projectContext.integrationsContent 
+        : null;
+
+      // Create an instance of EpicHandler
+      const epicHandler = new EpicHandler(this.kanbn, this.projectContext, {
+        promptLoader: this.promptLoader
+      });
+      
+      // Decompose the epic with enhanced logging
+      console.log(`[DEBUG] Calling epicHandler.decomposeEpic for epic: ${epicTask.name}`);
+      const epicData = await epicHandler.decomposeEpic(
+        `${epicTask.name}\n\n${epicTask.description || ''}`, 
+        integrations
+      );
+      console.log(`[DEBUG] Decomposition result received: ${JSON.stringify(epicData).substring(0, 100)}...`);
+      
+      if (!epicData || !epicData.tasks) {
+        console.log('[ERROR] Failed to decompose epic: Invalid response format');
+        throw new Error('Failed to decompose epic: Invalid response format');
+      }
+      
+      // Create child tasks
+      const column = await this.kanbn.findTaskColumn(epicId);
+      let childTaskIds = [];
+      console.log(`[DEBUG] Creating ${epicData.tasks.length} child tasks in column: ${column}`);
+      
+      for (const taskData of epicData.tasks) {
+        // Prepare child task data
+        const childTaskData = {
+          name: taskData.name,
+          description: taskData.description || "",
+          metadata: {
+            parent: epicId,
+            created: new Date(),
+            tags: taskData.metadata?.tags || []
+          }
+        };
+        
+        console.log(`[DEBUG] Creating child task: ${taskData.name}`);
+        // Create the child task
+        const childTaskId = await this.kanbn.createTask(childTaskData, column);
+        childTaskIds.push(childTaskId);
+        
+        // Update the epic with child reference
+        if (!epicTask.metadata.children) {
+          epicTask.metadata.children = [];
+        }
+        epicTask.metadata.children.push(childTaskId);
+      }
+      
+      // Update the epic
+      console.log(`[DEBUG] Updating epic with ${childTaskIds.length} child references`);
+      await this.kanbn.updateTask(epicId, epicTask);
+      
+      // Emit event
+      eventBus.emit('epicDecomposed', {
+        epicId,
+        epicName: epicTask.name,
+        childTaskIds,
+        source: 'chat'
+      });
+      
+      return `Decomposed epic "${epicTask.name}" into ${epicData.tasks.length} tasks:\n${epicData.tasks.map((task, index) => `${index + 1}. ${task.name}`).join('\n')}`;
+    } catch (error) {
+      console.error('[ERROR] Error decomposing epic:', error);
+      return `Error decomposing epic: ${error.message}`;
+    }
+  }
+
+  /**
+   * List all epics in the project
+   * @return {Promise<string>} Response message with list of epics
+   */
+  async handleListEpics() {
+    try {
+      // Search for tasks with type=epic or epic tag
+      const searchResults = await this.kanbn.search({
+        tags: ['epic']
+      });
+      
+      // If no results, try searching for tasks with 'epic' in the name
+      if (searchResults.length === 0) {
+        const nameResults = await this.kanbn.search({
+          name: 'epic'
+        });
+        
+        if (nameResults.length === 0) {
+          return 'No epics found in the project.';
+        }
+        
+        const epicList = nameResults.map(task =>
+          `- ${task.name} (in ${task.column})`
+        );
+        
+        return `Found ${nameResults.length} epics:\n${epicList.join('\n')}`;
+      }
+      
+      // Format and return the epics
+      const epicList = searchResults.map(task => {
+        // Count child tasks if any
+        const childCount = task.metadata && task.metadata.children ? task.metadata.children.length : 0;
+        return `- ${task.name} (in ${task.column}) - ${childCount} child tasks`;
+      });
+      
+      // Emit event
+      eventBus.emit('epicsListed', {
+        count: searchResults.length
+      });
+      
+      return `Found ${searchResults.length} epics:\n${epicList.join('\n')}`;
+    } catch (error) {
+      console.error('Error listing epics:', error);
+      return `Error listing epics: ${error.message}`;
+    }
+  }
+
+  /**
+   * Show details for a specific epic
+   * @param {string[]} params Command parameters
+   * @return {Promise<string>} Response message with epic details
+   */
+  async handleShowEpicDetails(params) {
+    try {
+      const epicName = params[params.length - 1];
+      
+      // Find the epic by name
+      const epicId = await this.findTaskByName(epicName);
+      if (!epicId) {
+        return `Epic "${epicName}" not found.`;
+      }
+      
+      // Get the epic task and its column
+      const epicTask = await this.kanbn.getTask(epicId);
+      const column = await this.kanbn.findTaskColumn(epicId);
+      
+      // Count child tasks
+      const childCount = epicTask.metadata && epicTask.metadata.children ? epicTask.metadata.children.length : 0;
+      
+      // Format epic details
+      let details = `# ${epicTask.name} (Epic)\n`;
+      details += `**Status**: ${column}\n`;
+      details += `**Child Tasks**: ${childCount}\n`;
+      
+      if (epicTask.description) {
+        details += `\n**Description**:\n${epicTask.description}\n`;
+      }
+      
+      if (epicTask.metadata) {
+        if (epicTask.metadata.created) {
+          details += `\n**Created**: ${new Date(epicTask.metadata.created).toLocaleString()}\n`;
+        }
+        
+        if (epicTask.metadata.tags && epicTask.metadata.tags.length > 0) {
+          details += `**Tags**: ${epicTask.metadata.tags.join(', ')}\n`;
+        }
+      }
+      
+      // Display acceptance criteria if available
+      if (epicTask.description && epicTask.description.includes('Acceptance Criteria')) {
+        const acMatch = epicTask.description.match(/## Acceptance Criteria\n([\s\S]*?)(?:\n##|$)/);
+        if (acMatch && acMatch[1]) {
+          details += `\n**Acceptance Criteria**:\n${acMatch[1].trim()}\n`;
+        }
+      }
+      
+      // List child tasks if any
+      if (childCount > 0) {
+        details += '\n**Child Tasks**:\n';
+        
+        for (const childId of epicTask.metadata.children) {
+          try {
+            const childTask = await this.kanbn.getTask(childId);
+            const childColumn = await this.kanbn.findTaskColumn(childId);
+            details += `- ${childTask.name} (in ${childColumn})\n`;
+          } catch (childError) {
+            details += `- [Error loading task ${childId}]\n`;
+          }
+        }
+      }
+      
+      // Emit event
+      eventBus.emit('epicDetailViewed', {
+        epicId,
+        epicName: epicTask.name
+      });
+      
+      return details;
+    } catch (error) {
+      console.error('Error showing epic details:', error);
+      return `Error showing epic details: ${error.message}`;
+    }
+  }
+
+  /**
+   * List tasks for a specific epic
+   * @param {string[]} params Command parameters
+   * @return {Promise<string>} Response message with list of tasks
+   */
+  async handleListEpicTasks(params) {
+    try {
+      const epicName = params[params.length - 1];
+      
+      // Find the epic by name
+      const epicId = await this.findTaskByName(epicName);
+      if (!epicId) {
+        return `Epic "${epicName}" not found.`;
+      }
+      
+      // Get the epic task
+      const epicTask = await this.kanbn.getTask(epicId);
+      
+      // Check if it has child tasks
+      if (!epicTask.metadata || !epicTask.metadata.children || epicTask.metadata.children.length === 0) {
+        return `Epic "${epicName}" does not have any child tasks.`;
+      }
+      
+      // List the child tasks
+      const childTasks = [];
+      for (const childId of epicTask.metadata.children) {
+        try {
+          const childTask = await this.kanbn.getTask(childId);
+          const childColumn = await this.kanbn.findTaskColumn(childId);
+          
+          // Note completed status
+          const completed = childTask.metadata && childTask.metadata.completed;
+          childTasks.push({
+            id: childId,
+            name: childTask.name,
+            column: childColumn,
+            completed
+          });
+        } catch (childError) {
+          console.error(`Error loading child task ${childId}:`, childError);
+        }
+      }
+      
+      // Format the child tasks
+      const taskList = childTasks.map(task => 
+        `- ${task.name} (in ${task.column})${task.completed ? ' ✓' : ''}`
+      );
+      
+      // Emit event
+      eventBus.emit('epicTasksListed', {
+        epicId,
+        epicName: epicTask.name,
+        taskCount: childTasks.length
+      });
+      
+      return `Tasks for epic "${epicTask.name}" (${childTasks.length}):\n${taskList.join('\n')}`;
+    } catch (error) {
+      console.error('Error listing epic tasks:', error);
+      return `Error listing epic tasks: ${error.message}`;
+    }
+  }
 }
+
+
 
 module.exports = ChatHandler;

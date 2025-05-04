@@ -15,9 +15,8 @@ class PromptLoader {
    * Create a new PromptLoader
    * @param {string} kanbnFolder The path to the .kanbn folder
    */
-  constructor(kanbnFolder) {
-    this.kanbnFolder = kanbnFolder;
-    this.customPromptsFolder = path.join(kanbnFolder, 'init-prompts');
+  constructor(promptsPath = null) {
+    this.promptsPath = promptsPath || path.join(__dirname, '..', 'prompts');
     this.defaultPromptsFolder = path.join(__dirname, '..', 'data', 'default-init-prompts');
   }
 
@@ -27,20 +26,24 @@ class PromptLoader {
    * @returns {Promise<string>} The prompt content
    */
   async loadPrompt(promptName) {
-    // First, try to load from custom prompts
+    // First, try to load from prompts path
     try {
-      const customPromptPath = path.join(this.customPromptsFolder, `${promptName}.md`);
-      if (fs.existsSync(customPromptPath)) {
-        return await readFile(customPromptPath, 'utf8');
+      const promptPath = path.join(this.promptsPath, `${promptName}.md`);
+      console.log('[DEBUG] Looking for prompt at:', promptPath);
+      if (fs.existsSync(promptPath)) {
+        console.log('[DEBUG] Found prompt at:', promptPath);
+        return await readFile(promptPath, 'utf8');
       }
     } catch (error) {
-      console.error(`Error loading custom prompt ${promptName}:`, error);
+      console.error(`Error loading prompt ${promptName}:`, error);
     }
 
     // Fall back to default prompts
     try {
       const defaultPromptPath = path.join(this.defaultPromptsFolder, `${promptName}.md`);
+      console.log('[DEBUG] Looking for default prompt at:', defaultPromptPath);
       if (fs.existsSync(defaultPromptPath)) {
+        console.log('[DEBUG] Found default prompt at:', defaultPromptPath);
         return await readFile(defaultPromptPath, 'utf8');
       }
     } catch (error) {
@@ -48,6 +51,7 @@ class PromptLoader {
     }
 
     // If no prompt is found, return a generic prompt
+    console.log('[DEBUG] No prompt found, using generic prompt');
     return `Please provide information about ${promptName.replace(/-/g, ' ')}.`;
   }
 
