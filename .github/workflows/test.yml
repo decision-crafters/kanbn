@@ -1,14 +1,10 @@
 name: Tests
 
-# Temporarily disabled for development
-# To re-enable, remove the following line and uncomment the 'on' section below
-on: workflow_dispatch
-
-# on:
-#   pull_request:
-#     branches: [ main, master ]
-#   push:
-#     branches: [ main, master ]
+on:
+  pull_request:
+    branches: [ '*' ]  # Run on pull requests to any branch
+  push:
+    branches: [ '*' ]  # Run on pushes to any branch
 
 jobs:
   test:
@@ -27,23 +23,30 @@ jobs:
           node-version: ${{ matrix.node-version }}
           cache: 'npm'
 
-      - name: Update package-lock.json
-        run: npm install
+      - name: Run linting
+        run: |
+          set -e
+          if [ -f package.json ]; then
+            if npm ls eslint > /dev/null 2>&1; then
+              npm run lint
+            fi
+          fi
 
       - name: Install dependencies
         run: npm ci
 
-      - name: Run tests
-        run: |
-          set -e
-          npm test
+      - name: Run Jest unit tests
+        run: npm test
         env:
+          CI: true
+          DEBUG: true
           KANBN_ENV: test
 
+      - name: Update package-lock.json
+        run: npm install
+
       - name: Build package
-        run: |
-          set -e
-          npm pack
+        run: npm pack
 
       - name: Run binary tests
         run: |
@@ -58,21 +61,16 @@ jobs:
           ./scripts/test-ai-init.sh
         env:
           KANBN_ENV: test
+          DEBUG: true
 
-      - name: Run binary tests
+      - name: Run AI scenario tests
         run: |
           set -e
           chmod +x ./scripts/test-ai-init-scenarios.sh
           ./scripts/test-ai-init-scenarios.sh
-
-      - name: Run linting
-        run: |
-          set -e
-          if [ -f package.json ]; then
-            if npm ls eslint > /dev/null 2>&1; then
-              npm run lint
-            fi
-          fi
+        env:
+          KANBN_ENV: test
+          DEBUG: true
 
       - name: Check documentation
         run: |
