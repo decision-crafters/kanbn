@@ -40,13 +40,13 @@ function validateOptions(options) {
       'taskWorkloadTags': {
         type: 'object',
         patternProperties: {
-          '^[\w ]+$': { type: 'number' }
+          '^\\w+$': { type: 'number' }
         }
       },
       'columnSorting': {
         type: 'object',
         patternProperties: {
-          '^[\w ]+$': {
+          '^\\w+$': {
             type: 'array',
             items: {
               type: 'object',
@@ -162,7 +162,7 @@ function validateColumns(columns) {
   const result = validate(columns, {
     type: 'object',
     patternProperties: {
-      '^[\w ]+$': {
+      '^\\w+$': {
         type: 'array',
         items: { type: 'string' }
       }
@@ -368,7 +368,7 @@ module.exports = {
           data.columns[column].length > 0 ?
             data.columns[column].map(task => {
               // Ensure task is a simple string without markdown formatting
-              const taskId = task.replace(/[\[\]\(\)]/g, '').split('/').pop().replace(/\.md$/, '');
+              const taskId = task.replace(/[()]/g, '').split('/').pop().replace(/\.md$/, '');
               return `- ${taskId}`;
             }).join('\n') :
             ''

@@ -6,8 +6,6 @@
  */
 
 const readline = require('readline');
-const fs = require('fs');
-const path = require('path');
 
 // Simple color helper that doesn't rely on external dependencies
 const colors = {
@@ -42,10 +40,10 @@ class SimpleInteractive {
 
   /**
    * Start an interactive chat session
-   * @param {Object} args Command arguments
+   * @param {Object} _args Command arguments
    * @returns {Promise<string>} Session result
    */
-  async start(args) {
+  async start(_args) {
     console.log('Debug: SimpleInteractive.start method called');
     try {
       // Validate components with detailed logging

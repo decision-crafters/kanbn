@@ -137,7 +137,7 @@ QUnit.test('should fail without force flag', async function(assert) {
         // Simulate task deletion
         return _taskId;
       },
-      getTask: async (taskId) => {
+      getTask: async (_taskId) => {
         return { name: 'Test Task' };
       }
     };
@@ -194,7 +194,7 @@ QUnit.test('should handle non-existent task', async function(assert) {
         // Simulate task deletion
         return _taskId;
       },
-      getTask: async (taskId) => {
+      getTask: async (_taskId) => {
         return { name: 'Test Task' };
       }
     };

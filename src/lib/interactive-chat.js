@@ -62,10 +62,10 @@ class InteractiveChat {
 
   /**
    * Start an interactive chat session
-   * @param {Object} args Command line arguments
+   * @param {Object} _args Command line arguments
    * @returns {Promise<string>} Session result
    */
-  async start(args) {
+  async start(_args) {
     console.log('Debug: InteractiveChat.start method called');
     try {
       // Validate components

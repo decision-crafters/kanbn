@@ -20,7 +20,7 @@ if (!N || isNaN(N)) {
 const capitalise = (w) => w.charAt(0).toUpperCase() + w.slice(1);
 const tags = [
   ...new Set([
-    ...new Array(6).fill(null).map((i) => capitalise(faker.lorem.word(6))),
+    ...new Array(6).fill(null).map(() => capitalise(faker.lorem.word(6))),
     "Nothing",
     "Tiny",
     "Small",
@@ -29,20 +29,20 @@ const tags = [
     "Huge",
   ]),
 ];
-const assignees = [...new Set([...new Array(4).fill(null).map((i) => faker.name.firstName())])];
+const assignees = [...new Set([...new Array(4).fill(null).map(() => faker.name.firstName())])];
 const names = [
   ...new Set([
     ...new Array(N * 2)
       .fill(null)
-      .map((i) => capitalise(faker.lorem.sentence(faker.datatype.number(4)).slice(0, -1)))
+      .map(() => capitalise(faker.lorem.sentence(faker.datatype.number(4)).slice(0, -1)))
       .filter((i) => i),
   ]),
 ];
 const NOW = new Date();
 const DAY = 24 * 60 * 60 * 1000;
 
-function generateTask(i) {
-  const name = names[i];
+function generateTask(_i) {
+  const name = names[_i];
   const id = utility.getTaskId(name);
   const created = faker.date.recent(30, NOW);
   const metadata = {
@@ -54,7 +54,7 @@ function generateTask(i) {
   const COUNT_TAGS = 1 + faker.datatype.number(4);
   if (Math.random() > 0.3) {
     metadata.tags = [
-      ...new Set(new Array(COUNT_TAGS).fill(null).map((i) => tags[Math.floor(Math.random() * tags.length)])),
+      ...new Set(new Array(COUNT_TAGS).fill(null).map(() => tags[Math.floor(Math.random() * tags.length)])),
     ];
   }
 
@@ -137,7 +137,7 @@ function generateSubTasks() {
   }
   const COUNT_SUB_TASKS = faker.datatype.number(10);
 
-  return new Array(COUNT_SUB_TASKS).fill(null).map((i) => ({
+  return new Array(COUNT_SUB_TASKS).fill(null).map((_v, _i) => ({
     text: faker.lorem.sentence(),
     completed: faker.datatype.boolean(),
   }));
@@ -151,11 +151,11 @@ function generateRelations(id) {
   const relationTypes = ["", "blocks ", "duplicates ", "requires ", "obsoletes "];
   return new Array(COUNT_RELATIONS)
     .fill(null)
-    .map((i) => ({
+    .map(_i => ({
       task: utility.getTaskId(names[Math.floor(Math.random() * names.length)]),
       type: relationTypes[Math.floor(Math.random() * relationTypes.length)],
     }))
-    .filter((i) => i.task !== id);
+    .filter(i => i.task !== id);
 }
 
 function generateComments() {
@@ -164,7 +164,7 @@ function generateComments() {
   }
   const COUNT_COMMENTS = faker.datatype.number(5);
 
-  return new Array(COUNT_COMMENTS).fill(null).map((i) => ({
+  return new Array(COUNT_COMMENTS).fill(null).map((_v, _i) => ({
     date: faker.date.recent(30, NOW),
     author: assignees[Math.floor(Math.random() * assignees.length)],
     text: faker.lorem.sentence(),
@@ -172,8 +172,8 @@ function generateComments() {
 }
 
 const tasks = [];
-for (let i = 0; i < N; i++) {
-  tasks.push(generateTask(i));
+for (let _i = 0; _i < N; _i++) {
+  tasks.push(generateTask(_i));
 }
 
 for (let task of tasks) {

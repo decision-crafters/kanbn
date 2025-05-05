@@ -1,7 +1,5 @@
 const QUnit = require('qunit');
 const mockRequire = require('mock-require');
-// Remove or prefix with underscore the unused EventEmitter import
-const _EventEmitter = require('events');
 const testHelper = require('../test-helper');
 const dotenv = require('dotenv');
 

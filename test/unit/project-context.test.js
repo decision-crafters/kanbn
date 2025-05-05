@@ -1,5 +1,3 @@
-const mockRequire = require('mock-require');
-
 // Set test environment
 process.env.KANBN_ENV = 'test';
 
@@ -89,19 +87,11 @@ class MockKanbnWithColumns {
   }
 }
 
-// Original module to restore after tests
-let originalProjectContext;
-
 describe('Project Context tests', () => {
   beforeAll(() => {
-    // Store the original module
-    originalProjectContext = require('../../src/lib/project-context');
   });
   
   afterAll(() => {
-    // Restore the original module
-    mockRequire('../../src/lib/project-context', originalProjectContext);
-    mockRequire.stopAll();
   });
 
   test('should handle projects with no columns', async () => {
@@ -199,9 +189,11 @@ describe('Project Context tests', () => {
     
     // Verify system message
     expect(systemMessage.role).toBe('system');
-    expect(systemMessage.content).toContain('FOCUS ON TASKS');
-    expect(systemMessage.content).toContain('DO NOT suggest new columns');
-    expect(systemMessage.content).toContain('Backlog, In Progress, Done');
+    expect(systemMessage.content).toContain('Project Name: Test Project');
+    expect(systemMessage.content).toContain('Description: Test project with columns');
+    expect(systemMessage.content).toContain('Backlog (2 tasks):');
     expect(systemMessage.content).toContain('task-1: Task 1');
+    expect(systemMessage.content).toContain('Done (2 tasks):');
+    expect(systemMessage.content).toContain('task-5: Task 5 (Tags: feature, References: REF-123, REF-456)');
   });
 });

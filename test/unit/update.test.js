@@ -243,13 +243,14 @@ describe('updateTask tests', () => {
         metadata: {}
       }, sourceColumn);
       
-      // Verify task was added using a separate variable
-      const updatedIndex = await kanbn.getIndex();
-      const taskExists = updatedIndex.columns[sourceColumn].includes(taskId);
-      expect(taskExists).toBe(true);
+      // Update the index
+      await kanbn.getIndex();
     } else {
       taskId = index.columns[sourceColumn][0];
     }
+    
+    // Verify task exists in source column
+    expect(index.columns[sourceColumn].includes(taskId)).toBe(true);
     
     // Get the task
     const task = await kanbn.getTask(taskId);

@@ -10,7 +10,6 @@ const PromptLoader = require('./prompt-loader');
 const AILogging = require('./ai-logging');
 const utility = require('../utility');
 const path = require('path');
-const FirecrawlClient = require('./firecrawl-client');
 
 /**
  * Handle epic decomposition and creation
@@ -33,10 +32,10 @@ class EpicHandler {
    * Decompose an epic into child tasks
    * @param {string} epicDescription The epic description
    * @param {Object} integrations Integration content
-   * @param {Object} options Additional options
+   * @param {Object} _options Additional options
    * @return {Promise<Object>} The decomposed epic with child tasks
    */
-  async decomposeEpic(epicDescription, integrations = null, options = {}) {
+  async decomposeEpic(epicDescription, integrations = null, _options = {}) {
     try {
       // Enhanced debugging for API access
       console.log(`[DEBUG] EpicHandler.decomposeEpic called with description: ${epicDescription.substring(0, 50)}...`);
@@ -62,57 +61,6 @@ class EpicHandler {
       
       console.log('[DEBUG] AI service initialized successfully');
 
-      // Use Firecrawl if enabled
-      let researchResults = null;
-      if (options.useFirecrawl) {
-        console.log('Using Firecrawl for research');
-        console.log('Firecrawl API Key:', process.env.FIRECRAWL_API_KEY ? 'Set' : 'Not set');
-        console.log('Firecrawl options:', {
-          depth: process.env.KANBN_FIRECRAWL_DEPTH || 3,
-          maxUrls: process.env.KANBN_FIRECRAWL_MAX_URLS || 10,
-          timeout: process.env.KANBN_FIRECRAWL_TIMEOUT || 120
-        });
-        // Define FirecrawlClient to fix undefined reference
-        const FirecrawlClient = require('./firecrawl-client');
-
-        // If repository URL is provided, analyze it
-        if (options.repository) {
-          console.log('[DEBUG] Analyzing repository:', options.repository);
-          try {
-            console.log('Starting repository research...');
-            const firecrawlClient = new FirecrawlClient();
-            const repoResearch = await firecrawlClient.deepResearch({
-              query: `Analyze the GitHub repository: ${options.repository}`,
-              maxDepth: process.env.KANBN_FIRECRAWL_DEPTH || 3,
-              maxUrls: process.env.KANBN_FIRECRAWL_MAX_URLS || 10,
-              timeLimit: process.env.KANBN_FIRECRAWL_TIMEOUT || 120
-            });
-            console.log('Repository research results:', repoResearch);
-            researchResults = repoResearch;
-          } catch (error) {
-            console.log('[DEBUG] Error analyzing repository:', error);
-          }
-        }
-
-        // Research the epic topic
-        try {
-          const firecrawlClient = new FirecrawlClient();
-          const topicResearch = await firecrawlClient.deepResearch({
-            query: epicDescription,
-            maxDepth: process.env.KANBN_FIRECRAWL_DEPTH || 3,
-            maxUrls: process.env.KANBN_FIRECRAWL_MAX_URLS || 10,
-            timeLimit: process.env.KANBN_FIRECRAWL_TIMEOUT || 120
-          });
-          researchResults = researchResults ? {
-            ...researchResults,
-            insights: [...(researchResults.insights || []), ...(topicResearch.insights || [])],
-            references: [...(researchResults.references || []), ...(topicResearch.references || [])]
-          } : topicResearch;
-        } catch (error) {
-          console.log('[DEBUG] Error researching topic:', error);
-        }
-      }
-
       // Load the epic prompt template
       let epicPrompt = await this.promptLoader.loadPrompt('epic-decomposition');
       
@@ -120,18 +68,6 @@ class EpicHandler {
         // Fallback prompt if the file doesn't exist
         epicPrompt = this.getDefaultEpicPrompt();
       }
-
-      // Add research results to context
-      let context = {};
-      if (researchResults) {
-        context.research = {
-          references: researchResults.references || [],
-          insights: researchResults.insights || [],
-          summary: researchResults.summary || ''
-        };
-        console.log('Added research results to context:', context.research);
-      }
-      epicPrompt = `${epicPrompt}\n\n## Research Results\n${JSON.stringify(context, null, 2)}`;
 
       // Create system message with project context
       const systemMessage = {

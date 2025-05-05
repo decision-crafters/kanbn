@@ -129,78 +129,58 @@ QUnit.module('Chat Domain Events', {
     mockRequire.reRequire('../../src/lib/ai-service'); // Re-require after mocking
 
     // --- Mock Dependencies Instead of src/main ---
-    const self = this; // Capture 'this' for use inside mock classes/functions
     this.mockKanbnInstance = new DomainMockKanbn(this.eventBus); // Create the specific kanbn instance we need
 
     // Mock ProjectContext
     const MockProjectContext = class {
         constructor(kanbn) {
-            // Ensure it receives the correct kanbn instance
-            // QUnit is not available here, so we rely on the test assertions later
-            // assert.strictEqual(kanbn, self.mockKanbnInstance, "ProjectContext received correct mock Kanbn instance");
             this.kanbn = kanbn;
         }
         async getContext() { return await this.kanbn.getProjectContext(); }
         createSystemMessage(context) {
-            // Simple mock implementation
             return `System Message based on: ${JSON.stringify(context)}`;
         }
-        // Add other methods if needed by ChatHandler/Controller
     };
     mockRequire('../../src/lib/project-context', MockProjectContext);
 
     // Mock ChatHandler
     const MockChatHandler = class {
         constructor(kanbn, boardFolder, projectContext, memoryManager, promptLoader, eventBus) {
-            // Ensure it receives the correct kanbn instance and eventBus
-            // assert.strictEqual(kanbn, self.mockKanbnInstance, "ChatHandler received correct mock Kanbn instance");
-            // assert.strictEqual(eventBus, self.eventBus, "ChatHandler received correct event bus");
             this.kanbn = kanbn;
-            this.projectContext = projectContext; // Should be instance of MockProjectContext
-            this.aiService = mockAIServiceInstance; // Use the mocked AI service
+            this.projectContext = projectContext; 
+            this.aiService = mockAIServiceInstance; 
             this.eventBus = eventBus;
-            // Mock other dependencies if necessary
         }
 
-        async handleMessage(message, options = {}) {
-            // Simulate basic command parsing or AI call based on message
+        async handleMessage(message) {
             if (message.toLowerCase().includes('create task')) {
                 const taskName = message.split('task ')[1] || 'Default Task Name';
-                // Ensure metadata exists before accessing tags
                 const taskData = { name: taskName, description: '', metadata: { tags: ['ai-interaction'] } };
                 await this.kanbn.createTask(taskData, 'Backlog');
                 return "OK, created task.";
             } else if (message.toLowerCase().includes('what tasks')) {
-                await this.kanbn.getProjectContext(); // Simulate context query
+                await this.kanbn.getProjectContext(); 
                 return "Here are the tasks...";
             } else if (message.toLowerCase().includes('project status')) {
-                await this.kanbn.status(); // Simulate status query
+                await this.kanbn.status(); 
                 return "Project status is good.";
             } else {
-                // Simulate generic AI interaction logging if needed
-                // This part is tricky as AILogging is usually inside AIService
-                // For now, let's assume the task creation covers the logging event trigger
                 return "Mock AI response for domain test.";
             }
         }
-        // Add other methods if needed by Controller
     };
     mockRequire('../../src/lib/chat-handler', MockChatHandler);
 
-    // Re-require dependencies after mocking
     mockRequire.reRequire('../../src/lib/project-context');
     mockRequire.reRequire('../../src/lib/chat-handler');
-    // Re-require the controller AFTER its dependencies are mocked
     delete require.cache[require.resolve('../../src/controller/chat')];
     this.chatController = require('../../src/controller/chat');
 
-
-    // Set test environment
     process.env.KANBN_ENV = 'test';
     },
 
     after: function() {
-        mockRequire.stop('../../lib/ai-service'); // Stop AI service mock
+        mockRequire.stop('../../lib/ai-service'); 
         mockRequire.stop('../../src/lib/project-context');
         mockRequire.stop('../../src/lib/chat-handler');
     },
@@ -212,7 +192,6 @@ QUnit.module('Chat Domain Events', {
         }
         process.chdir(testFolder);
 
-        // Reset mockKanbnInstance state if necessary (e.g., clear tasks map)
         this.mockKanbnInstance.tasks = new Map([['test-task', { id: 'test-task', name: 'Test Task', description: 'A test task', metadata: { tags: ['test'] } }]]);
         this.mockKanbnInstance.index = {
             name: 'Test Project',
@@ -222,17 +201,14 @@ QUnit.module('Chat Domain Events', {
                 'In Progress': []
             }
         };
-        // No need to re-mock dependencies here if they are stateless or managed by 'before'/'after'
     },
 
     afterEach: function() {
-        // No need to stop mocks here if managed by 'after'
         rimraf.sync(testFolder);
     }
 });
 
 QUnit.test('chat should emit task creation event when logging interaction', async function(assert) {
-    // Use the controller loaded in 'before' hook
     await this.chatController({
         message: 'Create a new task'
     });
@@ -246,8 +222,6 @@ QUnit.test('chat should emit task creation event when logging interaction', asyn
 });
 
 QUnit.test('chat should maintain context across multiple interactions', async function(assert) {
-    // Use the controller loaded in 'before' hook
-    // First interaction
     await this.chatController({
         message: 'What tasks do we have?'
     });
@@ -255,7 +229,6 @@ QUnit.test('chat should maintain context across multiple interactions', async fu
     const firstEvents = this.eventBus.getEvents();
     assert.ok(firstEvents.some(e => e.event === 'contextQueried'), 'Context query event emitted');
 
-    // Second interaction
     this.eventBus.clear();
     await this.chatController({
         message: 'Create a new task'
@@ -267,10 +240,6 @@ QUnit.test('chat should maintain context across multiple interactions', async fu
 });
 
 QUnit.test('chat should handle task state changes', async function(assert) {
-    // Use the controller loaded in 'before' hook
-
-    // Simulate task state change (This event is emitted externally, chat controller doesn't need to react directly)
-    // We just need to ensure the context query happens after the state change for the test logic.
     this.eventBus.emit('taskMoved', {
         taskId: 'test-task',
         fromColumn: 'Backlog',

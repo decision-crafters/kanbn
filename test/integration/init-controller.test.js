@@ -1,11 +1,7 @@
 const mockRequire = require('mock-require');
 const mockArgv = require('mock-argv');
 const captureConsole = require('capture-console');
-const {
-  config: mockConfig,
-  // Prefix unused variable with underscore
-  kanbn: _mockKanbn
-} = require('../mock-kanbn');
+const { config: mockConfig } = require('../mock-kanbn');
 const context = require('../context');
 
 // Add QUnit definition

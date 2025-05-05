@@ -3,10 +3,7 @@
  * Manages MCP server configurations, lifecycle, and communication
  */
 
-const debug = require('debug')('kanbn:mcp');
-const path = require('path');
 const { spawn } = require('child_process');
-const mcpServerSchema = require('./schema');
 const ProtocolFactory = require('./protocols/factory');
 
 class MCPClient {
@@ -25,7 +22,6 @@ class MCPClient {
     this.validateConfig(config);
     
     this.config = config;
-    debug('Loaded MCP configuration:', config);
   }
 
   /**
@@ -50,7 +46,6 @@ class MCPClient {
     }
 
     const serverConfig = this.config.mcpServers[serverName];
-    debug('Starting MCP server:', serverName, serverConfig);
 
     // Resolve environment variables
     const env = {};
@@ -76,19 +71,14 @@ class MCPClient {
       handler: this.protocolFactory.getHandler(serverName, serverConfig)
     });
 
-    debug('Started MCP server:', serverName);
-
     // Handle server output
-    server.stdout.on('data', (data) => {
-      debug(`[${serverName}] stdout:`, data.toString());
+    server.stdout.on('data', (_data) => {
     });
 
-    server.stderr.on('data', (data) => {
-      debug(`[${serverName}] stderr:`, data.toString());
+    server.stderr.on('data', (_data) => {
     });
 
-    server.on('close', (code) => {
-      debug(`[${serverName}] exited with code ${code}`);
+    server.on('close', (_code) => {
       this.servers.delete(serverName);
     });
 
@@ -128,7 +118,6 @@ class MCPClient {
       }
       server.process.kill();
       this.servers.delete(serverName);
-      debug('Stopped MCP server:', serverName);
     }
   }
 

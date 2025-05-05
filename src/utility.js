@@ -12,11 +12,14 @@ module.exports = (() => {
      * @param {boolean} dontExit
      */
     error(error, dontExit = false) {
-      const message = error instanceof Error
+      const message = (typeof error === 'object' && error.message)
         ? (process.env.DEBUG === 'true' ? error : this.replaceTags(error.message))
         : this.replaceTags(error);
       console.error(message);
-      !dontExit && process.env.KANBN_ENV !== 'test' && process.exit(1);
+      // Use an if statement for the throw
+      if (!dontExit && process.env.KANBN_ENV !== 'test') {
+        throw new Error(message);
+      }
     },
 
     /**
@@ -60,7 +63,7 @@ module.exports = (() => {
           /([A-Z]+(.))/g,
           (_, separator, letter, offset) => (offset ? "-" + separator : separator).toLowerCase()
         )
-        .split(/[\s!?.,@:;|\\/"'`£$%\^&*{}[\]()<>~#+\-=_¬]+/g)
+        .split(/[\s!?.,@:;|\\/"'`£$%^&*{}[\]()<>~#+\-=_¬]+/g)
         .join('-')
         .replace(/(^-|-$)/g, '');
     },
@@ -104,7 +107,7 @@ module.exports = (() => {
      * @param {string} s The string to trim
      */
     trimLeftEscapeCharacters(s) {
-      return s.replace(/^[\\\/]+/, '');
+      return s.replace(/^[/\\]+/, '');
     },
 
     /**
@@ -163,7 +166,7 @@ module.exports = (() => {
      */
     replaceTags(s) {
       for (const tag in tags) {
-        const r = new RegExp(`\{${tag}\}([^{]+)\{${tag}\}`, 'g');
+        const r = new RegExp(`{${tag}}([^{}]+){${tag}}`, 'g');
         s = s.replace(r, (m, s) => this[tags[tag]](s));
       }
       return s;

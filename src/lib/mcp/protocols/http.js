@@ -3,7 +3,6 @@
  * Handles HTTP/HTTPS communication with MCP servers
  */
 
-const debug = require('debug')('kanbn:mcp:http');
 const http = require('http');
 const https = require('https');
 const BaseProtocolHandler = require('./base');
@@ -22,7 +21,6 @@ class HTTPProtocolHandler extends BaseProtocolHandler {
    * Initialize the protocol handler
    */
   async initialize() {
-    debug('Initializing HTTP protocol handler:', this.baseUrl);
     // Verify server is reachable
     return this.checkHealth();
   }
@@ -41,7 +39,6 @@ class HTTPProtocolHandler extends BaseProtocolHandler {
         return await this._makeRequest(method, path, data);
       } catch (error) {
         lastError = error;
-        debug(`Request failed (attempt ${attempt}/${this.retries}):`, error.message);
         if (attempt < this.retries) {
           // Wait before retrying, using exponential backoff
           await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 100));
@@ -111,7 +108,6 @@ class HTTPProtocolHandler extends BaseProtocolHandler {
       await this.request('GET', healthPath);
       return true;
     } catch (error) {
-      debug('Health check failed:', error.message);
       return false;
     }
   }
@@ -121,7 +117,6 @@ class HTTPProtocolHandler extends BaseProtocolHandler {
    */
   async close() {
     // HTTP is stateless, no connections to close
-    debug('Closing HTTP protocol handler');
   }
 }
 

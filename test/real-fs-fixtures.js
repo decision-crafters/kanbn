@@ -118,7 +118,7 @@ function createFixtures(testName, options = {}) {
     const COUNT_TASKS = options.countTasks || faker.datatype.number(9) + 1;
     tasks = new Array(COUNT_TASKS).fill(null).map((v, i) => generateTask(i));
     taskIds = tasks.filter(_i => !_i.untracked).map(_i => utility.getTaskId(_i.name));
-    tasks.forEach(i => addRelations(taskIds));
+    tasks.forEach(_i => addRelations(taskIds));
   }
 
   if ('columns' in options) {

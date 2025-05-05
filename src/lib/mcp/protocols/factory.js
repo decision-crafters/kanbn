@@ -3,7 +3,6 @@
  * Creates and manages protocol handlers for MCP servers
  */
 
-const debug = require('debug')('kanbn:mcp:factory');
 const HTTPProtocolHandler = require('./http');
 
 class ProtocolFactory {
@@ -37,8 +36,9 @@ class ProtocolFactory {
         throw new Error(`Unknown protocol: ${protocol}`);
     }
 
+    // Store the handler instance
     this.handlers.set(serverName, handler);
-    debug('Created protocol handler:', serverName, protocol);
+
     return handler;
   }
 
@@ -47,10 +47,9 @@ class ProtocolFactory {
    */
   async closeAll() {
     for (const [serverName, handler] of this.handlers) {
-      debug('Closing handler:', serverName);
+      this.handlers.delete(serverName);
       await handler.close();
     }
-    this.handlers.clear();
   }
 }
 

@@ -1,5 +1,5 @@
-const fs = require('fs');
-const path = require('path');
+// eslint-disable-next-line node/no-unpublished-require
+const fs = require('fs-extra');
 const { Kanbn } = require('./src/main');
 const ProjectContext = require('./src/lib/project-context');
 const EpicHandler = require('./src/lib/epic-handler');

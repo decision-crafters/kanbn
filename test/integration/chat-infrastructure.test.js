@@ -1,7 +1,5 @@
 const QUnit = require('qunit');
 const path = require('path');
-const fs = require('fs');
-const rimraf = require('rimraf');
 const mockRequire = require('mock-require');
 
 const testFolder = path.join(__dirname, '..', 'test-chat-infrastructure');
@@ -75,7 +73,7 @@ class MockFS {
         this.errors.set(normalizedPath, error);
     }
 
-    readFileSync(path, encoding) {
+    readFileSync(path, _encoding) {
         const normalizedPath = path.replace(/\\/g, '/');
         if (this.errors.has(normalizedPath)) {
             throw this.errors.get(normalizedPath);
@@ -96,7 +94,7 @@ class MockFS {
         return this.files.has(normalizedPath);
     }
 
-    mkdirSync(path, options) {
+    mkdirSync(path, _options) {
         const normalizedPath = path.replace(/\\/g, '/');
         this.files.set(normalizedPath, '');
     }

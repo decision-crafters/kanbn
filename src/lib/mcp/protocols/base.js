@@ -19,12 +19,12 @@ class BaseProtocolHandler {
 
   /**
    * Send a request to the MCP server
-   * @param {string} method The request method
-   * @param {string} path The request path
-   * @param {Object} data The request data
+   * @param {string} _method The request method
+   * @param {string} _path The request path
+   * @param {Object} _data The request data
    * @returns {Promise<Object>} The response data
    */
-  async request(method, path, data) {
+  async request(_method, _path, _data) {
     throw new Error('request() must be implemented by subclass');
   }
 
