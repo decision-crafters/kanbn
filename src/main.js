@@ -11,6 +11,7 @@ const fileUtils = require("./lib/file-utils");
 const taskUtils = require("./lib/task-utils");
 const indexUtils = require("./lib/index-utils");
 const statusUtils = require("./lib/status-utils");
+const { filterTasks } = require("./lib/index-utils");
 
 const DEFAULT_FOLDER_NAME = ".kanbn";
 const DEFAULT_INDEX_FILE_NAME = "index.md";
@@ -32,7 +33,7 @@ const DEFAULT_TASK_WORKLOAD_TAGS = {
   Medium: 3,
   Large: 5,
   Huge: 8,
-};
+}
 const DEFAULT_DATE_FORMAT = "d mmm yy, H:MM";
 const DEFAULT_TASK_TEMPLATE = "^+^_${overdue ? '^R' : ''}${name}^: ${created ? ('\\n^-^/' + created) : ''}";
 
