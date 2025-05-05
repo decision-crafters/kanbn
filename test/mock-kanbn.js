@@ -45,6 +45,10 @@ class Kanbn {
   async getIndex() {
     return config.index;
   }
+
+  async loadIndex() {
+    return config.index;
+  }
   async findTrackedTasks() {
     return config.trackedTasks;
   }
@@ -161,6 +165,7 @@ const kanbn = {
   getMainFolder: async () => await new Kanbn().getMainFolder(),
   initialise: async (options = {}) => await new Kanbn().initialise(options),
   getIndex: async () => await new Kanbn().getIndex(),
+  loadIndex: async () => await new Kanbn().loadIndex(),
   findTrackedTasks: async () => await new Kanbn().findTrackedTasks(),
   findUntrackedTasks: async () => await new Kanbn().findUntrackedTasks(),
   taskExists: async (taskId) => await new Kanbn().taskExists(taskId),
