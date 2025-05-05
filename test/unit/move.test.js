@@ -119,39 +119,39 @@ describe('moveTask tests', () => {
   realFs.cleanupFixtures(fixtures.testDir);
 });
 
-test('Move a task to an absolute position in the same column', async function(assert) {
+test('Move a task to an absolute position in the same column', async () => {
   await this.kanbn.moveTask('task-1', 'Column 1', -1);
-  await verifyTaskPosition(this.kanbn, assert, 'task-1', 'Column 1', 0);
+  await verifyTaskPosition(this.kanbn, 'task-1', 'Column 1', 0);
 
   await this.kanbn.moveTask('task-1', 'Column 1', 0);
-  await verifyTaskPosition(this.kanbn, assert, 'task-1', 'Column 1', 0);
+  await verifyTaskPosition(this.kanbn, 'task-1', 'Column 1', 0);
 
   await this.kanbn.moveTask('task-1', 'Column 1', 1);
-  await verifyTaskPosition(this.kanbn, assert, 'task-1', 'Column 1', 1);
+  await verifyTaskPosition(this.kanbn, 'task-1', 'Column 1', 1);
 
   await this.kanbn.moveTask('task-1', 'Column 1', 2);
-  await verifyTaskPosition(this.kanbn, assert, 'task-1', 'Column 1', 2);
+  await verifyTaskPosition(this.kanbn, 'task-1', 'Column 1', 2);
 
   await this.kanbn.moveTask('task-1', 'Column 1', 3);
-  await verifyTaskPosition(this.kanbn, assert, 'task-1', 'Column 1', 3);
+  await verifyTaskPosition(this.kanbn, 'task-1', 'Column 1', 3);
 
   await this.kanbn.moveTask('task-1', 'Column 1', 4);
-  await verifyTaskPosition(this.kanbn, assert, 'task-1', 'Column 1', 4);
+  await verifyTaskPosition(this.kanbn, 'task-1', 'Column 1', 4);
 
   await this.kanbn.moveTask('task-1', 'Column 1', 5);
-  await verifyTaskPosition(this.kanbn, assert, 'task-1', 'Column 1', 4);
+  await verifyTaskPosition(this.kanbn, 'task-1', 'Column 1', 4);
 
   await this.kanbn.moveTask('task-1', 'Column 1', 0);
-  await verifyTaskPosition(this.kanbn, assert, 'task-1', 'Column 1', 0);
+  await verifyTaskPosition(this.kanbn, 'task-1', 'Column 1', 0);
 
   await this.kanbn.moveTask('task-1', 'Column 1', 4);
-  await verifyTaskPosition(this.kanbn, assert, 'task-1', 'Column 1', 4);
+  await verifyTaskPosition(this.kanbn, 'task-1', 'Column 1', 4);
 
   await this.kanbn.moveTask('task-1', 'Column 1', 1);
-  await verifyTaskPosition(this.kanbn, assert, 'task-1', 'Column 1', 1);
+  await verifyTaskPosition(this.kanbn, 'task-1', 'Column 1', 1);
 
   await this.kanbn.moveTask('task-1', 'Column 1', 3);
-  await verifyTaskPosition(this.kanbn, assert, 'task-1', 'Column 1', 3);
+  await verifyTaskPosition(this.kanbn, 'task-1', 'Column 1', 3);
 });
 
 test('Move a task to an absolute position in another column', async function(assert) {
@@ -177,24 +177,24 @@ test('Move a task to an absolute position in another column', async function(ass
   await verifyTaskPosition(this.kanbn, assert, 'task-1', 'Column 2', 5);
 
   await this.kanbn.moveTask('task-1', 'Column 3', 6);
-  await verifyTaskPosition(this.kanbn, assert, 'task-1', 'Column 3', 5);
+  await verifyTaskPosition(this.kanbn, 'task-1', 'Column 3', 5);
 });
 
-test('Move a task to a relative position in the same column', async function(assert) {
+test('Move a task to a relative position in the same column', async () => {
   await this.kanbn.moveTask('task-1', 'Column 1', -1, true);
-  await verifyTaskPosition(this.kanbn, assert, 'task-1', 'Column 1', 0);
+  await verifyTaskPosition(this.kanbn, 'task-1', 'Column 1', 0);
 
   await this.kanbn.moveTask('task-1', 'Column 1', 2, true);
-  await verifyTaskPosition(this.kanbn, assert, 'task-1', 'Column 1', 2);
+  await verifyTaskPosition(this.kanbn, 'task-1', 'Column 1', 2);
 
   await this.kanbn.moveTask('task-1', 'Column 1', -1, true);
-  await verifyTaskPosition(this.kanbn, assert, 'task-1', 'Column 1', 1);
+  await verifyTaskPosition(this.kanbn, 'task-1', 'Column 1', 1);
 
   await this.kanbn.moveTask('task-1', 'Column 1', -10, true);
-  await verifyTaskPosition(this.kanbn, assert, 'task-1', 'Column 1', 0);
+  await verifyTaskPosition(this.kanbn, 'task-1', 'Column 1', 0);
 
   await this.kanbn.moveTask('task-1', 'Column 1', 10, true);
-  await verifyTaskPosition(this.kanbn, assert, 'task-1', 'Column 1', 4);
+  await verifyTaskPosition(this.kanbn, 'task-1', 'Column 1', 4);
 });
 
 test('Move a task to a relative position in another column', async function(assert) {
@@ -211,19 +211,18 @@ test('Move a task to a relative position in another column', async function(asse
   await verifyTaskPosition(this.kanbn, assert, 'task-1', 'Column 3', 0);
 
   await this.kanbn.moveTask('task-1', 'Column 2', 10, true);
-  await verifyTaskPosition(this.kanbn, assert, 'task-1', 'Column 2', 5);
+  await verifyTaskPosition(this.kanbn, 'task-1', 'Column 2', 5);
 });
 
 /**
  * Helper function to verify a task's position in a column
  * @param {object} kanbn The Kanbn instance
- * @param {object} assert The QUnit assert object
  * @param {string} taskId The task ID to check
  * @param {string} columnName The column name to check
  * @param {number} position The expected position in the column
  */
-async function verifyTaskPosition(kanbn, assert, taskId, columnName, position) {
+async function verifyTaskPosition(kanbn, taskId, columnName, position) {
   const index = await kanbn.getIndex();
-  expect(index.columns[columnName].includes(taskId), `Task ${taskId} should be in ${columnName}`);
-  expect(index.columns[columnName].indexOf(taskId), position, `Task ${taskId} should be at position ${position} in ${columnName}`);
+  expect(index.columns[columnName].includes(taskId)).toBeTruthy();
+  expect(index.columns[columnName].indexOf(taskId)).toBe(position);
 }
