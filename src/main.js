@@ -1579,7 +1579,7 @@ class Kanbn {
     }
     rimraf.sync(await this.getMainFolder());
   }
-};
+}
 
 /**
  * Factory function that creates and returns a new Kanbn instance
