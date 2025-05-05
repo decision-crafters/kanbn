@@ -567,7 +567,7 @@ module.exports = async args => {
     // Check that the tags being removed currently exist
     for (let removedTag of removedTags) {
       if (taskData.metadata.tags.indexOf(removedTag) === -1) {
-        utility.error(`Tag "${removedSubTask.text}" doesn't exist`);
+        utility.error(`Tag "${removedTag}" doesn't exist`);
         return;
       }
     }
@@ -705,15 +705,16 @@ module.exports = async args => {
               return;
             }
             break;
-          case 'string':
+          case 'string': {
             if (typeof args[arg] === 'string') {
               taskData.metadata[arg] = args[arg];
             } else {
-              utility.error(`Custom field "${fieldName}" value is not a string`);
+              utility.error(`Custom field "${arg}" value is not a string`);
               return;
             }
             break;
-          case 'date':
+          }
+          case 'date': {
             const dateValue = chrono.parseDate(args[arg]);
             if (dateValue instanceof Date) {
               taskData.metadata[arg] = dateValue;
@@ -722,6 +723,7 @@ module.exports = async args => {
               return;
             }
             break;
+          }
           default: break;
         }
       }
@@ -763,6 +765,7 @@ module.exports = async args => {
 
       // Edit or remove sub-tasks
       if ('editSubTasks' in answers) {
+        let editSubTask;
         for (editSubTask of answers.editSubTasks) {
           const i = taskData.subTasks.findIndex(subTask => subTask.task === editSubTask.selectSubTask);
           if (i !== -1) {
@@ -790,6 +793,7 @@ module.exports = async args => {
 
       // Remove tags
       if ('removeTags' in answers && 'metadata' in taskData && 'tags' in taskData.metadata) {
+        let removeTag;
         for (removeTag of answers.removeTags) {
           const i = taskData.metadata.tags.indexOf(removeTag.name);
           if (i !== -1) {
@@ -805,6 +809,7 @@ module.exports = async args => {
 
       // Remove references
       if ('removeReferences' in answers && 'metadata' in taskData && 'references' in taskData.metadata) {
+        let removeReference;
         for (removeReference of answers.removeReferences) {
           const i = taskData.metadata.references.indexOf(removeReference.selectReference);
           if (i !== -1) {
@@ -826,6 +831,7 @@ module.exports = async args => {
 
       // Edit or remove relations
       if ('editRelations' in answers) {
+        let editRelation;
         for (editRelation of answers.editRelations) {
           const i = taskData.relations.findIndex(relation => relation.task === editRelation.selectRelation);
           if (i !== -1) {

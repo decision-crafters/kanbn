@@ -25,8 +25,8 @@ const PromptLoader = require('../lib/prompt-loader');
 const MemoryManager = require('../lib/memory-manager');
 const eventBus = require('../lib/event-bus');
 
-const { execSync } = require('child_process');
-const { debugLog } = require('../utility');
+// const { execSync } = require('child_process'); // Commented out as unused
+// const { debugLog } = require('../utility'); // Commented out as unused
 
 // Try to use the new SimpleInteractive class first, fall back to InteractiveChat if needed
 let SimpleInteractive;
@@ -417,7 +417,7 @@ module.exports = async args => {
     }
 
     // Create memory manager for commands that use conversation history
-    let memoryManager;
+    let _memoryManager;
     try {
       // Get the kanbn folder path - be resilient for testing environment
       let kanbnFolder = boardFolder;
@@ -429,7 +429,7 @@ module.exports = async args => {
         }
       }
 
-      memoryManager = new MemoryManager(kanbnFolder);
+      _memoryManager = new MemoryManager(kanbnFolder);
     } catch (error) {
       utility.warning(`Error initializing memory manager: ${error.message}`);
       // Create an empty memory manager for resilience in testing
@@ -457,7 +457,7 @@ module.exports = async args => {
           utility.debugLog(`Initialized project context with ${projectContext.columns ? projectContext.columns.length : 0} columns`);
 
           // Create chat handler with the project context
-          chatHandler = new ChatHandler(kanbn, boardFolder, projectContext);
+          const chatHandler = new ChatHandler(kanbn, boardFolder, projectContext);
           utility.debugLog('Chat handler initialized successfully');
         } catch (contextError) {
           utility.error('Error initializing project context:', contextError.message);
@@ -576,7 +576,7 @@ module.exports = async args => {
                 let match = null;
 
                 // First try the standard pattern
-                const aiResponseRegex1 = /Project Assistant: ([\s\S]*?)(?:(?:\n\[EVENT\])|$)/;
+                const aiResponseRegex1 = /Project Assistant: ([\s\S]*?)(?:(?:\n\[EVENT])|$)/;
                 match = result.match(aiResponseRegex1);
 
                 // If that fails, try a more relaxed pattern
@@ -610,14 +610,15 @@ module.exports = async args => {
                 // Memory is maintained by the subprocess, so this is not essential for basic functionality
                 // If memory persistence across sessions is needed, we would need to enhance ChatHandler
                 // to expose proper memory management methods
-                if (false) { // Disabled for now
-                  try {
-                    // Future implementation would go here
-                    utility.debugLog('Memory updates disabled in interactive mode');
-                  } catch (memoryError) {
-                    utility.debugLog(`Error updating chat memory: ${memoryError.message}`);
-                  }
+                /*
+                // Disabled memory updates
+                try {
+                  // Future implementation would go here
+                  utility.debugLog('Memory updates disabled in interactive mode');
+                } catch (memoryError) {
+                  utility.debugLog(`Error updating chat memory: ${memoryError.message}`);
                 }
+                */
               } catch (execError) {
                 // Detailed error logging to help diagnose subprocess issues
                 utility.debugLog(`Subprocess execution failed: ${execError.message}`);
@@ -708,7 +709,8 @@ module.exports = async args => {
         // If the first half and second half are very similar, only show the first half
         if (firstHalf.length > 20 && secondHalf.startsWith(firstHalf.substring(0, Math.min(50, firstHalf.length)))) {
           utility.debugLog('Detected duplicate response, showing only first half');
-          response = firstHalf;
+          const responseToShow = firstHalf;
+          response = responseToShow;
         }
 
         // REMOVED: Direct console.log to avoid duplicate output

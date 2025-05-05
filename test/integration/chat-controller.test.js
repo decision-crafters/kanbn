@@ -206,6 +206,7 @@ describe('Chat controller tests', () => {
         message: 'Test message'
       });
       expect(result).toBeTruthy();
+      expect(typeof result).toBe('string');
     } catch (error) {
       expect(error).toBeFalsy();
     }
@@ -253,16 +254,16 @@ describe('Chat controller tests', () => {
       
       // Test column queries with async/await instead of promise chaining
       const response1 = await testListTasksInColumn('what tasks are in Backlog');
-      expect(response1.includes('Tasks in Backlog') || response1.includes('AI services are not available')).toBeTruthy();
+      expect(response1.includes('Tasks in Backlog') || response1.includes('AI services are not available')).toBe(true);
       
       const response2 = await testListTasksInColumn('show tasks in the To Do');
-      expect(response2.includes('Tasks in To Do') || response2.includes('AI services are not available')).toBeTruthy();
+      expect(response2.includes('Tasks in To Do') || response2.includes('AI services are not available')).toBe(true);
       
       const response3 = await testListTasksInColumn('list items in "In Progress"');
-      expect(response3.includes('Tasks in In Progress') || response3.includes('AI services are not available')).toBeTruthy();
+      expect(response3.includes('Tasks in In Progress') || response3.includes('AI services are not available')).toBe(true);
       
       const response4 = await testListTasksInColumn('what tasks are in NonExistentColumn');
-      expect(response4.includes('doesn\'t exist') || response4.includes('AI services are not available')).toBeTruthy();
+      expect(response4.includes('doesn\'t exist') || response4.includes('AI services are not available')).toBe(true);
     } catch (error) {
       expect(error).toBeFalsy();
     }
