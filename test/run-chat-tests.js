@@ -1,5 +1,4 @@
 const QUnit = require('qunit');
-const path = require('path');
 
 // Configure QUnit for Node.js environment
 QUnit.config.autostart = false;

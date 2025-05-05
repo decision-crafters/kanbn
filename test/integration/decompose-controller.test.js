@@ -2,8 +2,11 @@ const path = require('path');
 const fs = require('fs');
 const rimraf = require('rimraf');
 const mockRequire = require('mock-require');
-const testHelper = require('../test-helper');
+// Remove unused variable
 const dotenv = require('dotenv');
+
+// Add QUnit definition
+const QUnit = require('qunit');
 
 // Load environment variables from .env file
 dotenv.config();
@@ -126,14 +129,16 @@ const mockAxios = {
 };
 
 const testFolder = path.join(__dirname, '..', 'test-decompose');
-const testTasksFolder = path.join(testFolder, '.kanbn', 'tasks');
+// Remove unused variable or prefix with underscore to indicate intentionally unused
+const _testTasksFolder = path.join(testFolder, '.kanbn', 'tasks');
 
 QUnit.module('Decompose controller tests', {
   before: function() {
     // Save the original modules
     const decomposeModulePath = require.resolve('../../src/controller/decompose');
     const mainModulePath = require.resolve('../../src/main');
-    const axiosModulePath = require.resolve('axios');
+    // Remove unused variable or prefix with underscore
+    const _axiosModulePath = require.resolve('axios');
 
     if (require.cache[decomposeModulePath]) {
       originalDecomposeModule = require.cache[decomposeModulePath];
@@ -197,7 +202,8 @@ QUnit.test('should log AI interaction when OpenRouter API key is not available',
       constructor() {
         console.log('MockAILogging instantiated');
       }
-      async logInteraction(boardFolder, type, data) {
+      // Fix unused parameter by prefixing with underscore
+      async logInteraction(boardFolder, type, _data) {
         console.log(`MockAILogging.logInteraction called with type: ${type}`);
         aiLoggingCallCount++;
         return true;
@@ -258,7 +264,7 @@ QUnit.test('should log AI interaction when OpenRouter API key is not available',
 
 QUnit.test('should create parent-child relationships between tasks', async function(assert) {
     // Get the decompose module with our mocks
-    const decompose = require('../../src/controller/decompose');
+    const _decompose = require('../../src/controller/decompose');
 
     // Create a mock instance to test with
     const mockKanbn = new MockKanbn();

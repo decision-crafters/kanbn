@@ -3,9 +3,13 @@ const mockArgv = require('mock-argv');
 const captureConsole = require('capture-console');
 const {
   config: mockConfig,
-  kanbn: mockKanbn
+  // Prefix unused variable with underscore
+  kanbn: _mockKanbn
 } = require('../mock-kanbn');
 const context = require('../context');
+
+// Add QUnit definition
+const QUnit = require('qunit');
 
 let kanbn;
 
@@ -203,5 +207,6 @@ QUnit.test('Reinitialise kanbn interactively should show current title', async a
   ]);
 
   captureConsole.stopIntercept(process.stdout);
-  assert.contains(output, new RegExp(`\(${mockConfig.index.name}\)`));
+  // Fix unnecessary escape characters
+  assert.contains(output, new RegExp(`(${mockConfig.index.name})`));
 });

@@ -10,10 +10,6 @@ const PromptLoader = require('./prompt-loader');
 const AILogging = require('./ai-logging');
 const utility = require('../utility');
 const path = require('path');
-const fs = require('fs');
-const debug = require('debug')('kanbn:epic-handler');
-const OpenRouterClient = require('./openrouter-client');
-const OllamaClient = require('./ollama-client');
 const FirecrawlClient = require('./firecrawl-client');
 
 /**
@@ -69,19 +65,29 @@ class EpicHandler {
       // Use Firecrawl if enabled
       let researchResults = null;
       if (options.useFirecrawl) {
-        console.log('[DEBUG] Using Firecrawl for research');
-        const firecrawlClient = new FirecrawlClient();
+        console.log('Using Firecrawl for research');
+        console.log('Firecrawl API Key:', process.env.FIRECRAWL_API_KEY ? 'Set' : 'Not set');
+        console.log('Firecrawl options:', {
+          depth: process.env.KANBN_FIRECRAWL_DEPTH || 3,
+          maxUrls: process.env.KANBN_FIRECRAWL_MAX_URLS || 10,
+          timeout: process.env.KANBN_FIRECRAWL_TIMEOUT || 120
+        });
+        // Define FirecrawlClient to fix undefined reference
+        const FirecrawlClient = require('./firecrawl-client');
 
         // If repository URL is provided, analyze it
         if (options.repository) {
           console.log('[DEBUG] Analyzing repository:', options.repository);
           try {
+            console.log('Starting repository research...');
+            const firecrawlClient = new FirecrawlClient();
             const repoResearch = await firecrawlClient.deepResearch({
               query: `Analyze the GitHub repository: ${options.repository}`,
               maxDepth: process.env.KANBN_FIRECRAWL_DEPTH || 3,
               maxUrls: process.env.KANBN_FIRECRAWL_MAX_URLS || 10,
               timeLimit: process.env.KANBN_FIRECRAWL_TIMEOUT || 120
             });
+            console.log('Repository research results:', repoResearch);
             researchResults = repoResearch;
           } catch (error) {
             console.log('[DEBUG] Error analyzing repository:', error);
@@ -90,6 +96,7 @@ class EpicHandler {
 
         // Research the epic topic
         try {
+          const firecrawlClient = new FirecrawlClient();
           const topicResearch = await firecrawlClient.deepResearch({
             query: epicDescription,
             maxDepth: process.env.KANBN_FIRECRAWL_DEPTH || 3,
@@ -122,7 +129,7 @@ class EpicHandler {
           insights: researchResults.insights || [],
           summary: researchResults.summary || ''
         };
-        debug('Added research results to context:', context.research);
+        console.log('Added research results to context:', context.research);
       }
       epicPrompt = `${epicPrompt}\n\n## Research Results\n${JSON.stringify(context, null, 2)}`;
 
@@ -211,6 +218,9 @@ class EpicHandler {
       // Create child tasks
       const childTaskIds = [];
       
+      // Define a context variable for research references if needed
+      let researchContext = null;
+
       for (const task of tasksData) {
         // Create task data
         const childTaskData = {
@@ -226,16 +236,21 @@ class EpicHandler {
         };
 
         // Add references from research if available
-        if (context?.research?.references?.length > 0) {
-          const relevantRefs = context.research.references.filter(ref => {
+        if (researchContext?.research?.references?.length > 0) {
+          console.log('Found research references:', researchContext.research.references.length);
+          const relevantRefs = researchContext.research.references.filter(ref => {
             const lowerTitle = ref.title?.toLowerCase() || '';
             const lowerDesc = ref.description?.toLowerCase() || '';
             const lowerTaskName = task.name.toLowerCase();
             const lowerTaskDesc = task.description?.toLowerCase() || '';
-            return lowerTitle.includes(lowerTaskName) ||
+            const isRelevant = lowerTitle.includes(lowerTaskName) ||
                    lowerDesc.includes(lowerTaskName) ||
                    lowerTitle.includes(lowerTaskDesc) ||
                    lowerDesc.includes(lowerTaskDesc);
+            if (isRelevant) {
+              console.log('Found relevant reference for task:', task.name, ref);
+            }
+            return isRelevant;
           });
 
           if (relevantRefs.length > 0) {
@@ -246,7 +261,7 @@ class EpicHandler {
                 description: ref.description
               }))
             };
-            debug('Added references to task:', task.name, childTaskData.metadata.references);
+            console.log('Added references to task:', task.name, childTaskData.metadata.references);
           }
         }
 

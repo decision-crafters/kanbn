@@ -29,15 +29,17 @@ const eventBus = require('../lib/event-bus');
 // const { debugLog } = require('../utility'); // Commented out as unused
 
 // Try to use the new SimpleInteractive class first, fall back to InteractiveChat if needed
-let SimpleInteractive;
 try {
-  SimpleInteractive = require('../lib/simple-interactive');
+  require('../lib/simple-interactive');
+  utility.debugLog('SimpleInteractive is available');
 } catch (error) {
   utility.debugLog('SimpleInteractive not available, using InteractiveChat');
 }
 
 try {
-  InteractiveChat = require('../lib/interactive-chat');
+  // Don't reassign the constant, just check if it's available
+  require('../lib/interactive-chat');
+  utility.debugLog('InteractiveChat is available');
 } catch (error) {
   utility.debugLog('InteractiveChat not available');
 }
@@ -384,7 +386,7 @@ module.exports = async (args, _argv, _id) => {
     // Check if we're in a Kanbn board
     let inBoard = false;
     try {
-      const data = await kanbn.getIndex();
+      await kanbn.getIndex();
       inBoard = true;
     } catch (error) {
       utility.warning('Not inside a Kanbn board. Some commands may not work correctly.');
@@ -417,7 +419,6 @@ module.exports = async (args, _argv, _id) => {
     }
 
     // Create memory manager for commands that use conversation history
-    let _memoryManager;
     try {
       // Get the kanbn folder path - be resilient for testing environment
       let kanbnFolder = boardFolder;
@@ -429,11 +430,11 @@ module.exports = async (args, _argv, _id) => {
         }
       }
 
-      _memoryManager = new MemoryManager(kanbnFolder);
+      // Initialize memory manager, but don't store the reference since it's not used
+      new MemoryManager(kanbnFolder);
+      utility.debugLog(`Memory manager initialized successfully`);
     } catch (error) {
       utility.warning(`Error initializing memory manager: ${error.message}`);
-      // Create an empty memory manager for resilience in testing
-      memoryManager = new MemoryManager(boardFolder);
     }
 
     // Handle commands
@@ -448,7 +449,6 @@ module.exports = async (args, _argv, _id) => {
 
         // Initialize these before using them in the interactive loop
         let projectContext;
-        let chatHandler;
 
         try {
           // Create project context
@@ -456,8 +456,9 @@ module.exports = async (args, _argv, _id) => {
           projectContext = await projectContextManager.getContext(true);
           utility.debugLog(`Initialized project context with ${projectContext.columns ? projectContext.columns.length : 0} columns`);
 
-          // Create chat handler with the project context
-          const chatHandler = new ChatHandler(kanbn, boardFolder, projectContext);
+          // Initialize chat handler but don't store in unused variable
+          utility.debugLog('Initializing chat handler with project context');
+          new ChatHandler(kanbn, boardFolder, projectContext);
           utility.debugLog('Chat handler initialized successfully');
         } catch (contextError) {
           utility.error('Error initializing project context:', contextError.message);
@@ -576,7 +577,7 @@ module.exports = async (args, _argv, _id) => {
                 let match = null;
 
                 // First try the standard pattern
-                const aiResponseRegex1 = /Project Assistant: ([\s\S]*?)(?:(?:\n\[EVENT])|$)/;
+                const aiResponseRegex1 = /Project Assistant: ([\s\S]*?)(?:(?:\n[EVENT])|$)/;
                 match = result.match(aiResponseRegex1);
 
                 // If that fails, try a more relaxed pattern
@@ -587,7 +588,7 @@ module.exports = async (args, _argv, _id) => {
 
                 // If that still fails, try to extract anything after 'Thinking...'
                 if (!match || !match[1]) {
-                  const aiResponseRegex3 = /Thinking\.\.\.\s*([\s\S]*?)(?:$)/;
+                  const aiResponseRegex3 = /Thinking...\s*([\s\S]*?)(?:$)/;
                   match = result.match(aiResponseRegex3);
                 }
 
@@ -640,8 +641,8 @@ module.exports = async (args, _argv, _id) => {
 
               // Remove AI interaction task references
               filteredResponse = filteredResponse
-                .replace(/ai-(?:request|response)-interaction-at-[\w-\.]+/g, '[system task]')
-                .replace(/AI (?:request|response) interaction at [\w-\.:]+/g, '[system task]');
+                .replace(/ai-(?:request|response)-interaction-at-[\w-.]+/g, '[system task]')
+                .replace(/AI (?:request|response) interaction at [\w-.:]+/g, '[system task]');
 
               // Clear the thinking message and display response
               process.stdout.write('\r' + ' '.repeat(80) + '\r');
@@ -707,17 +708,19 @@ module.exports = async (args, _argv, _id) => {
         const secondHalf = response.substring(halfLength).trim();
 
         // If the first half and second half are very similar, only show the first half
+        let responseToReturn = response;
         if (firstHalf.length > 20 && secondHalf.startsWith(firstHalf.substring(0, Math.min(50, firstHalf.length)))) {
           utility.debugLog('Detected duplicate response, showing only first half');
-          const responseToShow = firstHalf;
-          response = responseToShow;
+          responseToReturn = firstHalf;
         }
 
         // REMOVED: Direct console.log to avoid duplicate output
         // Let the top-level index.js handle printing the result exactly once
+
+        return responseToReturn || 'No response from chat handler';
       }
 
-      return response || 'No response from chat handler';
+      return 'No response from chat handler';
     } else {
       // Show help
       utility.info(`

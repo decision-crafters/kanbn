@@ -52,7 +52,7 @@ async function interactiveCreateTask(taskData, taskIds, columnName, columnNames)
       name: 'description',
       message: 'Task description:',
       default: taskData.description,
-      when: answers => answers.setDescription
+      when: _ => _.setDescription
     },
     {
       type: 'list',
@@ -66,7 +66,7 @@ async function interactiveCreateTask(taskData, taskIds, columnName, columnNames)
       name: 'setDue',
       message: 'Set a due date?',
       default: false,
-      when: answers => !dueDateExists
+      when: _ => !dueDateExists
     },
     {
       type: 'datepicker',
@@ -74,21 +74,21 @@ async function interactiveCreateTask(taskData, taskIds, columnName, columnNames)
       message: 'Due date:',
       default: dueDateExists ? taskData.metadata.due : new Date(),
       format: ['Y', '/', 'MM', '/', 'DD'],
-      when: answers => answers.setDue,
+      when: _ => _.setDue,
     },
     {
       type: 'confirm',
       name: 'setAssigned',
       message: 'Assign this task?',
       default: false,
-      when: answers => !assignedExists
+      when: _ => !assignedExists
     },
     {
       type: 'input',
       name: 'assigned',
       message: 'Assigned to:',
       default: assignedExists ? taskData.metadata.assigned : getGitUsername(),
-      when: answers => answers.setAssigned || assignedExists
+      when: _ => _.setAssigned || assignedExists
     },
     {
       type: 'recursive',
@@ -162,7 +162,7 @@ async function interactiveCreateTask(taskData, taskIds, columnName, columnNames)
       initialMessage: 'Add a relation?',
       message: 'Add another relation?',
       default: false,
-      when: answers => taskIds.length > 0,
+      when: _ => taskIds.length > 0,
       prompts: [
         {
           type: 'autocomplete',
@@ -439,7 +439,7 @@ module.exports = async args => {
 
         // Check value type
         switch (customField.type) {
-          case 'boolean':
+          case 'boolean': {
             if (typeof args[arg] === 'boolean') {
               taskData.metadata[arg] = args[arg];
             } else {
@@ -447,7 +447,8 @@ module.exports = async args => {
               return;
             }
             break;
-          case 'number':
+          }
+          case 'number': {
             const numberValue = parseFloat(args[arg]);
             if (!isNaN(numberValue)) {
               taskData.metadata[arg] = numberValue;
@@ -456,7 +457,8 @@ module.exports = async args => {
               return;
             }
             break;
-          case 'string':
+          }
+          case 'string': {
             if (typeof args[arg] === 'string') {
               taskData.metadata[arg] = args[arg];
             } else {
@@ -464,7 +466,8 @@ module.exports = async args => {
               return;
             }
             break;
-          case 'date':
+          }
+          case 'date': {
             const dateValue = chrono.parseDate(args[arg]);
             if (dateValue instanceof Date) {
               taskData.metadata[arg] = dateValue;
@@ -473,6 +476,7 @@ module.exports = async args => {
               return;
             }
             break;
+          }
           default: break;
         }
       }

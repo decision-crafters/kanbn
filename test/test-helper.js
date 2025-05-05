@@ -5,13 +5,10 @@
  * This centralizes test-specific code that was previously included in production files.
  */
 
-const kanbnModule = require('../src/main');
 const AIService = require('../src/lib/ai-service');
 const ProjectContext = require('../src/lib/project-context');
 const AILogging = require('../src/lib/ai-logging');
 const InteractiveChat = require('../src/lib/interactive-chat');
-const fs = require('fs');
-const path = require('path');
 
 /**
  * Get project context for testing
@@ -61,7 +58,7 @@ async function getProjectContext(kanbnInstance, includeReferences = false) {
  * @param {Function} streamCallback Optional callback for streaming responses
  * @returns {Promise<string>} AI response
  */
-async function callAIService(message, context, kanbnInstance, apiKey, model, boardFolder, conversationId, streamCallback = null) {
+async function callAIService(message, context, kanbnInstance, apiKey, model, _boardFolder, _conversationId, streamCallback = null) {
   const aiService = new AIService({
     apiKey: apiKey,
     model: model,
@@ -170,7 +167,7 @@ function createMockAIService(responseText = "This is a test response from the mo
       return responseText;
     },
     
-    loadConversationHistory: (boardFolder, conversationId) => {
+    loadConversationHistory: (_boardFolder, _conversationId) => {
       return [];
     },
     

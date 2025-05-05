@@ -34,7 +34,12 @@
       "start": ["s", "run"],
       "stop": ["x", "kill"],
       "status": ["stat"]
-    }
+    },
+    "default": {
+      "type": "markdown"
+    },
+    "unknown": true,
+    "stopEarly": false
   },
   "controller": "./src/controller/integrations",
   "help": "./docs/commands/integrations.txt"

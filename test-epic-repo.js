@@ -129,13 +129,27 @@ async function testRepoEpicDecomposition() {
         console.error('Invalid results format or no tasks returned:', results);
       }
 
-      // List final tasks
-      console.log('\n=== Final Task List ===');
+      // List final tasks with details
+      console.log('\n=== Final Task List with Details ===');
       const index = await kanbn.loadIndex();
       const tasks = await kanbn.loadAllTrackedTasks(index);
       console.log('Total tasks:', Object.keys(tasks).length);
       for (const [taskId, task] of Object.entries(tasks)) {
-        console.log(`- ${taskId}: ${task.name} (${task.metadata?.type || 'task'})`);
+        console.log(`\n=== Task: ${taskId} ===`);
+        console.log('Name:', task.name);
+        console.log('Type:', task.metadata?.type || 'task');
+        console.log('Description:', task.description);
+        console.log('Tags:', task.metadata?.tags?.join(', ') || 'none');
+        if (task.metadata?.references) {
+          console.log('References:');
+          for (const [type, refs] of Object.entries(task.metadata.references)) {
+            console.log(`  ${type}:`);
+            for (const ref of refs) {
+              console.log(`    - ${ref.title || ref.url}`);
+              console.log(`      ${ref.url}`);
+            }
+          }
+        }
       }
 
     } catch (decompositionError) {

@@ -12,6 +12,7 @@ const path = require('path');
 const utility = require('./src/utility');
 
 module.exports = async () => {
+  console.log('[TRACE] Starting Kanbn execution');
   // Try to load .env from current working directory first, then fallback to package root
   const dotenvResult = require('dotenv').config() || require('dotenv').config({ path: path.join(__dirname, '.env') });
 
@@ -50,12 +51,18 @@ module.exports = async () => {
 
   // Get the command
   const command = process.argv[2] || '';
+  console.log('[TRACE] Command:', command);
+  console.log('[TRACE] Full argv:', process.argv);
 
   // Load route configs and get the current route
-  const routes = require('auto-load')(path.join(__dirname, 'routes')), route = {};
-  const found = Object.entries(routes).find(([id, route]) => route.commands.indexOf(command) !== -1);
+  console.log('[TRACE] Loading routes from:', path.join(__dirname, 'routes'));
+  const routes = require('auto-load')(path.join(__dirname, 'routes'));
+  console.log('[TRACE] Available routes:', Object.keys(routes));
+  const route = {};
+  const found = Object.entries(routes).find(([_, route]) => route.commands.indexOf(command) !== -1);
 
   // Make sure we have a valid route
+  console.log('[TRACE] Found route:', found ? found[0] : 'undefined');
   if (found === undefined) {
     utility.error(`"${command}" is not a valid command`);
     return;
@@ -82,7 +89,10 @@ module.exports = async () => {
       console.log(`DEBUG: Executing controller: ${route.config.controller}`);
     }
 
-    const result = await require(route.config.controller)(
+    console.log('[TRACE] Loading controller:', route.config.controller);
+    const controller = require(route.config.controller);
+    console.log('[TRACE] Controller loaded, executing with args');
+    const result = await controller(
       minimist(
         process.argv.slice(2),
         route.config.args

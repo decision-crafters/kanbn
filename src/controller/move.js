@@ -51,7 +51,7 @@ function moveTask(taskId, columnName, position = null, relative = false, kanbnIn
     kanbnInstance.getIndex().then(index => {
       const actualColumn = Object.entries(index.columns).find(([_, tasks]) => tasks.includes(taskId))?.[0] || null;
       console.log(`Moved task "${taskId}" to column "${actualColumn}"`);
-    }).catch(error => {
+    }).catch(_ => {
       console.log(`Moved task "${taskId}" to column "${columnName}"`);
     });
   })

@@ -124,10 +124,10 @@ class Kanbn {
     }
     return config.task;
   }
-  async loadTask(taskId) { // Already exists, ensure it's correct
+  async loadTask(_taskId) { // Already exists, ensure it's correct
     return config.task;
   }
-  async findTaskColumn(taskId) {
+  async findTaskColumn(_taskId) {
     return 'Test Column';
   }
   async updateTask(taskId, taskData) {
@@ -183,7 +183,7 @@ class Kanbn {
     };
   }
 
-  async burndown(sprints = null, dates = null, assigned = null, columns = null, normalise = null) {
+  async burndown(_sprints = null, _dates = null, _assigned = null, _columns = null, _normalise = null) {
     return config.burndown;
   }
 
@@ -227,5 +227,35 @@ class Kanbn {
   }
 }
 
-// Export only the Kanbn class and the config for test manipulation
-module.exports = { Kanbn, config };
+// Create a singleton instance for the CLI
+const kanbnInstance = new Kanbn();
+
+// Create a CLI runner function that matches index.js
+const cliRunner = async () => {
+  // For tests, we want to execute the integrations command
+  const integrationsController = require('../src/controller/integrations');
+  
+  // Parse command line arguments (mocked)
+  const args = {
+    _: ['integrations', 'add'],
+    type: 'mcp',
+    name: 'firecrawl',
+    command: 'npx',
+    args: '-y firecrawl-mcp'
+  };
+  
+  // Execute the controller
+  return await integrationsController(args);
+};
+
+// Export the CLI runner as the main export (matches index.js)
+module.exports = cliRunner;
+
+// Export the Kanbn class for direct instantiation (matches src/main.js)
+module.exports.Kanbn = Kanbn;
+
+// Export config for test manipulation
+module.exports.config = config;
+
+// Export the singleton instance for convenience
+module.exports.instance = kanbnInstance;

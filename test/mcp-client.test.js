@@ -1,5 +1,4 @@
 const QUnit = require('qunit');
-const assert = QUnit.assert; // Use QUnit's assertion library
 const MCPClient = require('../src/lib/mcp/client');
 
 QUnit.module('MCPClient', hooks => {

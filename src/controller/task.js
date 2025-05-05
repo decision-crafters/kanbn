@@ -1,8 +1,6 @@
 const Kanbn = require("../main");
 const utility = require("../utility");
 const parseTask = require("../parse-task");
-const markdown = require("../lib/markdown");
-const TerminalRenderer = require("markdown-it-terminal");
 const promptBuilder = require("../promptBuilder");
 const eventBus = require("../lib/event-bus");
 

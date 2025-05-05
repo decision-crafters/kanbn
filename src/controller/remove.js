@@ -44,10 +44,9 @@ module.exports = async args => {
     return;
   }
 
-  // Get the index
-  let index;
+  // Verify kanbn is accessible before proceeding
   try {
-    index = await kanbn.getIndex();
+    await kanbn.getIndex();
   } catch (error) {
     utility.error(error);
     return;
@@ -55,13 +54,7 @@ module.exports = async args => {
 
   // If the force flag is specified, remove the task without asking
   if (args.force) {
-    try {
-      await removeTask(taskId, !args.index, kanbn);
-    } catch (error) {
-      // Error already logged in removeTask
-      throw error;
-    }
-
+    await removeTask(taskId, !args.index, kanbn);
   // Otherwise, prompt for confirmation first
   } else {
     try {

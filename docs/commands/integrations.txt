@@ -1,7 +1,7 @@
 Kanbn Integrations Command
 ========================
 
-The 'integrations' command manages markdown files that provide additional context for AI assistance using RAG (Retrieval-Augmented Generation).
+The 'integrations' command manages both markdown files for AI context and Model Context Protocol (MCP) servers for enhanced AI capabilities.
 
 Usage:
 ------
@@ -23,6 +23,8 @@ The RAG-based approach:
 
 Options:
 -------
+Markdown Integration Options:
+---------------------------
 --list                     List all available integrations
 --add                      Add a new integration
 --remove                   Remove an integration
@@ -31,8 +33,19 @@ Options:
 --content <content>        Content for the integration
 --help                     Show this help message
 
+MCP Server Options:
+-----------------
+--type <type>            Type of integration (markdown or mcp)
+--command <cmd>          Command to run the MCP server
+--args <args>            Arguments for the MCP server command
+--start                  Start an MCP server
+--stop                   Stop an MCP server
+--status                 Check MCP server status
+
 Examples:
 --------
+Markdown Integration Examples:
+--------------------------
 List all integrations:
   kanbn integrations --list
 
@@ -47,6 +60,20 @@ Add an integration from content:
 
 Remove an integration:
   kanbn integrations --remove --name github
+
+MCP Server Examples:
+------------------
+Add an MCP server:
+  kanbn integrations --add --type mcp --name firecrawl --command npx --args "-y firecrawl-mcp"
+
+Start an MCP server:
+  kanbn integrations --start --name firecrawl
+
+Check server status:
+  kanbn integrations --status --name firecrawl
+
+Stop an MCP server:
+  kanbn integrations --stop --name firecrawl
 
 Using integrations with chat:
 ---------------------------

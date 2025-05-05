@@ -7,83 +7,82 @@ if (!fs.existsSync(path.join(__dirname, '../real-fs-fixtures'))) {
   fs.mkdirSync(path.join(__dirname, '../real-fs-fixtures'), { recursive: true });
 }
 
-QUnit.module('updateTask tests', {
-  before() {
-    require('../qunit-throws-async');
-  },
-  beforeEach() {
+describe('updateTask tests', () => {
+  let testDir;
+  let kanbn;
+  let originalCwd;
+
+  beforeAll(async () => {
+    console.log('Running beforeAll hook');
+  });
+  
+  beforeEach(async () => {
+    console.log('Running beforeEach hook');
     const timestamp = Date.now();
-    this.testDir = realFs.createFixtures(`update-test-${timestamp}`, {
+    testDir = realFs.createFixtures(`update-test-${timestamp}`, {
       countColumns: 2,
       countTasks: 2
     }).testDir;
     
-    this.originalCwd = process.cwd();
-    process.chdir(this.testDir);
+    originalCwd = process.cwd();
+    process.chdir(testDir);
     
     // Create a new Kanbn instance
-    this.kanbn = kanbnFactory();
-  },
-  afterEach() {
-    process.chdir(this.originalCwd);
-    realFs.cleanupFixtures(this.testDir);
-  }
-});
-
-QUnit.test('Update task in uninitialised folder should throw "not initialised" error', async function(assert) {
-  // Create an empty directory
-  const emptyDir = path.join(this.testDir, 'empty');
-  fs.mkdirSync(emptyDir);
-  process.chdir(emptyDir);
+    kanbn = kanbnFactory();
+    console.log('Kanbn instance created');
+  });
   
-  assert.throwsAsync(
-    async () => {
-      await this.kanbn.updateTask('task-1', {});
-    },
-    /Not initialised in this folder/
-  );
-  
-  process.chdir(this.testDir);
-});
+  afterEach(async () => {
+    console.log('Running afterEach hook');
+    process.chdir(originalCwd);
+    await realFs.cleanupFixtures(testDir);
+  });
 
-QUnit.test('Update non-existent task should throw "task file not found" error', async function(assert) {
-  const index = await this.kanbn.getIndex();
-  assert.ok(index, 'Index should exist');
-  
-  await assert.throwsAsync(
-    async () => {
-      await this.kanbn.updateTask('task-3', {});
-    },
-    /No task file found with id "task-3"/
-  );
-});
+  test('Update task in uninitialised folder should throw "not initialised" error', async () => {
+    console.log('Running test: Update task in uninitialised folder should throw "not initialised" error');
+    // Create an empty directory
+    const emptyDir = path.join(testDir, 'empty');
+    fs.mkdirSync(emptyDir);
+    process.chdir(emptyDir);
+    
+    await expect(kanbn.updateTask('task-1', {}))
+      .rejects.toThrow(/Not initialised in this folder/);
+    
+    process.chdir(testDir);
+  });
 
-QUnit.test('Update an untracked task should throw "task not indexed" error', async function(assert) {
-  // Create an untracked task
-  const taskPath = path.join(this.testDir, '.kanbn', 'tasks', 'test-task.md');
-  fs.writeFileSync(taskPath, '# Test Task');
-  
-  // Try to update an untracked task
-  assert.throwsAsync(
-    async () => {
-      await this.kanbn.updateTask('test-task', {});
-    },
-    /Task "test-task" is not in the index/
-  );
-});
+  test('Update non-existent task should throw "task file not found" error', async () => {
+    console.log('Running test: Update non-existent task should throw "task file not found" error');
+    const index = await kanbn.getIndex();
+    expect(index).toBeDefined();
+    
+    await expect(kanbn.updateTask('task-3', {}))
+      .rejects.toThrow(/No task file found with id "task-3"/);
+  });
 
-QUnit.test('Update a task with a blank name should throw "blank name" error', async function(assert) {
-  try {
-    const index = await this.kanbn.getIndex();
-    assert.ok(index, 'Index should exist');
+  test('Update an untracked task should throw "task not indexed" error', async () => {
+    console.log('Running test: Update an untracked task should throw "task not indexed" error');
+    // Create an untracked task
+    const taskPath = path.join(testDir, '.kanbn', 'tasks', 'test-task.md');
+    fs.writeFileSync(taskPath, '# Test Task');
+    
+    // Try to update an untracked task
+    await expect(kanbn.updateTask('test-task', {}))
+      .rejects.toThrow(/Task "test-task" is not in the index/);
+  });
+
+  test('Update a task with a blank name should throw "blank name" error', async () => {
+    console.log('Running test: Update a task with a blank name should throw "blank name" error');
+    const index = await kanbn.getIndex();
+    expect(index).toBeDefined();
     
     const taskIds = Object.values(index.columns).flat();
-    assert.ok(taskIds.length > 0, 'Should have at least one task');
+    expect(taskIds.length).toBeGreaterThan(0);
     const taskId = taskIds[0];
     
     // Get the task first to ensure it exists
-    const task = await this.kanbn.getTask(taskId);
-    assert.ok(task, 'Task should exist');
+    const task = await kanbn.getTask(taskId);
+    expect(task).toBeDefined();
     
     // Create a new task object with a blank name
     const updatedTask = {
@@ -93,30 +92,23 @@ QUnit.test('Update a task with a blank name should throw "blank name" error', as
     };
     
     // Try to update with a blank name
-    await assert.throwsAsync(
-      async () => {
-        await this.kanbn.updateTask(taskId, updatedTask);
-      },
-      /Task name cannot be blank/
-    );
-  } catch (error) {
-    assert.ok(false, `Test failed with error: ${error.message}`);
-  }
-});
+    await expect(kanbn.updateTask(taskId, updatedTask))
+      .rejects.toThrow(/Task name cannot be blank/);
+  });
 
-QUnit.test('Rename a task', async function(assert) {
-  try {
-    const index = await this.kanbn.getIndex();
-    assert.ok(index, 'Index should exist');
+  test('Rename a task', async () => {
+    console.log('Running test: Rename a task');
+    const index = await kanbn.getIndex();
+    expect(index).toBeDefined();
     
     const taskIds = Object.values(index.columns).flat();
-    assert.ok(taskIds.length > 0, 'Should have at least one task');
+    expect(taskIds.length).toBeGreaterThan(0);
     const taskId = taskIds[0];
     
     // Get the task
-    const task = await this.kanbn.getTask(taskId);
-    assert.ok(task, 'Task should exist');
-    assert.ok(task.name, 'Task should have a name');
+    const task = await kanbn.getTask(taskId);
+    expect(task).toBeDefined();
+    expect(task.name).toBeDefined();
     
     // Create a new task object with a new name
     const newName = 'Renamed Task ' + Date.now();
@@ -129,156 +121,144 @@ QUnit.test('Rename a task', async function(assert) {
     };
     
     // Update the task
-    await this.kanbn.updateTask(taskId, updatedTask);
+    await kanbn.updateTask(taskId, updatedTask);
     
     // Get the new task ID
     const newTaskId = newName.toLowerCase().replace(/[^\w]+/g, '-');
     
     // Verify that the task file and index were updated
-    const BASE_PATH = path.join(this.testDir, '.kanbn');
-    assert.ok(fs.existsSync(path.join(BASE_PATH, 'tasks', `${newTaskId}.md`)), 'New task file should exist');
+    const tasksPath = path.join(testDir, '.kanbn', 'tasks');
+    expect(fs.existsSync(path.join(tasksPath, `${newTaskId}.md`))).toBe(true);
     
     // Verify task is in index
-    const updatedIndex = await this.kanbn.getIndex();
+    const updatedIndex = await kanbn.getIndex();
     const allTasks = Object.values(updatedIndex.columns).flat();
-    assert.ok(allTasks.includes(newTaskId), 'New task ID should be in index');
-  } catch (error) {
-    assert.ok(false, `Test failed with error: ${error.message}`);
-  }
-});
-
-QUnit.test('Rename a task to a name that already exists should throw "task already exists" error', async function(assert) {
-  const index = await this.kanbn.getIndex();
-  assert.ok(index, 'Index should exist');
-  
-  const taskIds = Object.values(index.columns).flat();
-  assert.ok(taskIds.length >= 2, 'Should have at least two tasks');
-  const taskId1 = taskIds[0];
-  const taskId2 = taskIds[1];
-  
-  const task1 = await this.kanbn.getTask(taskId1);
-  const task2 = await this.kanbn.getTask(taskId2);
-  assert.ok(task1, 'Task 1 should exist');
-  assert.ok(task2, 'Task 2 should exist');
-  
-  // Try to rename task1 to task2's name
-  await assert.throwsAsync(
-    async () => {
-      await this.kanbn.updateTask(taskId1, { name: task2.name });
-    },
-    new RegExp(`A task with id "${taskId2}" already exists`)
-  );
-});
-
-QUnit.test('Update a task', async function(assert) {
-  const index = await this.kanbn.getIndex();
-  assert.ok(index, 'Index should exist');
-  
-  const taskIds = Object.values(index.columns).flat();
-  assert.ok(taskIds.length >= 2, 'Should have at least two tasks');
-  const taskId = taskIds[0];
-  const relatedTaskId = taskIds[1];
-  
-  const BASE_PATH = await this.kanbn.getMainFolder();
-  const TEST_DESCRIPTION = 'Test description...';
-  const TEST_TAGS = ['Tag 1', 'Tag 2'];
-  const TEST_SUB_TASK = {
-    text: 'Test sub-task',
-    completed: true
-  };
-  const TEST_RELATION = {
-    task: relatedTaskId,
-    type: 'Test relation type'
-  };
-
-  // Get the task
-  let task = await this.kanbn.getTask(taskId);
-  assert.ok(task, 'Task should exist');
-
-  // Update task
-  const currentDate = (new Date()).toISOString();
-  await this.kanbn.updateTask(taskId, {
-    name: task.name,
-    description: TEST_DESCRIPTION,
-    metadata: {
-      tags: TEST_TAGS
-    },
-    subTasks: [
-      TEST_SUB_TASK
-    ],
-    relations: [
-      TEST_RELATION
-    ]
+    expect(allTasks.includes(newTaskId)).toBe(true);
   });
 
-  // Verify that the task file was updated
-  const updatedTask = await this.kanbn.getTask(taskId);
-  assert.equal(updatedTask.description, TEST_DESCRIPTION, 'Task should have updated description');
-  assert.deepEqual(updatedTask.metadata.tags, TEST_TAGS, 'Task should have updated tags');
-  
-  // Verify subtasks
-  assert.ok(updatedTask.subTasks.some(st => 
-    st.text === TEST_SUB_TASK.text && st.completed === TEST_SUB_TASK.completed
-  ), 'Task should have the test subtask');
-  
-  // Verify relations
-  assert.ok(updatedTask.relations.some(rel => 
-    rel.task === TEST_RELATION.task && rel.type === TEST_RELATION.type
-  ), 'Task should have the test relation');
+  test('Rename a task to a name that already exists should throw "task already exists" error', async () => {
+    console.log('Running test: Rename a task to a name that already exists should throw "task already exists" error');
+    const index = await kanbn.getIndex();
+    expect(index).toBeDefined();
+    
+    const taskIds = Object.values(index.columns).flat();
+    expect(taskIds.length).toBeGreaterThanOrEqual(2);
+    const taskId1 = taskIds[0];
+    const taskId2 = taskIds[1];
+    
+    const task1 = await kanbn.getTask(taskId1);
+    const task2 = await kanbn.getTask(taskId2);
+    expect(task1).toBeDefined();
+    expect(task2).toBeDefined();
+    
+    // Try to rename task1 to task2's name
+    await expect(kanbn.updateTask(taskId1, { name: task2.name }))
+      .rejects.toThrow(new RegExp(`A task with id "${taskId2}" already exists`));
+  });
 
-  // Verify that the task updated date was updated
-  task = await this.kanbn.getTask(taskId);
-  assert.equal(task.metadata.updated.toISOString().substr(0, 9), currentDate.substr(0, 9));
-});
+  test('Update a task', async () => {
+    console.log('Running test: Update a task');
+    const index = await kanbn.getIndex();
+    expect(index).toBeDefined();
+    
+    const taskIds = Object.values(index.columns).flat();
+    expect(taskIds.length).toBeGreaterThanOrEqual(2);
+    const taskId = taskIds[0];
+    const relatedTaskId = taskIds[1];
+    
+    const TEST_DESCRIPTION = 'Test description...';
+    const TEST_TAGS = ['Tag 1', 'Tag 2'];
+    const TEST_SUB_TASK = {
+      text: 'Test sub-task',
+      completed: true
+    };
+    const TEST_RELATION = {
+      task: relatedTaskId,
+      type: 'Test relation type'
+    };
 
-QUnit.test('Move a task using the update method', async function(assert) {
-  try {
-    const index = await this.kanbn.getIndex();
-    assert.ok(index, 'Index should exist');
+    // Get the task
+    let task = await kanbn.getTask(taskId);
+    expect(task).toBeDefined();
+
+    // Update task
+    const currentDate = (new Date()).toISOString();
+    await kanbn.updateTask(taskId, {
+      name: task.name,
+      description: TEST_DESCRIPTION,
+      metadata: {
+        tags: TEST_TAGS
+      },
+      subTasks: [
+        TEST_SUB_TASK
+      ],
+      relations: [
+        TEST_RELATION
+      ]
+    });
+
+    // Verify that the task file was updated
+    const updatedTask = await kanbn.getTask(taskId);
+    expect(updatedTask.description).toBe(TEST_DESCRIPTION);
+    expect(updatedTask.metadata.tags).toEqual(TEST_TAGS);
+    
+    // Verify subtasks
+    expect(updatedTask.subTasks.some(st => 
+      st.text === TEST_SUB_TASK.text && st.completed === TEST_SUB_TASK.completed
+    )).toBe(true);
+    
+    // Verify relations
+    expect(updatedTask.relations.some(rel => 
+      rel.task === TEST_RELATION.task && rel.type === TEST_RELATION.type
+    )).toBe(true);
+
+    // Verify that the task updated date was updated
+    task = await kanbn.getTask(taskId);
+    expect(task.metadata.updated.toISOString().substr(0, 9)).toBe(currentDate.substr(0, 9));
+  });
+
+  test('Move a task using the update method', async () => {
+    console.log('Running test: Move a task using the update method');
+    const index = await kanbn.getIndex();
+    // Assert index is defined before using it
+    expect(index).toBeDefined();
     
     const columnNames = Object.keys(index.columns);
-    assert.ok(columnNames.length >= 2, 'Should have at least two columns');
+    // Assert we have enough columns for the test
+    expect(columnNames.length).toBeGreaterThanOrEqual(2);
     
     const sourceColumn = columnNames[0];
     const targetColumn = columnNames[1];
     
+    let taskId;
+    
+    // Add a task if needed rather than using conditionals with expect
     if (index.columns[sourceColumn].length === 0) {
       const taskName = 'Test Task ' + Date.now();
-      const taskId = taskName.toLowerCase().replace(/[^\w]+/g, '-');
+      taskId = taskName.toLowerCase().replace(/[^\w]+/g, '-');
       
-      await this.kanbn.addTask({
+      await kanbn.addTask({
         name: taskName,
         description: 'Test description',
         metadata: {}
       }, sourceColumn);
       
-      // Verify the task was added
-      const updatedIndex = await this.kanbn.getIndex();
-      assert.ok(updatedIndex.columns[sourceColumn].includes(taskId), `Task should be in ${sourceColumn}`);
-      
-      // Get the task
-      const task = await this.kanbn.getTask(taskId);
-      assert.ok(task, 'Task should exist');
-      
-      await this.kanbn.updateTask(taskId, task, targetColumn);
-      
-      // Verify that the index was updated
-      const finalIndex = await this.kanbn.getIndex();
-      assert.ok(finalIndex.columns[targetColumn].includes(taskId), `Task should be in ${targetColumn}`);
+      // Verify task was added using a separate variable
+      const updatedIndex = await kanbn.getIndex();
+      const taskExists = updatedIndex.columns[sourceColumn].includes(taskId);
+      expect(taskExists).toBe(true);
     } else {
-      const taskId = index.columns[sourceColumn][0];
-      
-      // Get the task
-      const task = await this.kanbn.getTask(taskId);
-      assert.ok(task, 'Task should exist');
-      
-      await this.kanbn.updateTask(taskId, task, targetColumn);
-      
-      // Verify that the index was updated
-      const updatedIndex = await this.kanbn.getIndex();
-      assert.ok(updatedIndex.columns[targetColumn].includes(taskId), `Task should be in ${targetColumn}`);
+      taskId = index.columns[sourceColumn][0];
     }
-  } catch (error) {
-    assert.ok(false, `Test failed with error: ${error.message}`);
-  }
+    
+    // Get the task
+    const task = await kanbn.getTask(taskId);
+    expect(task).toBeDefined();
+    
+    await kanbn.updateTask(taskId, task, targetColumn);
+    
+    // Verify that the index was updated
+    const finalIndex = await kanbn.getIndex();
+    expect(finalIndex.columns[targetColumn].includes(taskId)).toBe(true);
+  });
 });

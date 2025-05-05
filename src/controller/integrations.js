@@ -51,6 +51,12 @@ async function getMCPClient(boardFolder) {
  * @returns {Promise<string>} Command result
  */
 module.exports = async args => {
+  console.log('[TRACE] Integrations controller started');
+  console.log('[TRACE] Args:', JSON.stringify(args, null, 2));
+  // Debug logging
+  console.log('Integrations controller args:', JSON.stringify(args, null, 2));
+  console.log('Current directory:', process.cwd());
+  console.log('Environment:', process.env);
   try {
     // Debug the args object to help diagnose issues
     if (process.env.DEBUG === 'true') {
@@ -66,10 +72,10 @@ module.exports = async args => {
       }
     }
 
-    // Use CommonJS require instead of ES module import to avoid compatibility issues
-    const kanbnModule = require('../main');
-    // Create a Kanbn instance
-    const kanbn = typeof kanbnModule === 'function' ? kanbnModule() : kanbnModule;
+    // Get the Kanbn class
+    const Kanbn = require('../main');
+    // Create a new instance
+    const kanbn = new Kanbn();
 
     // Check if we're in a Kanbn board
     let boardFolder;
@@ -133,6 +139,7 @@ module.exports = async args => {
       console.log(result);
       return result;
     } else if (args.add) {
+      console.log('[TRACE] Add command detected');
       // Add a new integration
       if (!args.name) {
         return 'Missing integration name. Usage:\n' +

@@ -292,11 +292,11 @@ class ChatHandler {
   }
 
   /**
-   * Delete a task
+   * Delete a task (first implementation)
    * @param {string[]} params Command parameters
    * @return {Promise<string>} Response message
    */
-  async handleDeleteTask(params) {
+  async handleDeleteTaskFirstImpl(params) {
     try {
       // Extract task name from params
       const taskName = params[2];
@@ -353,11 +353,46 @@ class ChatHandler {
   }
 
   /**
-   * Show details for a specific task
+   * Search for tasks containing a keyword (alternate implementation)
+   * @param {string[]} params Command parameters
+   * @return {Promise<string>} Response message with search results
+   */
+  async handleSearchTasksAlternate(params) {
+    try {
+      // Extract search term from params
+      const searchTerm = params[params.length - 1];
+
+      // Search for tasks
+      const searchResults = await this.kanbn.search({
+        name: searchTerm,
+        description: searchTerm,
+        operator: 'OR'
+      });
+
+      if (searchResults.length === 0) {
+        return `No tasks found containing "${searchTerm}".`;
+      }
+
+      // Format and return the tasks
+      const taskList = searchResults.map(task =>
+        `- ${task.name}${task.description ? ': ' + task.description.split('\n')[0] : ''} (in ${task.column})`
+      );
+
+      eventBus.emit('tasksSearched', { searchTerm, resultCount: searchResults.length });
+
+      return `Found ${searchResults.length} tasks containing "${searchTerm}":\n${taskList.join('\n')}`;
+    } catch (error) {
+      console.error('Error searching tasks:', error);
+      throw new Error(`Failed to search tasks: ${error.message}`);
+    }
+  }
+
+  /**
+   * Show details for a specific task (alternate implementation)
    * @param {string[]} params Command parameters
    * @return {Promise<string>} Response message with task details
    */
-  async handleShowTaskDetails(params) {
+  async handleShowTaskDetailsAlternate(params) {
     try {
       // Extract task name from params
       const taskName = params[params.length - 1];
@@ -818,41 +853,6 @@ class ChatHandler {
   }
 
   /**
-   * Search for tasks containing a keyword
-   * @param {string[]} params Command parameters
-   * @return {Promise<string>} Response message with search results
-   */
-  async handleSearchTasks(params) {
-    try {
-      // Extract search term from params
-      const searchTerm = params[params.length - 1];
-
-      // Search for tasks
-      const searchResults = await this.kanbn.search({
-        name: searchTerm,
-        description: searchTerm,
-        operator: 'OR'
-      });
-
-      if (searchResults.length === 0) {
-        return `No tasks found containing "${searchTerm}".`;
-      }
-
-      // Format and return the tasks
-      const taskList = searchResults.map(task =>
-        `- ${task.name}${task.description ? ': ' + task.description.split('\n')[0] : ''} (in ${task.column})`
-      );
-
-      eventBus.emit('tasksSearched', { searchTerm, resultCount: searchResults.length });
-
-      return `Found ${searchResults.length} tasks containing "${searchTerm}":\n${taskList.join('\n')}`;
-    } catch (error) {
-      console.error('Error searching tasks:', error);
-      throw new Error(`Failed to search tasks: ${error.message}`);
-    }
-  }
-
-  /**
    * Show statistics for tasks in a column
    * @param {string[]} params Command parameters
    * @return {Promise<string>} Response message with task statistics
@@ -1175,11 +1175,11 @@ class ChatHandler {
 
   /**
    * Detect project context from user input
-   * @param {string} projectName The project name
-   * @param {string} projectDescription The project description
+   * @param {string} _projectName The project name
+   * @param {string} _projectDescription The project description
    * @return {Promise<Object>} The detected project context
    */
-  async detectProjectContext(projectName, projectDescription) {
+  async detectProjectContext(_projectName, _projectDescription) {
     // In test mode, return a mock context
     if (process.env.KANBN_ENV === 'test') {
       return {
@@ -1195,12 +1195,12 @@ class ChatHandler {
 
   /**
    * Calculate Cost of Delay for a task
-   * @param {string} taskName The task name
-   * @param {string} taskDescription The task description
-   * @param {string} classOfService The class of service
+   * @param {string} _taskName The task name
+   * @param {string} _taskDescription The task description
+   * @param {string} _classOfService The class of service
    * @return {Promise<Object>} The calculated Cost of Delay
    */
-  async calculateCostOfDelay(taskName, taskDescription, classOfService) {
+  async calculateCostOfDelay(_taskName, _taskDescription, _classOfService) {
     // In test mode, return a mock calculation
     if (process.env.KANBN_ENV === 'test') {
       return {
@@ -1215,13 +1215,13 @@ class ChatHandler {
 
   /**
    * Calculate WSJF (Weighted Shortest Job First) for a task
-   * @param {string} taskName The task name
-   * @param {string} taskDescription The task description
+   * @param {string} _taskName The task name
+   * @param {string} _taskDescription The task description
    * @param {number} costOfDelay The cost of delay
    * @param {number} jobSize The job size
    * @return {Promise<Object>} The calculated WSJF
    */
-  async calculateWSJF(taskName, taskDescription, costOfDelay, jobSize) {
+  async calculateWSJF(_taskName, _taskDescription, costOfDelay, jobSize) {
     // In test mode, return a mock calculation
     if (process.env.KANBN_ENV === 'test') {
       return {

@@ -7,11 +7,13 @@ const debug = require('debug')('kanbn:mcp');
 const path = require('path');
 const { spawn } = require('child_process');
 const mcpServerSchema = require('./schema');
+const ProtocolFactory = require('./protocols/factory');
 
 class MCPClient {
   constructor() {
     this.servers = new Map();
     this.config = null;
+    this.protocolFactory = new ProtocolFactory();
   }
 
   /**
@@ -69,7 +71,11 @@ class MCPClient {
       stdio: 'pipe'
     });
 
-    this.servers.set(serverName, server);
+    this.servers.set(serverName, {
+      process: server,
+      handler: this.protocolFactory.getHandler(serverName, serverConfig)
+    });
+
     debug('Started MCP server:', serverName);
 
     // Handle server output
@@ -86,8 +92,28 @@ class MCPClient {
       this.servers.delete(serverName);
     });
 
-    // TODO: Wait for server to be ready (health check)
+    // Initialize protocol handler and wait for server to be ready
+    const handler = this.servers.get(serverName).handler;
+    await handler.initialize();
+
     return server;
+  }
+
+  /**
+   * Send a request to an MCP server
+   * @param {string} serverName Name of the server
+   * @param {string} method HTTP method
+   * @param {string} path Request path
+   * @param {Object} data Request data
+   * @returns {Promise<Object>} Response data
+   */
+  async request(serverName, method, path, data) {
+    const server = this.servers.get(serverName);
+    if (!server) {
+      throw new Error(`MCP server "${serverName}" not running`);
+    }
+
+    return server.handler.request(method, path, data);
   }
 
   /**
@@ -97,7 +123,10 @@ class MCPClient {
   async stopServer(serverName) {
     const server = this.servers.get(serverName);
     if (server) {
-      server.kill();
+      if (server.handler) {
+        await server.handler.close();
+      }
+      server.process.kill();
       this.servers.delete(serverName);
       debug('Stopped MCP server:', serverName);
     }
@@ -110,6 +139,7 @@ class MCPClient {
     for (const serverName of this.servers.keys()) {
       await this.stopServer(serverName);
     }
+    await this.protocolFactory.closeAll();
   }
 }
 

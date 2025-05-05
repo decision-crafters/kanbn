@@ -1,5 +1,4 @@
 const QUnit = require('qunit');
-const assert = QUnit.assert; // Use QUnit's assertion library
 const http = require('http');
 const HTTPProtocolHandler = require('../src/lib/mcp/protocols/http');
 
@@ -128,7 +127,7 @@ QUnit.module('HTTPProtocolHandler', hooks => {
     });
 
     QUnit.test('should handle timeout', async assert => {
-      const tempServer = http.createServer((req, res) => {
+      const tempServer = http.createServer((_req, _res) => {
         // Never respond
       });
 

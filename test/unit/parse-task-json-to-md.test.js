@@ -1,8 +1,7 @@
 const parseTask = require('../../src/parse-task');
 
-QUnit.module('Task JSON to markdown conversion tests');
-
-const CASE_1 = `---
+describe('Task JSON to markdown conversion tests', () => {
+  const CASE_1 = `---
 tags:
   - tag1
   - tag2
@@ -49,7 +48,7 @@ Even more data!
 - [blocks this-task](this-task.md)
 `;
 
-const CASE_2 = `---
+  const CASE_2 = `---
 tags:
   - tag1
   - tag2
@@ -61,102 +60,97 @@ tags:
 This is a *task* description
 `;
 
-const CASE_3 = `
+  const CASE_3 = `
 # Task Name
 
 This is a *task* description
 `;
 
-const CASE_4 = `
+  const CASE_4 = `
 # Task Name
 `;
 
-const CASE_5 = `
-Some text...
-`;
-
-const CASE_6 = ``;
-
-const validCases = [
-  {
-    data: {
-      name: 'Task Name',
-      description: 'This is a *task* description\n' +
-        '\n' +
-        'It has some code:\n' +
-        '\n' +
-        '```js\n' +
-        'const wibble = 1;\n' +
-        '```\n' +
-        '\n' +
-        'And a list:\n' +
-        '\n' +
-        '- one\n' +
-        '- two\n' +
-        '- three\n' +
-        '\n' +
-        '## This task has a sub-heading\n' +
-        '\n' +
-        'More data\n' +
-        '\n' +
-        '### And a sub-sub-heading\n' +
-        '\n' +
-        'And more data...\n' +
-        '\n' +
-        '## More stuff\n' +
-        '\n' +
-        'Even more data!',
-      metadata: {
-        tags: [ 'tag1', 'tag2', 'tag3' ]
+  const validCases = [
+    {
+      data: {
+        name: 'Task Name',
+        description: 'This is a *task* description\n' +
+          '\n' +
+          'It has some code:\n' +
+          '\n' +
+          '```js\n' +
+          'const wibble = 1;\n' +
+          '```\n' +
+          '\n' +
+          'And a list:\n' +
+          '\n' +
+          '- one\n' +
+          '- two\n' +
+          '- three\n' +
+          '\n' +
+          '## This task has a sub-heading\n' +
+          '\n' +
+          'More data\n' +
+          '\n' +
+          '### And a sub-sub-heading\n' +
+          '\n' +
+          'And more data...\n' +
+          '\n' +
+          '## More stuff\n' +
+          '\n' +
+          'Even more data!',
+        metadata: {
+          tags: [ 'tag1', 'tag2', 'tag3' ]
+        },
+        subTasks: [
+          { text: 'this is a sub-task', completed: false },
+          { text: 'here is a completed sub-task', completed: true }
+        ],
+        relations: [
+          { type: 'requires', task: 'another-task' },
+          { type: 'duplicates', task: 'some-other-task' },
+          { type: 'blocks', task: 'this-task' }
+        ]
       },
-      subTasks: [
-        { text: 'this is a sub-task', completed: false },
-        { text: 'here is a completed sub-task', completed: true }
-      ],
-      relations: [
-        { type: 'requires', task: 'another-task' },
-        { type: 'duplicates', task: 'some-other-task' },
-        { type: 'blocks', task: 'this-task' }
-      ]
+      expected: CASE_1
     },
-    expected: CASE_1
-  },
-  {
-    data: {
-      name: 'Task Name',
-      description: 'This is a *task* description',
-      metadata: {
-        tags: [ 'tag1', 'tag2', 'tag3' ]
+    {
+      data: {
+        name: 'Task Name',
+        description: 'This is a *task* description',
+        metadata: {
+          tags: [ 'tag1', 'tag2', 'tag3' ]
+        },
+        subTasks: [],
+        relations: []
       },
-      subTasks: [],
-      relations: []
+      expected: CASE_2
     },
-    expected: CASE_2
-  },
-  {
-    data: {
-      name: 'Task Name',
-      description: 'This is a *task* description',
-      metadata: {},
-      subTasks: [],
-      relations: []
+    {
+      data: {
+        name: 'Task Name',
+        description: 'This is a *task* description',
+        metadata: {},
+        subTasks: [],
+        relations: []
+      },
+      expected: CASE_3
     },
-    expected: CASE_3
-  },
-  {
-    data: {
-      name: 'Task Name',
-      description: '',
-      metadata: {},
-      subTasks: [],
-      relations: []
-    },
-    expected: CASE_4
-  }
-];
+    {
+      data: {
+        name: 'Task Name',
+        description: '',
+        metadata: {},
+        subTasks: [],
+        relations: []
+      },
+      expected: CASE_4
+    }
+  ];
 
-QUnit.test('Test json to task conversion with valid json', assert => {
-  validCases.forEach(validCase => {
-    assert.equal(parseTask.json2md(validCase.data), validCase.expected.trimStart());
+  test('json to task conversion with valid json', () => {
+    validCases.forEach(validCase => {
+      expect(parseTask.json2md(validCase.data)).toBe(validCase.expected.trimStart());
+    });
   });
 });

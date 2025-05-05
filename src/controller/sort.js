@@ -195,7 +195,7 @@ async function interactive(columnName, columnNames, sorters) {
           message: 'Field:',
           default: 'Name',
           choices: sorterFields.map(sorterField => sorterField.name),
-          filter: (value, answers) => sorterNameToField[value]
+          filter: (value, _answers) => sorterNameToField[value]
         },
         {
           type: 'confirm',
@@ -230,7 +230,7 @@ async function interactive(columnName, columnNames, sorters) {
             'Ascending',
             'Descending'
           ],
-          filter: (value, answers) => ({
+          filter: (value, _answers) => ({
             'Ascending': 'ascending',
             'Descending': 'descending'
           })[value]
@@ -371,7 +371,7 @@ module.exports = async (args, argv) => {
   // Build sorters interactively
   if (args.interactive) {
     interactive(columnName, columnNames, sorters)
-    .then(answers => {
+    .then(_answers => {
       inquirer
       .prompt({
         type: 'confirm',
@@ -380,7 +380,7 @@ module.exports = async (args, argv) => {
         default: args.save
       })
       .then(saveAnswer => {
-        sortColumn(answers.column, answers.sorters, saveAnswer.save, kanbn);
+        sortColumn(_answers.column, _answers.sorters, saveAnswer.save, kanbn);
       })
       .catch(error => {
         utility.error(error);

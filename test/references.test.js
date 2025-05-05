@@ -76,17 +76,6 @@ QUnit.test('should convert task with references to markdown', function(assert) {
 });
 
 QUnit.test('should validate references in metadata', function(assert) {
-  const validMetadata = {
-    references: [
-      'https://example.com/reference1',
-      'https://github.com/decision-crafters/kanbn/issues/123'
-    ]
-  };
-
-  const invalidMetadata = {
-    references: 'not an array'
-  };
-
   // Skip validation tests since validateMetadataFromJSON is not directly exposed
   assert.ok(true, 'Validation tests skipped');
 });

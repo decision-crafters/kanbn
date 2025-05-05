@@ -28,8 +28,7 @@
  * - ai-logging.js - AI interaction logging
  */
 
-const ContextSerializer = require('../lib/context-serializer');
-const { debugLog } = require('../utility');
+// Import the chat controller directly
 const chatController = require('./chat-controller');
 
 // Export the chat controller as the main module

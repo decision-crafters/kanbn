@@ -18,7 +18,7 @@ module.exports = async args => {
       console.log('Everything OK');
       // Exit with success code when no errors are found
       if (process.env.KANBN_ENV !== 'test') {
-        process.exit(0);
+        throw new Error('VALIDATION_SUCCESS');
       }
     } else {
       // Use dontExit=true to prevent utility.error from exiting, so we can exit with our own code
@@ -32,7 +32,7 @@ module.exports = async args => {
       );
       // Exit with error code when validation errors are found
       if (process.env.KANBN_ENV !== 'test') {
-        process.exit(1);
+        throw new Error('VALIDATION_FAILED');
       }
     }
   })

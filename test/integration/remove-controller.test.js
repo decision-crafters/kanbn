@@ -66,7 +66,7 @@ QUnit.test('should remove task with force flag', async function(assert) {
     // Create a mock kanbn instance
     const mockKanbn = {
       initialised: async () => true,
-      taskExists: async (taskId) => true,
+      taskExists: async (_taskId) => true,
       getIndex: async () => {
         return {
           columns: {
@@ -76,9 +76,9 @@ QUnit.test('should remove task with force flag', async function(assert) {
           }
         };
       },
-      deleteTask: async (taskId, removeFile) => {
+      deleteTask: async (_taskId, _removeFile) => {
         // Simulate task deletion
-        return taskId;
+        return _taskId;
       },
       getTask: async (taskId) => {
         if (taskId === 'task-2') {
@@ -123,7 +123,7 @@ QUnit.test('should fail without force flag', async function(assert) {
     // Create a mock kanbn instance
     const mockKanbn = {
       initialised: async () => true,
-      taskExists: async (taskId) => true,
+      taskExists: async (_taskId) => true,
       getIndex: async () => {
         return {
           columns: {
@@ -133,9 +133,9 @@ QUnit.test('should fail without force flag', async function(assert) {
           }
         };
       },
-      deleteTask: async (taskId, removeFile) => {
+      deleteTask: async (_taskId, _removeFile) => {
         // Simulate task deletion
-        return taskId;
+        return _taskId;
       },
       getTask: async (taskId) => {
         return { name: 'Test Task' };
@@ -175,8 +175,8 @@ QUnit.test('should handle non-existent task', async function(assert) {
     // Create a mock kanbn instance
     const mockKanbn = {
       initialised: async () => true,
-      taskExists: async (taskId) => {
-        if (taskId === 'missing-task') {
+      taskExists: async (_taskId) => {
+        if (_taskId === 'missing-task') {
           throw new Error('Task "missing-task" not found in index');
         }
         return true;
@@ -190,9 +190,9 @@ QUnit.test('should handle non-existent task', async function(assert) {
           }
         };
       },
-      deleteTask: async (taskId, removeFile) => {
+      deleteTask: async (_taskId, _removeFile) => {
         // Simulate task deletion
-        return taskId;
+        return _taskId;
       },
       getTask: async (taskId) => {
         return { name: 'Test Task' };
@@ -228,7 +228,7 @@ QUnit.test('should update index when removing task', async function(assert) {
     let taskDeleted = false;
     const mockKanbn = {
       initialised: async () => true,
-      taskExists: async (taskId) => true,
+      taskExists: async (_taskId) => true,
       getIndex: async () => {
         if (taskDeleted) {
           return {
@@ -248,10 +248,10 @@ QUnit.test('should update index when removing task', async function(assert) {
           };
         }
       },
-      deleteTask: async (taskId, removeFile) => {
+      deleteTask: async (_taskId, _removeFile) => {
         // Simulate task deletion
         taskDeleted = true;
-        return taskId;
+        return _taskId;
       },
       getTask: async (taskId) => {
         if (taskDeleted && taskId === 'task-3') {
@@ -305,7 +305,7 @@ QUnit.test('should handle removing tasks from different columns', async function
 
     const mockKanbn = {
       initialised: async () => true,
-      taskExists: async (taskId) => true,
+      taskExists: async (_taskId) => true,
       getIndex: async () => {
         return {
           columns: {
@@ -315,12 +315,12 @@ QUnit.test('should handle removing tasks from different columns', async function
           }
         };
       },
-      deleteTask: async (taskId, removeFile) => {
+      deleteTask: async (_taskId, _removeFile) => {
         // Simulate task deletion
-        if (taskId === 'task-1') state.backlogEmpty = true;
-        if (taskId === 'task-2') state.inProgressEmpty = true;
-        if (taskId === 'task-3') state.doneEmpty = true;
-        return taskId;
+        if (_taskId === 'task-1') state.backlogEmpty = true;
+        if (_taskId === 'task-2') state.inProgressEmpty = true;
+        if (_taskId === 'task-3') state.doneEmpty = true;
+        return _taskId;
       },
       getTask: async (taskId) => {
         if ((state.backlogEmpty && taskId === 'task-1') ||

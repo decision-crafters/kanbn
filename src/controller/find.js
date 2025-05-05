@@ -208,7 +208,7 @@ function findTasks(filters, quiet, json) {
   const kanbn = Kanbn();
 
   const removeEmptyProperties = o => Object.fromEntries(Object.entries(o).filter(
-    ([k, v]) => !(Array.isArray(v) && v.length == 0) && !!v
+    ([, v]) => !(Array.isArray(v) && v.length == 0) && !!v
   ));
   kanbn
   .search(filters, quiet)
