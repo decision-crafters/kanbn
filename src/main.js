@@ -1,7 +1,6 @@
 const fs = require("fs");
 const path = require("path");
 const glob = require("glob-promise");
-const parseIndex = require("./parse-index");
 const parseTask = require("./parse-task");
 const utility = require("./utility");
 const yaml = require("yamljs");
@@ -10,7 +9,6 @@ const rimraf = require("rimraf");
 
 const fileUtils = require("./lib/file-utils");
 const taskUtils = require("./lib/task-utils");
-const filterUtils = require("./lib/filter-utils");
 const indexUtils = require("./lib/index-utils");
 const statusUtils = require("./lib/status-utils");
 
@@ -134,68 +132,6 @@ function sortTasks(tasks, sorters) {
 }
 
 /**
- * Transform a value using a sort filter regular expression
- * @param {string} value
- * @param {string} filter
- * @return {string} The transformed value
- */
-function sortFilter(value, filter) {
-  return indexUtils.sortFilter(value, filter);
-}
-
-/**
- * Compare two values (supports string, date and number values)
- * @param {any} a
- * @param {any} b
- * @return {number} A positive value if a > b, negative if a < b, otherwise 0
- */
-function compareValues(a, b) {
-  return indexUtils.compareValues(a, b);
-}
-
-/**
- * Filter a list of tasks using a filters object containing field names and filter values
- * @param {object} index
- * @param {object[]}} tasks
- * @param {object} filters
- */
-function filterTasks(index, tasks, filters) {
-  return indexUtils.filterTasks(index, tasks, filters);
-}
-
-/**
- * Check if the input string matches the filter regex
- * @param {string|string[]} filter A regular expression or array of regular expressions
- * @param {string} input The string to match against
- * @return {boolean} True if the input matches the string filter
- */
-function stringFilter(filter, input) {
-  return filterUtils.stringFilter(filter, input);
-}
-
-/**
- * Check if the input date matches a date (ignore time part), or if multiple dates are passed in, check if the
- * input date is between the earliest and latest dates
- * @param {Date|Date[]} dates A date or list of dates to check against
- * @param {Date} input The input date to match against
- * @return {boolean} True if the input matches the date filter
- */
-function dateFilter(dates, input) {
-  return filterUtils.dateFilter(dates, input);
-}
-
-/**
- * Check if the input matches a number, or if multiple numbers are passed in, check if the input is between the
- * minimum and maximum numbers
- * @param {number|number[]} filter A filter number or array of filter numbers
- * @param {number} input The number to match against
- * @return {boolean} True if the input matches the number filter
- */
-function numberFilter(filter, input) {
-  return filterUtils.numberFilter(filter, input);
-}
-
-/**
  * Calculate task workload
  * @param {object} index The index object
  * @param {object} task The task object
@@ -213,28 +149,6 @@ function taskWorkload(index, task) {
  */
 function taskProgress(index, task) {
   return indexUtils.taskProgress(index, task);
-}
-
-/**
- * Calculate task workload statistics between a start and end date
- * @param {object[]} tasks
- * @param {string} metadataProperty
- * @param {Date} start
- * @param {Date} end
- * @return {object} A statistics object
- */
-function taskWorkloadInPeriod(tasks, metadataProperty, start, end) {
-  return indexUtils.taskWorkloadInPeriod(tasks, metadataProperty, start, end);
-}
-
-/**
- * Get a list of tasks that were started before and/or completed after a date
- * @param {object[]} tasks
- * @param {Date} date
- * @return {object[]} A filtered list of tasks
- */
-function getActiveTasksAtDate(tasks, date) {
-  return indexUtils.getActiveTasksAtDate(tasks, date);
 }
 
 /**
@@ -289,36 +203,16 @@ function updateColumnLinkedCustomFields(index, taskData, columnName) {
   return indexUtils.updateColumnLinkedCustomFields(index, taskData, columnName);
 }
 
-/**
- * If index options contains a list of columns linked to a custom field name and a task's column matches one
- * of the columns in this list, set the task's custom field value to the current date depending on criteria:
- * - if 'once', update the value only if it's not currently set
- * - if 'always', update the value regardless
- * - otherwise, don't update the value
- * @param {object} index
- * @param {object} taskData
- * @param {string} columnName
- * @param {string} fieldName
- * @param {string} [updateCriteria='none']
- */
-function updateColumnLinkedCustomField(index, taskData, columnName, fieldName, updateCriteria = "none") {
-  return indexUtils.updateColumnLinkedCustomField(index, taskData, columnName, fieldName, updateCriteria);
-}
-
 class Kanbn {
-  ROOT = process.cwd();
-  CONFIG_YAML = path.join(this.ROOT, "kanbn.yml");
-  CONFIG_JSON = path.join(this.ROOT, "kanbn.json");
-
-  // Memoize config
-  configMemo = null;
-
   constructor(root = null) {
-    if(root) {
-      this.ROOT = root
-      this.CONFIG_YAML = path.join(this.ROOT, "kanbn.yml");
-      this.CONFIG_JSON = path.join(this.ROOT, "kanbn.json");
+    if (root) {
+      this.ROOT = root;
+    } else {
+      this.ROOT = process.cwd();
     }
+    this.CONFIG_YAML = path.join(this.ROOT, "kanbn.yml");
+    this.CONFIG_JSON = path.join(this.ROOT, "kanbn.json");
+    this.configMemo = null; // Initialize memoized config here
   }
 
   /**
@@ -457,17 +351,6 @@ class Kanbn {
    * @return {Promise<index>} The index
    */
   async getIndex() {
-    // Check if this folder has been initialised
-    if (!(await this.initialised())) {
-      throw new Error("Not initialised in this folder");
-    }
-
-    return this.loadIndex();
-  }
-
-  /**
-   * Get a task as an object
-   * @param {string} taskId The task id to get
    * @return {Promise<task>} The task
    */
   async getTask(taskId) {
@@ -692,7 +575,7 @@ class Kanbn {
    */
   async loadAllTrackedTasks(index, columnName = null, includeSystemTasks = false) {
     try {
-      const { projectTasks, systemTasks, allTasks } = await this.loadAllTasksWithSeparation(index, columnName);
+      const { projectTasks, allTasks } = await this.loadAllTasksWithSeparation(index, columnName);
       return includeSystemTasks ? allTasks : projectTasks;
     } catch (error) {
       console.error(`Error loading tasks: ${error.message}`);
@@ -1702,13 +1585,8 @@ module.exports = createKanbn;
 // Add utility functions and the Kanbn class as properties
 module.exports.Kanbn = Kanbn;
 module.exports.findTaskColumn = findTaskColumn;
-module.exports.getTaskPath = getTaskPath;
-module.exports.addFileExtension = addFileExtension;
-module.exports.removeFileExtension = removeFileExtension;
-module.exports.taskInIndex = taskInIndex;
 module.exports.addTaskToIndex = addTaskToIndex;
 module.exports.removeTaskFromIndex = removeTaskFromIndex;
 module.exports.renameTaskInIndex = renameTaskInIndex;
 module.exports.getTaskMetadata = getTaskMetadata;
 module.exports.setTaskMetadata = setTaskMetadata;
-module.exports.taskCompleted = taskCompleted;
