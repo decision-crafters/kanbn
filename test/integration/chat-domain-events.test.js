@@ -32,6 +32,21 @@ class DomainEventBus extends EventEmitter {
 class DomainMockKanbn {
     constructor(eventBus) {
         this.eventBus = eventBus;
+        this.tasks = new Map([['test-task', { id: 'test-task', name: 'Test Task', description: 'A test task', metadata: { tags: ['test'] } }]]);
+        this.index = {
+            name: 'Test Project',
+            description: 'Test project for domain events',
+            columns: {
+                'Backlog': ['test-task'],
+                'In Progress': []
+            }
+        };
+    }
+
+    // Add loadIndex method
+    async loadIndex() {
+        this.eventBus.emit('contextQueried', { context: this.index });
+        return this.index;
     }
 
     async initialised() {
@@ -42,10 +57,7 @@ class DomainMockKanbn {
         const index = {
             name: 'Test Project',
             description: 'Test project for domain events',
-            columns: {
-                'Backlog': ['test-task'],
-                'In Progress': []
-            }
+            columns: this.index.columns // Use the stored index columns
         };
         this.eventBus.emit('contextQueried', { context: index });
         return index;
@@ -66,12 +78,7 @@ class DomainMockKanbn {
     }
 
     async loadAllTrackedTasks() {
-        return [{
-            id: 'test-task',
-            name: 'Test Task',
-            description: 'A test task',
-            metadata: { tags: ['test'] }
-        }];
+        return Array.from(this.tasks.values());
     }
 
     async createTask(taskData, column) {
@@ -86,6 +93,11 @@ class DomainMockKanbn {
             taskId,
             type: 'chat'
         });
+        // Add the created task to our mock map
+        this.tasks.set(taskId, { id: taskId, ...taskData });
+        if (this.index.columns[column]) {
+            this.index.columns[column].push(taskId);
+        }
         return taskId;
     }
 
