@@ -9,9 +9,13 @@ if (!fs.existsSync(path.join(__dirname, '../real-fs-fixtures'))) {
 }
 
 describe('moveTask tests', () => {
+  let testDir;
+  let originalCwd;
+  let kanbn;
+
   beforeEach(() => {
     const timestamp = Date.now();
-    this.testDir = realFs.createFixtures(`move-test-${timestamp}`, {
+    testDir = realFs.createFixtures(`move-test-${timestamp}`, {
       countColumns: 4,
       countTasks: 17,
       tasksPerColumn: 5,
