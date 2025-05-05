@@ -20,9 +20,8 @@ const path = require('path');
  */
 async function getProjectContext(includeReferences = false) {
   // Explicitly use the mock Kanbn for consistency in test helpers
-  // Use the MockKanbn class which should now have all necessary methods
-  const MockKanbn = require('./mock-kanbn').Kanbn;
-  const kanbn = new MockKanbn();
+  const { Kanbn: MockKanbn } = require('./mock-kanbn'); // Get the class
+  const kanbn = new MockKanbn(); // Create an instance
 
   const projectContextHelper = new ProjectContext(kanbn);
   try {
@@ -60,9 +59,8 @@ async function callAIService(message, context, apiKey, model, boardFolder, conve
   });
 
   // Create system message using ProjectContext with a mock Kanbn
-  // Use the MockKanbn class which should now have all necessary methods
-  const MockKanbn = require('./mock-kanbn').Kanbn;
-  const mockKanbnForSystemMessage = new MockKanbn();
+  const { Kanbn: MockKanbn } = require('./mock-kanbn'); // Get the class
+  const mockKanbnForSystemMessage = new MockKanbn(); // Create an instance
 
   const projectContextHelper = new ProjectContext(mockKanbnForSystemMessage);
   const systemMessage = projectContextHelper.createSystemMessage(context);
@@ -85,9 +83,8 @@ async function callAIService(message, context, apiKey, model, boardFolder, conve
  */
 async function logAIInteraction(boardFolder, type, data) {
   // Use mock Kanbn for logging as well
-  // The MockKanbn class should have the necessary methods (createTask, getTaskPath, etc.)
-  const MockKanbn = require('./mock-kanbn').Kanbn;
-  const kanbn = new MockKanbn();
+  const { Kanbn: MockKanbn } = require('./mock-kanbn'); // Get the class
+  const kanbn = new MockKanbn(); // Create an instance
 
   // Ensure getMainFolder exists on the mock if AILogging needs it
   // (It should exist based on mock-kanbn.js)
@@ -113,10 +110,8 @@ async function logAIInteraction(boardFolder, type, data) {
  */
 async function interactiveChat(projectContext, chatHandler, args) {
   // Use mock Kanbn here too
-  // Use mock Kanbn here too
-  // The MockKanbn class should have the necessary methods
-  const MockKanbn = require('./mock-kanbn').Kanbn;
-  const kanbn = new MockKanbn();
+  const { Kanbn: MockKanbn } = require('./mock-kanbn'); // Get the class
+  const kanbn = new MockKanbn(); // Create an instance
   const boardFolder = process.cwd(); // Or use a mock path if needed
 
   // Ensure necessary methods exist on the mock instance for AILogging

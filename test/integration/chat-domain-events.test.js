@@ -120,42 +120,14 @@ QUnit.module('Chat Domain Events', {
     // Create domain event bus
     const eventBus = new DomainEventBus();
     this.eventBus = eventBus;
-    
-    // Set up mocks
-    const MockKanbnWithEvents = class extends DomainMockKanbn {
-      constructor() {
-        super(eventBus);
-      }
-    };
 
-    // Create a function that returns our mock instance
-    const mockKanbnFunction = function() {
-      return new MockKanbnWithEvents(eventBus);
-    };
-    
-   mockKanbnFunction.Kanbn = MockKanbnWithEvents; // Ensure the class is exported correctly
+    // Use the specific DomainMockKanbn for these tests
+    const sharedMockKanbnInstance = new DomainMockKanbn(eventBus);
 
-   // Add other necessary mock methods directly to the function object if needed elsewhere
-   mockKanbnFunction.findTaskColumn = async () => 'Backlog'; // Make async if needed
-   mockKanbnFunction.getProjectContext = async () => {
-     const kanbn = new MockKanbnWithEvents(eventBus);
-     return await kanbn.getProjectContext(); // Ensure await is used
-   };
-   mockKanbnFunction.loadIndex = async () => { // Add missing mock methods
-       const kanbn = new MockKanbnWithEvents(eventBus);
-       return await kanbn.loadIndex();
-   };
-    mockKanbnFunction.taskExists = async (taskId) => {
-       const kanbn = new MockKanbnWithEvents(eventBus);
-       return await kanbn.taskExists(taskId);
-   };
-    mockKanbnFunction.createTask = async (taskData, column) => {
-       const kanbn = new MockKanbnWithEvents(eventBus);
-       return await kanbn.createTask(taskData, column);
-   };
-
-
-   mockRequire('../../src/main', mockKanbnFunction);
+    // Mock src/main to return the shared instance when called as a function
+    mockRequire('../../src/main', () => sharedMockKanbnInstance);
+    // Mock the .Kanbn property if anything requires the class directly from src/main
+    mockRequire('../../src/main').Kanbn = DomainMockKanbn; // Use the specific mock class
 
     // Reset cache for chat controller
     delete require.cache[require.resolve('../../src/controller/chat')];
@@ -184,48 +156,13 @@ QUnit.module('Chat Domain Events', {
             fs.mkdirSync(testFolder, { recursive: true });
         }
         process.chdir(testFolder);
-        
-        const eventBus = this.eventBus;
-        
-        // Set up mocks
-        const MockKanbnWithEvents = class extends DomainMockKanbn {
-          constructor() {
-            super(eventBus);
-          }
-        };
 
-        // Create a function that returns our mock instance
-        const mockKanbnFunction = function() {
-          return new MockKanbnWithEvents(eventBus);
-        };
+       // Use the specific DomainMockKanbn for these tests
+       const sharedMockKanbnInstance = new DomainMockKanbn(this.eventBus);
 
-        // mockKanbnFunction is already defined above in this scope
-        // const mockKanbnFunction = function() {
-        //   return new MockKanbnWithEvents(eventBus);
-        // };
-
-        mockKanbnFunction.Kanbn = MockKanbnWithEvents; // Ensure the class is exported correctly
-
-        // Add other necessary mock methods directly to the function object
-        mockKanbnFunction.findTaskColumn = async () => 'Backlog'; // Make async
-        mockKanbnFunction.getProjectContext = async () => {
-          const kanbn = new MockKanbnWithEvents(eventBus);
-          return await kanbn.getProjectContext(); // Ensure await
-        };
-        mockKanbnFunction.loadIndex = async () => { // Add missing mock methods
-            const kanbn = new MockKanbnWithEvents(eventBus);
-            return await kanbn.loadIndex();
-        };
-         mockKanbnFunction.taskExists = async (taskId) => {
-            const kanbn = new MockKanbnWithEvents(eventBus);
-            return await kanbn.taskExists(taskId);
-        };
-         mockKanbnFunction.createTask = async (taskData, column) => {
-            const kanbn = new MockKanbnWithEvents(eventBus);
-            return await kanbn.createTask(taskData, column);
-        };
-
-        mockRequire('../../src/main', mockKanbnFunction);
+       // Mock src/main to return the shared instance
+       mockRequire('../../src/main', () => sharedMockKanbnInstance);
+       mockRequire('../../src/main').Kanbn = DomainMockKanbn; // Use the specific mock class
 
         // Mock AI Service again for beforeEach scope if needed, or rely on 'before'
         const mockAIServiceInstance = testHelper.createMockAIService('Mock AI response for domain test.');
