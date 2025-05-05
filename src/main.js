@@ -48,7 +48,7 @@ const defaultInitialiseOptions = {
     completedColumns: ["Done"],
   },
   columns: ["Backlog", "Todo", "In Progress", "Done"],
-};
+}
 
 /**
  * Get a list of all tracked task ids
