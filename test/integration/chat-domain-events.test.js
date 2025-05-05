@@ -160,13 +160,22 @@ QUnit.module('Chat Domain Events', {
     // Reset cache for chat controller
     delete require.cache[require.resolve('../../src/controller/chat')];
 
+    // Mock AI Service to prevent network calls
+    const mockAIServiceInstance = testHelper.createMockAIService('Mock AI response for domain test.');
+    mockRequire('../../src/lib/ai-service', function() {
+        return mockAIServiceInstance; // Return the instance directly
+    });
+    mockRequire.reRequire('../../src/lib/ai-service'); // Re-require after mocking
+
         // Set test environment
         process.env.KANBN_ENV = 'test';
-        process.env.OPENROUTER_API_KEY = 'test-api-key';
+        // OPENROUTER_API_KEY is not needed now as AIService is mocked
+        // process.env.OPENROUTER_API_KEY = 'test-api-key';
     },
 
     after: function() {
         mockRequire.stop('../../src/main');
+        mockRequire.stop('../../src/lib/ai-service'); // Stop AI service mock
     },
 
     beforeEach: function() {
@@ -217,11 +226,22 @@ QUnit.module('Chat Domain Events', {
         };
 
         mockRequire('../../src/main', mockKanbnFunction);
+
+        // Mock AI Service again for beforeEach scope if needed, or rely on 'before'
+        const mockAIServiceInstance = testHelper.createMockAIService('Mock AI response for domain test.');
+         mockRequire('../../src/lib/ai-service', function() {
+            return mockAIServiceInstance; // Return the instance directly
+        });
+        mockRequire.reRequire('../../src/lib/ai-service'); // Re-require after mocking
+
         // Reset cache for chat controller
         delete require.cache[require.resolve('../../src/controller/chat')];
     },
 
     afterEach: function() {
+        mockRequire.stop('../../src/lib/ai-service'); // Stop AI service mock for this scope
+        // Note: Stopping main mock might interfere if other tests run after this beforeEach
+        // Consider if mockRequire('../../src/main', ...) needs to be stopped here too
         rimraf.sync(testFolder);
     }
 });
