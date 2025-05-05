@@ -1,3 +1,4 @@
+/* global QUnit */
 /**
  * Check if an async function throws an error
  * @param {Function} block The async function to call

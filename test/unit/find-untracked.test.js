@@ -1,3 +1,4 @@
+/* global QUnit */
 const mockFileSystem = require('mock-fs');
 const kanbn = require('../../src/main');
 

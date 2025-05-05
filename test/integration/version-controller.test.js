@@ -1,3 +1,4 @@
+/* global QUnit */
 const mockArgv = require('mock-argv');
 const captureConsole = require('capture-console');
 const kanbn = require('../../index');

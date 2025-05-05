@@ -1,3 +1,4 @@
+/* global QUnit */
 const fs = require('fs');
 const path = require('path');
 const realFs = require('../real-fs-fixtures');

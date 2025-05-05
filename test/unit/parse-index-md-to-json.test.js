@@ -1,3 +1,4 @@
+/* global QUnit */
 const parseIndex = require('../../src/parse-index');
 
 QUnit.module('Index markdown to JSON conversion tests');

@@ -1,3 +1,4 @@
+/* global QUnit */
 const taskUtils = require('../../src/lib/task-utils');
 
 QUnit.module('task-utils tests');

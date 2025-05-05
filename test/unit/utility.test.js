@@ -1,3 +1,4 @@
+/* global QUnit */
 const utility = require('../../src/utility');
 
 QUnit.module('utility tests', {

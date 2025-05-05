@@ -1,3 +1,4 @@
+/* global QUnit */
 const stripAnsi = require('strip-ansi');
 
 /**
