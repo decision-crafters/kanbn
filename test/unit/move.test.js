@@ -8,11 +8,8 @@ if (!fs.existsSync(path.join(__dirname, '../real-fs-fixtures'))) {
   fs.mkdirSync(path.join(__dirname, '../real-fs-fixtures'), { recursive: true });
 }
 
-describe('moveTask tests', {
-  before() {
-    require('../qunit-throws-async');
-  },
-  beforeEach() {
+describe('moveTask tests', () => {
+  beforeEach(() => {
     const timestamp = Date.now();
     this.testDir = realFs.createFixtures(`move-test-${timestamp}`, {
       countColumns: 4,
@@ -26,9 +23,10 @@ describe('moveTask tests', {
     
     this.originalCwd = process.cwd();
     process.chdir(this.testDir);
-    
     this.kanbn = kanbnFactory();
-  },
+  });
+
+  afterEach(() => {
     process.chdir(this.originalCwd);
     realFs.cleanupFixtures(this.testDir);
   });
@@ -38,23 +36,13 @@ describe('moveTask tests', {
     fs.mkdirSync(emptyDir);
     process.chdir(emptyDir);
 
-    try {
-      await this.kanbn.moveTask('task-1', 'Column 2');
-      expect(true).toBe(false);
-    } catch (error) {
-      expect(error.message).toBe('Not initialised in this folder');
-    }
+    await expect(this.kanbn.moveTask('task-1', 'Column 2')).rejects.toThrow('Not initialised in this folder');
 
     process.chdir(this.testDir);
   });
 
   test('Move non-existent task should throw "task file not found" error', async () => {
-    try {
-      await this.kanbn.moveTask('task-18', 'Column 2');
-      expect(true).toBe(false);
-    } catch (error) {
-      expect(error.message).toBe('No task file found with id "task-18"');
-    }
+    await expect(this.kanbn.moveTask('task-18', 'Column 2')).rejects.toThrow(/No task file found with id "task-18"/);
   });
 
   test('Move an untracked task should throw "task not indexed" error', async () => {
@@ -77,23 +65,13 @@ describe('moveTask tests', {
     process.chdir(untrackedDir);
     const untrackedKanbn = kanbnFactory();
 
-    try {
-      await untrackedKanbn.moveTask('test-task', 'Test Column 1');
-      expect(true).toBe(false);
-    } catch (error) {
-      expect(error.message).toBe('Task "test-task" is not in the index');
-    }
+    await expect(untrackedKanbn.moveTask('test-task', 'Test Column 1')).rejects.toThrow('Task "test-task" is not in the index');
 
     process.chdir(this.testDir);
   });
 
   test('Move a task to a non-existent column should throw "column not found" error', async () => {
-    try {
-      await this.kanbn.moveTask('task-1', 'Column 5');
-      expect(true).toBe(false);
-    } catch (error) {
-      expect(error.message).toBe('Column "Column 5" doesn\'t exist');
-    }
+    await expect(this.kanbn.moveTask('task-1', 'Column 5')).rejects.toThrow("Column \"Column 5\" doesn't exist");
   });
 
   test('Move a task', async () => {
@@ -104,7 +82,7 @@ describe('moveTask tests', {
     // Verify that the task was moved
     const index = await this.kanbn.getIndex();
     expect(index.columns['Column 2'].includes('task-1')).toBeTruthy();
-    expect(!index.columns['Column 1'].includes('task-1')).toBeTruthy();
+    expect(index.columns['Column 1'].includes('task-1')).toBeFalsy();
 
     // Verify that the task updated date was updated
     const task = await this.kanbn.getTask('task-1');
@@ -118,7 +96,7 @@ describe('moveTask tests', {
     // Verify that the task was moved
     const index = await this.kanbn.getIndex();
     expect(index.columns['Column 2'].includes('task-1')).toBeTruthy();
-    expect(!index.columns['Column 1'].includes('task-1')).toBeTruthy();
+    expect(index.columns['Column 1'].includes('task-1')).toBeFalsy();
 
     // Verify that the task started date was updated
     const task = await this.kanbn.getTask('task-1');

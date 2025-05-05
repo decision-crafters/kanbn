@@ -162,7 +162,7 @@ module.exports = (() => {
      * @return {string} The updated string
      */
     replaceTags(s) {
-      for (tag in tags) {
+      for (const tag in tags) {
         const r = new RegExp(`\{${tag}\}([^{]+)\{${tag}\}`, 'g');
         s = s.replace(r, (m, s) => this[tags[tag]](s));
       }
