@@ -365,7 +365,7 @@ async function handleChatMessage(options) {
  * @param {Object} args Command arguments
  * @returns {Promise<string>} Command result
  */
-module.exports = async args => {
+module.exports = async (args, _argv, _id) => {
   utility.debugLog('Chat controller started');
   // Validate required modules are loaded correctly
   try {

@@ -388,7 +388,7 @@ function updateTask(taskId, taskData, columnName) {
   });
 }
 
-module.exports = async args => {
+module.exports = async (args, _argv, _id) => {
 
   // Make sure kanbn has been initialised
   const kanbn = Kanbn();
