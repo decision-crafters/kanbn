@@ -4,6 +4,14 @@ const { Kanbn } = require('./src/main');
 const ProjectContext = require('./src/lib/project-context');
 const EpicHandler = require('./src/lib/epic-handler');
 
+/**
+ * Performs an end-to-end test of epic decomposition in a Kanbn project environment.
+ *
+ * Initializes a test project, creates an epic task, decomposes it into subtasks using AI-driven logic (optionally with Firecrawl), creates the resulting child tasks, updates the epic with child references, and logs the final task list. Environment variables control AI service selection and decomposition options.
+ *
+ * @remark
+ * The use of Firecrawl during decomposition is controlled by the `KANBN_USE_FIRECRAWL` environment variable.
+ */
 async function testEpicDecomposition() {
   try {
     // Log environment configuration

@@ -166,11 +166,14 @@ const sorterFields = [
 ];
 
 /**
- * Sort a column interactively
- * @param {string} columnName
- * @param {string[]} columnNames
- * @param {object[]} sorters
- * @return {Promise<any>}
+ * Prompts the user to interactively select a column and configure sorting criteria for that column.
+ *
+ * Allows the user to choose a column, add multiple sorters with optional filters, and specify sort order for each field.
+ *
+ * @param {string} columnName - The default column to preselect.
+ * @param {string[]} columnNames - List of available columns to choose from.
+ * @param {object[]} sorters - Existing sorters to prepopulate the prompt.
+ * @returns {Promise<any>} A promise resolving to the user's sorting selections, including column and sorter configurations.
  */
 async function interactive(columnName, columnNames, sorters) {
   const sorterNameToField = Object.fromEntries(sorterFields.map(sorterField => [sorterField.name, sorterField.field]));

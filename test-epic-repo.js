@@ -4,6 +4,13 @@ const { Kanbn } = require('./src/main');
 const ProjectContext = require('./src/lib/project-context');
 const EpicHandler = require('./src/lib/epic-handler');
 
+/**
+ * Runs an end-to-end test that initializes a Kanbn project, creates an epic task linked to a repository, decomposes the epic into subtasks using AI-driven analysis, and prints detailed information about all resulting tasks.
+ *
+ * The test sets up a temporary project environment, configures AI service usage based on environment variables, and leverages repository analysis (optionally using Firecrawl) to generate subtasks from the epic's description. Each generated subtask is created in the same column as the epic and linked as a child. The epic is updated to reference its children, and all tasks are listed with their details at the end.
+ *
+ * @remark Errors during project setup or decomposition are caught and logged; the function does not throw.
+ */
 async function testRepoEpicDecomposition() {
   try {
     // Log environment configuration

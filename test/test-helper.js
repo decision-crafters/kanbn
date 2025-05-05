@@ -11,10 +11,14 @@ const AILogging = require('../src/lib/ai-logging');
 const InteractiveChat = require('../src/lib/interactive-chat');
 
 /**
- * Get project context for testing
- * @param {Object} kanbnInstance A pre-configured Kanbn instance (mock or real)
- * @param {boolean} includeReferences Whether to include references in the context
- * @returns {Promise<Object>} Project context
+ * Retrieves the project context using the provided Kanbn instance, returning a minimal mock context if the instance is invalid or an error occurs.
+ *
+ * @param {Object} kanbnInstance - A Kanbn instance (mock or real) used to obtain project context.
+ * @param {boolean} [includeReferences=false] - Whether to include reference data in the context.
+ * @returns {Promise<Object>} The project context object, or a default mock context on failure.
+ *
+ * @remark
+ * If the Kanbn instance is invalid or an error occurs during context retrieval, a minimal mock context is returned instead of throwing.
  */
 async function getProjectContext(kanbnInstance, includeReferences = false) {
   if (!kanbnInstance || typeof kanbnInstance.loadIndex !== 'function') {
@@ -47,16 +51,19 @@ async function getProjectContext(kanbnInstance, includeReferences = false) {
 }
 
 /**
- * Call AI service API for testing
- * @param {string} message User message
- * @param {Object} context Project context
- * @param {Object} kanbnInstance Kanbn instance for context generation
- * @param {string} apiKey API key
- * @param {string} model Model name
- * @param {string} boardFolder Board folder path
- * @param {string} conversationId Conversation ID
- * @param {Function} streamCallback Optional callback for streaming responses
- * @returns {Promise<string>} AI response
+ * Sends a user message and project context to the AI service and returns the AI's response.
+ *
+ * Throws an error if the provided Kanbn instance is invalid.
+ *
+ * @param {string} message - The user's message to send to the AI.
+ * @param {Object} context - The project context to include in the system prompt.
+ * @param {Object} kanbnInstance - The Kanbn instance used to generate the system message.
+ * @param {string} apiKey - API key for the AI service.
+ * @param {string} model - The AI model to use.
+ * @param {Function} [streamCallback] - Optional callback for streaming partial responses.
+ * @returns {Promise<string>} The AI assistant's response.
+ *
+ * @throws {Error} If {@link kanbnInstance} is missing or does not have a valid `loadIndex` method.
  */
 async function callAIService(message, context, kanbnInstance, apiKey, model, _boardFolder, _conversationId, streamCallback = null) {
   const aiService = new AIService({
@@ -84,12 +91,14 @@ async function callAIService(message, context, kanbnInstance, apiKey, model, _bo
 }
 
 /**
- * Log AI interaction for testing
- * @param {string} boardFolder Board folder path
- * @param {Object} kanbnInstance A pre-configured Kanbn instance (mock or real)
- * @param {string} type Interaction type
- * @param {Object} data Interaction data
- * @returns {Promise<void>}
+ * Logs an AI interaction to the specified board folder using the provided Kanbn instance.
+ *
+ * @param {string} boardFolder - Path to the board folder where the interaction will be logged.
+ * @param {string} type - The type of AI interaction being logged.
+ * @param {Object} data - The data associated with the AI interaction.
+ *
+ * @remark
+ * If the provided Kanbn instance is invalid or missing the required method, the function logs an error and does not perform logging.
  */
 async function logAIInteraction(boardFolder, kanbnInstance, type, data) {
   if (!kanbnInstance || typeof kanbnInstance.createTask !== 'function') { // Basic check
@@ -101,12 +110,15 @@ async function logAIInteraction(boardFolder, kanbnInstance, type, data) {
 }
 
 /**
- * Run interactive chat session for testing
- * @param {Object} kanbnInstance A pre-configured Kanbn instance (mock or real)
- * @param {Object} projectContext Project context
- * @param {Object} chatHandler Chat handler
- * @param {Object} args Command arguments
- * @returns {Promise<string>} Session result
+ * Runs an interactive AI chat session using the provided Kanbn instance and project context.
+ *
+ * @param {Object} kanbnInstance - A Kanbn instance with a `createTask` method.
+ * @param {Object} projectContext - The context of the project for the chat session.
+ * @param {Object} chatHandler - Handler for processing chat messages.
+ * @param {Object} args - Command arguments, including conversation ID and other options.
+ * @returns {Promise<string>} The result of the chat session.
+ *
+ * @throws {Error} If an invalid Kanbn instance is provided.
  */
 async function interactiveChat(kanbnInstance, projectContext, chatHandler, args) {
   if (!kanbnInstance || typeof kanbnInstance.createTask !== 'function') { // Basic check
@@ -135,9 +147,12 @@ async function interactiveChat(kanbnInstance, projectContext, chatHandler, args)
 }
 
 /**
- * Create a mock AI service for testing
- * @param {string} responseText The text to return from the mock AI service
- * @returns {Object} Mock AI service
+ * Creates a mock AI service object for testing AI-related functionality.
+ *
+ * The mock service simulates AI chat completions, conversation history loading, and saving, returning preset responses and supporting optional streaming and logging callbacks.
+ *
+ * @param {string} [responseText="This is a test response from the mock AI assistant."] - The response text returned by the mock AI service.
+ * @returns {Object} A mock AI service implementing chat completion and conversation history methods.
  */
 function createMockAIService(responseText = "This is a test response from the mock AI assistant.") {
   return {

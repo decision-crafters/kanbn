@@ -198,10 +198,13 @@ async function interactive() {
 }
 
 /**
- * Search tasks
- * @param {object} filters
- * @param {boolean} quiet
- * @param {boolean} json
+ * Searches for tasks matching the specified filters and outputs the results in the chosen format.
+ *
+ * Depending on the provided flags, results are displayed as a plain list, formatted YAML, or JSON.
+ *
+ * @param {object} filters - Criteria to filter tasks.
+ * @param {boolean} quiet - If true, outputs only the list of matching task IDs or JSON.
+ * @param {boolean} json - If true, outputs results in JSON format.
  */
 function findTasks(filters, quiet, json) {
   // Create a Kanbn instance

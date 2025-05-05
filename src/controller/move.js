@@ -36,12 +36,15 @@ async function interactive(columns, columnName, columnNames, sortedColumnNames, 
 }
 
 /**
- * Move a task
- * @param {string} taskId
- * @param {string} columnName
- * @param {?number} [position=null]
- * @param {boolean} [relative=false]
- * @param {object} kanbnInstance The Kanbn instance to use
+ * Moves a task to a specified column and position within a Kanbn board.
+ *
+ * After moving, logs a message indicating the task's new column.
+ *
+ * @param {string} taskId - The ID of the task to move.
+ * @param {string} columnName - The target column name.
+ * @param {?number} [position=null] - The position within the column, or null to append.
+ * @param {boolean} [relative=false] - Whether the position is relative to the current position.
+ * @param {object} kanbnInstance - The Kanbn instance managing the board.
  */
 function moveTask(taskId, columnName, position = null, relative = false, kanbnInstance) {
   kanbnInstance
