@@ -50,6 +50,25 @@ class Kanbn {
     return config.index;
   }
 
+  async loadAllTrackedTasks() {
+    // Return tracked tasks based on the index columns
+    let tasks = [];
+    for (const column in config.index.columns) {
+      tasks = tasks.concat(config.index.columns[column]);
+    }
+    // Return task objects, not just IDs, assuming a default task structure
+    return tasks.map(taskId => ({ ...config.task, id: taskId }));
+  }
+
+  async getOptions() {
+    return config.index.options || {}; // Return options from mock index
+  }
+
+  async getCustomFields() {
+    // Return mock custom fields if defined in options, otherwise empty object
+    return (config.index.options && config.index.options.customFields) || {};
+  }
+
   async getTaskPath(taskId) {
     return path.join(await this.getMainFolder(), 'tasks', `${taskId}.md`);
   }

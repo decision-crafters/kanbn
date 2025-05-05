@@ -20,38 +20,9 @@ const path = require('path');
  */
 async function getProjectContext(includeReferences = false) {
   // Explicitly use the mock Kanbn for consistency in test helpers
+  // Use the MockKanbn class which should now have all necessary methods
   const MockKanbn = require('./mock-kanbn').Kanbn;
   const kanbn = new MockKanbn();
-  // Ensure the mock has the necessary methods for ProjectContext
-  if (!kanbn.loadIndex) {
-    console.warn('Warning: MockKanbn in test-helper is missing loadIndex method.');
-    kanbn.loadIndex = async () => ({ columns: { 'Backlog': [] } }); // Provide a basic default mock
-  }
-  if (!kanbn.loadAllTrackedTasks) {
-     console.warn('Warning: MockKanbn in test-helper is missing loadAllTrackedTasks method.');
-     kanbn.loadAllTrackedTasks = async () => ([]); // Provide a basic default mock
-  }
-   if (!kanbn.getTask) {
-     console.warn('Warning: MockKanbn in test-helper is missing getTask method.');
-     kanbn.getTask = async (taskId) => ({ id: taskId, name: 'Mock Task', description: '' }); // Basic mock
-   }
-   if (!kanbn.getTaskPath) {
-     console.warn('Warning: MockKanbn in test-helper is missing getTaskPath method.');
-     kanbn.getTaskPath = async (taskId) => `./mock/tasks/${taskId}.md`; // Basic mock
-   }
-   if (!kanbn.getTaskFilePath) {
-     console.warn('Warning: MockKanbn in test-helper is missing getTaskFilePath method.');
-     kanbn.getTaskFilePath = async (taskId) => `./mock/tasks/${taskId}.md`; // Basic mock
-   }
-   if (!kanbn.getOptions) {
-     console.warn('Warning: MockKanbn in test-helper is missing getOptions method.');
-     kanbn.getOptions = async () => ({}); // Basic mock
-   }
-   if (!kanbn.getCustomFields) {
-     console.warn('Warning: MockKanbn in test-helper is missing getCustomFields method.');
-     kanbn.getCustomFields = async () => ({}); // Basic mock
-   }
-
 
   const projectContextHelper = new ProjectContext(kanbn);
   try {
@@ -89,30 +60,9 @@ async function callAIService(message, context, apiKey, model, boardFolder, conve
   });
 
   // Create system message using ProjectContext with a mock Kanbn
+  // Use the MockKanbn class which should now have all necessary methods
   const MockKanbn = require('./mock-kanbn').Kanbn;
   const mockKanbnForSystemMessage = new MockKanbn();
-   // Ensure the mock has the necessary methods for ProjectContext
-  if (!mockKanbnForSystemMessage.loadIndex) {
-    mockKanbnForSystemMessage.loadIndex = async () => ({ columns: { 'Backlog': [] } });
-  }
-  if (!mockKanbnForSystemMessage.loadAllTrackedTasks) {
-     mockKanbnForSystemMessage.loadAllTrackedTasks = async () => ([]);
-  }
-   if (!mockKanbnForSystemMessage.getTask) {
-     mockKanbnForSystemMessage.getTask = async (taskId) => ({ id: taskId, name: 'Mock Task', description: '' });
-   }
-   if (!mockKanbnForSystemMessage.getTaskPath) {
-     mockKanbnForSystemMessage.getTaskPath = async (taskId) => `./mock/tasks/${taskId}.md`;
-   }
-   if (!mockKanbnForSystemMessage.getTaskFilePath) {
-     mockKanbnForSystemMessage.getTaskFilePath = async (taskId) => `./mock/tasks/${taskId}.md`;
-   }
-   if (!mockKanbnForSystemMessage.getOptions) {
-     mockKanbnForSystemMessage.getOptions = async () => ({});
-   }
-   if (!mockKanbnForSystemMessage.getCustomFields) {
-     mockKanbnForSystemMessage.getCustomFields = async () => ({});
-   }
 
   const projectContextHelper = new ProjectContext(mockKanbnForSystemMessage);
   const systemMessage = projectContextHelper.createSystemMessage(context);
@@ -135,28 +85,20 @@ async function callAIService(message, context, apiKey, model, boardFolder, conve
  */
 async function logAIInteraction(boardFolder, type, data) {
   // Use mock Kanbn for logging as well
+  // The MockKanbn class should have the necessary methods (createTask, getTaskPath, etc.)
   const MockKanbn = require('./mock-kanbn').Kanbn;
   const kanbn = new MockKanbn();
-   // Add necessary methods if AILogging depends on them
-   if (!kanbn.getMainFolder) {
-     kanbn.getMainFolder = async () => boardFolder || '.';
-   }
-   if (!kanbn.createTask) {
-     kanbn.createTask = async () => 'mock-ai-log-task-id';
-   }
-   if (!kanbn.getTaskPath) {
-     kanbn.getTaskPath = async (taskId) => path.join(boardFolder || '.', '.kanbn', 'tasks', `${taskId}.md`);
-   }
-    if (!kanbn.getTaskFilePath) {
-     kanbn.getTaskFilePath = async (taskId) => path.join(boardFolder || '.', '.kanbn', 'tasks', `${taskId}.md`);
-   }
-   if (!kanbn.saveTask) {
-     kanbn.saveTask = async () => {};
-   }
-   if (!kanbn.getOptions) {
-     kanbn.getOptions = async () => ({ ai: { logging: true } }); // Assume logging enabled for mock
-   }
 
+  // Ensure getMainFolder exists on the mock if AILogging needs it
+  // (It should exist based on mock-kanbn.js)
+  // if (!kanbn.getMainFolder) {
+  //   kanbn.getMainFolder = async () => boardFolder || '.';
+  // }
+  // Ensure getOptions exists for logging check
+  // (It should exist now based on mock-kanbn.js)
+  // if (!kanbn.getOptions) {
+  //   kanbn.getOptions = async () => ({ ai: { logging: true } }); // Assume logging enabled for mock
+  // }
 
   const aiLogging = new AILogging(kanbn);
   return await aiLogging.logInteraction(boardFolder, type, data);
@@ -171,30 +113,14 @@ async function logAIInteraction(boardFolder, type, data) {
  */
 async function interactiveChat(projectContext, chatHandler, args) {
   // Use mock Kanbn here too
+  // Use mock Kanbn here too
+  // The MockKanbn class should have the necessary methods
   const MockKanbn = require('./mock-kanbn').Kanbn;
   const kanbn = new MockKanbn();
   const boardFolder = process.cwd(); // Or use a mock path if needed
 
-  // Ensure mock kanbn has methods needed by AILogging if used within InteractiveChat
-   if (!kanbn.getMainFolder) {
-     kanbn.getMainFolder = async () => boardFolder || '.';
-   }
-   if (!kanbn.createTask) {
-     kanbn.createTask = async () => 'mock-ai-log-task-id';
-   }
-   if (!kanbn.getTaskPath) {
-     kanbn.getTaskPath = async (taskId) => path.join(boardFolder || '.', '.kanbn', 'tasks', `${taskId}.md`);
-   }
-    if (!kanbn.getTaskFilePath) {
-     kanbn.getTaskFilePath = async (taskId) => path.join(boardFolder || '.', '.kanbn', 'tasks', `${taskId}.md`);
-   }
-   if (!kanbn.saveTask) {
-     kanbn.saveTask = async () => {};
-   }
-   if (!kanbn.getOptions) {
-     kanbn.getOptions = async () => ({ ai: { logging: true } }); // Assume logging enabled for mock
-   }
-
+  // Ensure necessary methods exist on the mock instance for AILogging
+  // (They should exist now based on mock-kanbn.js)
 
   const aiService = new AIService({
     apiKey: process.env.OPENROUTER_API_KEY,

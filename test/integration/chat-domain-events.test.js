@@ -4,6 +4,7 @@ const fs = require('fs');
 const rimraf = require('rimraf');
 const mockRequire = require('mock-require');
 const EventEmitter = require('events');
+const testHelper = require('../test-helper'); // Import test helper for mock AI service
 
 const testFolder = path.join(__dirname, '..', 'test-chat-domain');
 
@@ -189,10 +190,10 @@ QUnit.module('Chat Domain Events', {
           return new MockKanbnWithEvents(eventBus);
         };
 
-        // Create a function that returns our mock instance
-        const mockKanbnFunction = function() {
-          return new MockKanbnWithEvents(eventBus);
-        };
+        // mockKanbnFunction is already defined above in this scope
+        // const mockKanbnFunction = function() {
+        //   return new MockKanbnWithEvents(eventBus);
+        // };
 
         mockKanbnFunction.Kanbn = MockKanbnWithEvents; // Ensure the class is exported correctly
 
