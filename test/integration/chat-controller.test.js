@@ -207,6 +207,7 @@ describe('Chat controller tests', () => {
       });
       expect(result).toBeTruthy();
       expect(typeof result).toBe('string');
+      expect(result.length).toBeGreaterThan(0);
     } catch (error) {
       expect(error).toBeFalsy();
     }
@@ -267,5 +268,65 @@ describe('Chat controller tests', () => {
     } catch (error) {
       expect(error).toBeFalsy();
     }
+  });
+
+  test('should handle errors gracefully', async () => {
+    // Create a mock that throws an error
+    class ErrorMockKanbn extends BaseMockKanbn {
+      async getIndex() {
+        throw new Error('Test error');
+      }
+    }
+    
+    // Mock the main module with our error-throwing mock
+    const mockMainFunction = function() {
+      return new ErrorMockKanbn();
+    };
+    mockMainFunction.Kanbn = ErrorMockKanbn;
+    mockRequire('../../src/main', mockMainFunction);
+    
+    // Load the chat module with our mocks
+    const chat = require('../../src/controller/chat');
+    
+    // Call the chat function and expect an error response
+    const result = await chat({
+      message: 'Test message'
+    });
+    
+    expect(result).toBeTruthy();
+    expect(result.includes('Error')).toBe(true);
+  });
+
+  test('should handle chat handler errors', async () => {
+    // Create a mock that works but whose chat handler will throw
+    const mockMainFunction = function() {
+      return new MockKanbnValidColumns();
+    };
+    mockMainFunction.Kanbn = MockKanbnValidColumns;
+    mockMainFunction.findTaskColumn = () => 'Backlog';
+    mockRequire('../../src/main', mockMainFunction);
+    
+    // Mock the ChatHandler to throw an error
+    const originalChatHandler = require('../../src/lib/chat-handler');
+    mockRequire('../../src/lib/chat-handler', class MockChatHandler {
+      constructor() {}
+      handleMessage() {
+        throw new Error('Chat handler test error');
+      }
+    });
+    
+    // Load the chat module with our mocks
+    const chat = require('../../src/controller/chat');
+    
+    // Call the chat function and expect it to fall back to AI
+    const result = await chat({
+      message: 'Test message'
+    });
+    
+    expect(result).toBeTruthy();
+    expect(typeof result).toBe('string');
+    
+    // Restore the original ChatHandler
+    mockRequire('../../src/lib/chat-handler', originalChatHandler);
   });
 });
