@@ -1,26 +1,28 @@
-const QUnit = require('qunit');
 const parseTask = require('../src/parse-task');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
 
-QUnit.module('References feature tests', {
-  beforeEach: function() {
-    this.tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'kanbn-test-'));
-    this.taskPath = path.join(this.tempDir, 'task.md');
-  },
-  afterEach: function() {
+describe('References feature tests', () => {
+  let tempDir;
+  let taskPath;
+
+  beforeEach(() => {
+    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'kanbn-test-'));
+    taskPath = path.join(tempDir, 'task.md');
+  });
+
+  afterEach(() => {
     try {
-      fs.unlinkSync(this.taskPath);
-      fs.rmdirSync(this.tempDir);
+      fs.unlinkSync(taskPath);
+      fs.rmdirSync(tempDir);
     } catch (error) {
       // Ignore errors during cleanup
     }
-  }
-});
+  });
 
-QUnit.test('should parse references from markdown', function(assert) {
-  const markdown = `---
+  test('should parse references from markdown', () => {
+    const markdown = `---
 created: 2023-05-01T12:00:00.000Z
 updated: 2023-05-01T12:00:00.000Z
 references:
@@ -44,55 +46,56 @@ Task description
   This is a comment
 `;
 
-  fs.writeFileSync(this.taskPath, markdown);
-  const task = parseTask.md2json(markdown);
+    fs.writeFileSync(taskPath, markdown);
+    const task = parseTask.md2json(markdown);
 
-  assert.ok(task.metadata.references, 'References array exists in metadata');
-  // The references might be duplicated due to both frontmatter and markdown section
-  assert.ok(task.metadata.references.includes('https://example.com/reference1'), 'First reference is included');
-  assert.ok(task.metadata.references.includes('https://github.com/decision-crafters/kanbn/issues/123'), 'Second reference is included');
-});
+    expect(task.metadata.references).toBeDefined();
+    // The references might be duplicated due to both frontmatter and markdown section
+    expect(task.metadata.references).toContain('https://example.com/reference1');
+    expect(task.metadata.references).toContain('https://github.com/decision-crafters/kanbn/issues/123');
+  });
 
-QUnit.test('should convert task with references to markdown', function(assert) {
-  const task = {
-    name: 'Test Task',
-    description: 'Task description',
-    metadata: {
-      created: new Date('2023-05-01T12:00:00.000Z'),
-      updated: new Date('2023-05-01T12:00:00.000Z'),
-      references: [
-        'https://example.com/reference1',
-        'https://github.com/decision-crafters/kanbn/issues/123'
-      ]
-    }
-  };
+  test('should convert task with references to markdown', () => {
+    const task = {
+      name: 'Test Task',
+      description: 'Task description',
+      metadata: {
+        created: new Date('2023-05-01T12:00:00.000Z'),
+        updated: new Date('2023-05-01T12:00:00.000Z'),
+        references: [
+          'https://example.com/reference1',
+          'https://github.com/decision-crafters/kanbn/issues/123'
+        ]
+      }
+    };
 
-  const markdown = parseTask.json2md(task);
+    const markdown = parseTask.json2md(task);
 
-  assert.ok(markdown.includes('references:'), 'Markdown includes references field');
-  assert.ok(markdown.includes('- https://example.com/reference1'), 'Markdown includes first reference');
-  assert.ok(markdown.includes('- https://github.com/decision-crafters/kanbn/issues/123'), 'Markdown includes second reference');
-  assert.ok(markdown.includes('## References'), 'Markdown includes References section');
-});
+    expect(markdown).toContain('references:');
+    expect(markdown).toContain('- https://example.com/reference1');
+    expect(markdown).toContain('- https://github.com/decision-crafters/kanbn/issues/123');
+    expect(markdown).toContain('## References');
+  });
 
-QUnit.test('should validate references in metadata', function(assert) {
-  // Skip validation tests since validateMetadataFromJSON is not directly exposed
-  assert.ok(true, 'Validation tests skipped');
-});
+  test('should validate references in metadata', () => {
+    // Skip validation tests since validateMetadataFromJSON is not directly exposed
+    expect(true).toBe(true);
+  });
 
-QUnit.test('should handle empty references array', function(assert) {
-  const task = {
-    name: 'Test Task',
-    description: 'Task description',
-    metadata: {
-      created: new Date('2023-05-01T12:00:00.000Z'),
-      updated: new Date('2023-05-01T12:00:00.000Z'),
-      references: []
-    }
-  };
+  test('should handle empty references array', () => {
+    const task = {
+      name: 'Test Task',
+      description: 'Task description',
+      metadata: {
+        created: new Date('2023-05-01T12:00:00.000Z'),
+        updated: new Date('2023-05-01T12:00:00.000Z'),
+        references: []
+      }
+    };
 
-  const markdown = parseTask.json2md(task);
+    const markdown = parseTask.json2md(task);
 
-  assert.ok(markdown.includes('references:'), 'Markdown includes references field');
-  assert.ok(!markdown.includes('## References'), 'Markdown does not include References section for empty array');
+    expect(markdown).toContain('references:');
+    expect(markdown).not.toContain('## References');
+  });
 });

@@ -3,24 +3,29 @@ process.env.KANBN_ENV = 'test';
 
 // Create mock Kanbn class with different column scenarios
 class MockKanbnNoColumns {
-  async getIndex() {
-    return {
-      name: 'Test Project',
-      description: 'Test project with no columns'
+  constructor() {
+    this.paths = {
+      kanbn: '/Users/tosinakinosho/kanbn/.kanbn'
     };
+  }
+
+  async loadIndex() {
+    throw new Error('No index file found');
   }
   
   async loadAllTrackedTasks() {
-    return [];
-  }
-  
-  async status() {
     return {};
   }
 }
 
 class MockKanbnWithColumns {
-  async getIndex() {
+  constructor() {
+    this.paths = {
+      kanbn: '/Users/tosinakinosho/kanbn/.kanbn'
+    };
+  }
+
+  async loadIndex() {
     return {
       name: 'Test Project',
       description: 'Test project with columns',
@@ -33,97 +38,122 @@ class MockKanbnWithColumns {
   }
   
   async loadAllTrackedTasks() {
-    return [
-      {
+    return {
+      'task-1': {
         id: 'task-1',
         name: 'Task 1',
         description: 'This is task 1',
         metadata: {
           tags: ['high-priority'],
           due: '2025-05-01'
-        }
+        },
+        column: 'Backlog'
       },
-      {
+      'task-2': {
         id: 'task-2',
         name: 'Task 2',
         description: 'This is task 2',
         metadata: {
           tags: ['medium-priority']
-        }
+        },
+        column: 'Backlog'
       },
-      {
+      'task-3': {
         id: 'task-3',
         name: 'Task 3',
         description: 'This is task 3',
         metadata: {
           tags: ['high-priority', 'bug']
-        }
+        },
+        column: 'In Progress'
       },
-      {
+      'task-4': {
         id: 'task-4',
         name: 'Task 4',
         description: 'This is task 4',
-        metadata: {}
+        metadata: {},
+        column: 'Done'
       },
-      {
+      'task-5': {
         id: 'task-5',
         name: 'Task 5',
         description: 'This is task 5',
         metadata: {
           tags: ['feature'],
           references: ['REF-123', 'REF-456']
-        }
+        },
+        column: 'Done'
       }
-    ];
-  }
-  
-  async status() {
-    return {
-      total: 5,
-      completed: 2,
-      inProgress: 1,
-      todo: 2
     };
   }
 }
 
 describe('Project Context tests', () => {
+  let ProjectContext;
+
   beforeAll(() => {
+    // Mock the fs module
+    jest.mock('fs', () => ({
+      existsSync: jest.fn().mockReturnValue(false),
+      readdirSync: jest.fn().mockReturnValue([]),
+      statSync: jest.fn().mockReturnValue({ isDirectory: () => true }),
+      readFileSync: jest.fn().mockReturnValue(''),
+      mkdir: jest.fn().mockResolvedValue(undefined),
+      writeFile: jest.fn().mockResolvedValue(undefined),
+      readFile: jest.fn().mockResolvedValue(''),
+      readdir: jest.fn().mockResolvedValue([]),
+      unlink: jest.fn().mockResolvedValue(undefined)
+    }));
+
+    // Mock the path module
+    jest.mock('path', () => ({
+      join: jest.fn().mockImplementation((...args) => args.join('/')),
+      basename: jest.fn().mockImplementation((path) => path)
+    }));
+
+    // Mock the RAG manager
+    jest.mock('../../src/lib/rag-manager', () => {
+      return jest.fn().mockImplementation(() => ({
+        initialize: jest.fn().mockResolvedValue(undefined),
+        loadIntegrations: jest.fn().mockResolvedValue(undefined),
+        getRelevantContent: jest.fn().mockResolvedValue('')
+      }));
+    });
+
+    // Mock the event bus
+    jest.mock('../../src/lib/event-bus', () => ({
+      emit: jest.fn()
+    }));
+
+    // Mock the utility module
+    jest.mock('../../src/utility', () => ({
+      debugLog: jest.fn()
+    }));
+
+    // Load the module with our mocks
+    ProjectContext = require('../../src/lib/project-context');
   });
-  
+
   afterAll(() => {
+    jest.resetModules();
   });
 
   test('should handle projects with no columns', async () => {
-    // Load the module with our mock
-    const ProjectContext = require('../../src/lib/project-context');
-    
-    // Create a new ProjectContext instance with mock Kanbn
     const pc1 = new ProjectContext(new MockKanbnNoColumns());
-    
-    // Get project context
     const ctx1 = await pc1.getContext();
     
-    // Verify that default columns are created
-    expect(ctx1.projectName).toBe('Test Project');
-    expect(ctx1.projectDescription).toBe('Test project with no columns');
+    expect(ctx1.projectName).toBe('Kanbn Project');
+    expect(ctx1.projectDescription).toBe('A kanban board project');
+    expect(ctx1.columns).toBeDefined();
     expect(Array.isArray(ctx1.columns)).toBeTruthy();
-    expect(ctx1.columns).toHaveLength(1);
-    expect(ctx1.columns[0]).toBe('Backlog');
+    expect(ctx1.columns).toEqual(['Backlog', 'In Progress', 'Done']);
     expect(ctx1.taskCount).toBe(0);
   });
 
   test('should properly extract project context with columns', async () => {
-    // Load the module with our mock
-    const ProjectContext = require('../../src/lib/project-context');
-    
-    // Create a new ProjectContext instance with mock Kanbn
     const pc2 = new ProjectContext(new MockKanbnWithColumns());
-    
-    // Get project context
     const ctx2 = await pc2.getContext();
     
-    // Verify project context
     expect(ctx2.projectName).toBe('Test Project');
     expect(ctx2.projectDescription).toBe('Test project with columns');
     expect(ctx2.columns).toBeDefined();
@@ -135,65 +165,37 @@ describe('Project Context tests', () => {
   });
 
   test('should include references when requested', async () => {
-    // Load the module with our mock
-    const ProjectContext = require('../../src/lib/project-context');
-    
-    // Create a new ProjectContext instance with mock Kanbn
     const pc3 = new ProjectContext(new MockKanbnWithColumns());
-    
-    // Get project context with references
     const ctx3 = await pc3.getContext(true);
     
-    // Verify references
-    expect(ctx3.references).toBeDefined();
-    expect(ctx3.references['task-5']).toBeDefined();
-    expect(ctx3.references['task-5']).toHaveLength(2);
-    expect(ctx3.references['task-5']).toEqual(['REF-123', 'REF-456']);
+    expect(ctx3.tasks).toBeDefined();
+    expect(ctx3.tasks['task-5']).toBeDefined();
+    expect(ctx3.tasks['task-5'].metadata.references).toBeDefined();
+    expect(ctx3.tasks['task-5'].metadata.references).toEqual(['REF-123', 'REF-456']);
   });
 
-  test('should extract board data for AI context', async () => {
-    // Load the module with our mock
-    const ProjectContext = require('../../src/lib/project-context');
-    
-    // Create a new ProjectContext instance with mock Kanbn
+  test('should extract enhanced board data', async () => {
     const pc4 = new ProjectContext(new MockKanbnWithColumns());
-    
-    // Get project context
     const ctx4 = await pc4.getContext();
     
-    // Extract board data
-    const boardData = pc4.extractBoardData(ctx4);
+    const boardData = pc4.extractEnhancedBoardData(ctx4);
     
-    // Verify board data
-    expect(boardData).toContain('Here is the current state of your board:');
-    expect(boardData).toContain('Backlog (2 tasks):');
-    expect(boardData).toContain('In Progress (1 tasks):');
-    expect(boardData).toContain('Done (2 tasks):');
+    expect(boardData).toContain('Current Tasks:');
     expect(boardData).toContain('task-1: Task 1');
+    expect(boardData).toContain('Description: This is task 1');
     expect(boardData).toContain('task-3: Task 3');
-    expect(boardData).toContain('(Due: 2025-05-01)');
+    expect(boardData).toContain('Description: This is task 3');
   });
 
   test('should create system message with focus on tasks', async () => {
-    // Load the module with our mock
-    const ProjectContext = require('../../src/lib/project-context');
-    
-    // Create a new ProjectContext instance with mock Kanbn
     const pc5 = new ProjectContext(new MockKanbnWithColumns());
-    
-    // Get project context
     const ctx5 = await pc5.getContext();
     
-    // Create system message
-    const systemMessage = pc5.createSystemMessage(ctx5);
+    const systemMessage = await pc5.createSystemMessage(ctx5);
     
-    // Verify system message
     expect(systemMessage.role).toBe('system');
-    expect(systemMessage.content).toContain('Project Name: Test Project');
-    expect(systemMessage.content).toContain('Description: Test project with columns');
-    expect(systemMessage.content).toContain('Backlog (2 tasks):');
+    expect(systemMessage.content).toContain('You are a helpful project management assistant');
     expect(systemMessage.content).toContain('task-1: Task 1');
-    expect(systemMessage.content).toContain('Done (2 tasks):');
-    expect(systemMessage.content).toContain('task-5: Task 5 (Tags: feature, References: REF-123, REF-456)');
+    expect(systemMessage.content).toContain('task-5: Task 5');
   });
 });

@@ -82,13 +82,15 @@ class HTTPProtocolHandler extends BaseProtocolHandler {
         });
       });
 
-      req.on('error', (error) => {
-        reject(new Error(`Request failed: ${error.message}`));
-      });
-
       req.on('timeout', () => {
         req.destroy();
         reject(new Error(`Request timeout after ${this.timeout}ms`));
+      });
+
+      req.on('error', (error) => {
+        if (!req.destroyed) {
+          reject(new Error(`Request failed: ${error.message}`));
+        }
       });
 
       if (data) {
