@@ -10,12 +10,15 @@ inquirer.registerPrompt('recursive', require('inquirer-recursive'));
 inquirer.registerPrompt('autocomplete', require('inquirer-autocomplete-prompt'));
 
 /**
- * Update a task interactively
- * @param {object} taskData
- * @param {string[]} taskIds
- * @param {string} columnName
- * @param {string[]} columnNames
- * @return {Promise<any>}
+ * Prompts the user through an interactive CLI to update a Kanbn task's properties.
+ *
+ * Presents a sequence of prompts to edit the task's name, description, column, due date, assigned user, sub-tasks, tags, references, and relations. Prompts are dynamically shown based on the current state of the task and user choices, supporting addition, editing, and removal of various task attributes.
+ *
+ * @param {object} taskData - The current data of the task to be updated.
+ * @param {string[]} taskIds - List of all tracked task IDs for relation selection.
+ * @param {string} columnName - The current column of the task.
+ * @param {string[]} columnNames - All available column names for selection.
+ * @returns {Promise<any>} Resolves with the user's answers representing the updated task properties.
  */
 async function interactive(taskData, taskIds, columnName, columnNames) {
   const dueDateExists = (
@@ -371,10 +374,11 @@ async function interactive(taskData, taskIds, columnName, columnNames) {
 }
 
 /**
- * Update a task
- * @param {string} taskId
- * @param {object} taskData
- * @param {?string} columnName
+ * Updates a task in the Kanbn board with new data and optionally moves it to a different column.
+ *
+ * @param {string} taskId - The ID of the task to update.
+ * @param {object} taskData - The updated task data.
+ * @param {?string} columnName - The name of the column to move the task to, or null to leave unchanged.
  */
 function updateTask(taskId, taskData, columnName) {
   const kanbn = Kanbn();

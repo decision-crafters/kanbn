@@ -23,9 +23,12 @@ const colors = {
 let mcpClient = null;
 
 /**
- * Get or create MCP client
- * @param {string} boardFolder Path to Kanbn board folder
- * @returns {Promise<MCPClient>} MCP client instance
+ * Returns a singleton MCPClient instance initialized with configuration from the specified Kanbn board folder.
+ *
+ * If the client has not been created, loads MCP server configuration from the board's `kanbn.json` file. If the file is missing or invalid, initializes with an empty MCP servers configuration.
+ *
+ * @param {string} boardFolder - Path to the Kanbn board folder.
+ * @returns {Promise<MCPClient>} A Promise that resolves to the MCPClient instance.
  */
 async function getMCPClient(boardFolder) {
   if (!mcpClient) {

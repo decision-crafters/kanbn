@@ -10,12 +10,15 @@ inquirer.registerPrompt('recursive', require('inquirer-recursive'));
 inquirer.registerPrompt('autocomplete', require('inquirer-autocomplete-prompt'));
 
 /**
- * Create a task interactively
- * @param {object} taskData
- * @param {string[]} taskIds
- * @param {string} columnName
- * @param {string[]} columnNames
- * @return {Promise<any>}
+ * Prompts the user interactively to create or edit a task, collecting details such as name, description, column, due date, assignment, sub-tasks, tags, references, and relations.
+ *
+ * Prompts are dynamically shown based on existing task data and user responses. Supports recursive entry for sub-tasks, tags, references, and relations, with autocomplete for related task IDs.
+ *
+ * @param {object} taskData - Initial task data to pre-fill prompts.
+ * @param {string[]} taskIds - List of existing task IDs for relation selection.
+ * @param {string} columnName - Default column name for the task.
+ * @param {string[]} columnNames - List of available column names.
+ * @returns {Promise<object>} A promise resolving to the user's input for the new or edited task.
  */
 async function interactiveCreateTask(taskData, taskIds, columnName, columnNames) {
   const dueDateExists = (
