@@ -351,6 +351,14 @@ class Kanbn {
    * @return {Promise<index>} The index
    */
   async getIndex() {
+    // Check if this folder has been initialised
+    if (!(await this.initialised())) {
+      throw new Error("Not initialised in this folder");
+    }
+    return await this.loadIndex();
+  }
+
+  /**
    * @return {Promise<task>} The task
    */
   async getTask(taskId) {
