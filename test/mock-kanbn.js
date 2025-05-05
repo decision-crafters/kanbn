@@ -227,29 +227,5 @@ class Kanbn {
   }
 }
 
-// Create a singleton instance
-const kanbnInstance = new Kanbn();
-
-// Export a function that returns the singleton instance
-const KanbnConstructor = function() {
-  return kanbnInstance;
-};
-
-// Copy all methods from the prototype and the instance to the constructor function
-Object.getOwnPropertyNames(Kanbn.prototype).forEach(key => {
-  if (typeof Kanbn.prototype[key] === 'function') {
-    KanbnConstructor[key] = async (...args) => await kanbnInstance[key](...args);
-  }
-});
-
-Object.getOwnPropertyNames(kanbnInstance).forEach(key => {
-  if (typeof kanbnInstance[key] === 'function') {
-    KanbnConstructor[key] = async (...args) => await kanbnInstance[key](...args);
-  }
-});
-
-// Export the constructor function as the default export
-module.exports = KanbnConstructor;
-
-// Also export config for test manipulation
-module.exports.config = config;
+// Export only the Kanbn class and the config for test manipulation
+module.exports = { Kanbn, config };
