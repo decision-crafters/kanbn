@@ -81,6 +81,12 @@ class DomainMockKanbn {
         return Array.from(this.tasks.values());
     }
 
+    // Add taskExists method
+    async taskExists(taskId) {
+        // Check if task exists in our mock map or was created during the test
+        return this.tasks.has(taskId) || taskId.startsWith('task-');
+    }
+
     async createTask(taskData, column) {
         const taskId = `task-${Date.now()}`;
         this.eventBus.emit('taskCreated', {
