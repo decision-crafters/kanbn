@@ -225,46 +225,5 @@ class Kanbn {
   }
 }
 
-// For backward compatibility
-const kanbn = {
-  initialised: async () => await new Kanbn().initialised(),
-  getMainFolder: async () => await new Kanbn().getMainFolder(),
-  initialise: async (options = {}) => await new Kanbn().initialise(options),
-  getIndex: async () => await new Kanbn().getIndex(),
-  loadIndex: async () => await new Kanbn().loadIndex(),
-  getTaskPath: async (taskId) => await new Kanbn().getTaskPath(taskId),
-  getTaskFilePath: async (taskId) => await new Kanbn().getTaskFilePath(taskId),
-  getIndexPath: async () => await new Kanbn().getIndexPath(),
-  saveIndex: async (index) => await new Kanbn().saveIndex(index),
-  saveTask: async (taskId, taskData) => await new Kanbn().saveTask(taskId, taskData),
-  deleteTask: async (taskId) => await new Kanbn().deleteTask(taskId),
-  moveTask: async (taskId, columnName) => await new Kanbn().moveTask(taskId, columnName),
-  findTrackedTasks: async () => await new Kanbn().findTrackedTasks(),
-  findUntrackedTasks: async () => await new Kanbn().findUntrackedTasks(),
-  taskExists: async (taskId) => await new Kanbn().taskExists(taskId),
-  getTask: async (taskId) => await new Kanbn().getTask(taskId),
-  loadTask: async (taskId) => await new Kanbn().loadTask(taskId),
-  findTaskColumn: async (taskId) => await new Kanbn().findTaskColumn(taskId),
-  updateTask: async (taskId, taskData) => await new Kanbn().updateTask(taskId, taskData),
-  createTask: async (taskData, columnName) => await new Kanbn().createTask(taskData, columnName),
-  addUntrackedTaskToIndex: async (untrackedTask, columnName) => await new Kanbn().addUntrackedTaskToIndex(untrackedTask, columnName),
-  listArchivedTasks: async () => await new Kanbn().listArchivedTasks(),
-  archiveTask: async (taskId) => await new Kanbn().archiveTask(taskId),
-  restoreTask: async (taskId, columnName) => await new Kanbn().restoreTask(taskId, columnName),
-  status: async () => await new Kanbn().status(),
-  burndown: async (sprints, dates, assigned, columns, normalise) => 
-    await new Kanbn().burndown(sprints, dates, assigned, columns, normalise),
-  search: async (searchCriteria = {}) => await new Kanbn().search(searchCriteria)
-};
-
-const kanbnInstance = new Kanbn();
-
-const KanbnConstructor = function() {
-  return kanbnInstance;
-};
-
-// Export both the Kanbn constructor and the kanbn object for backward compatibility
-module.exports = KanbnConstructor;
-module.exports.Kanbn = Kanbn; // Export the Kanbn class directly
-module.exports.config = config;
-module.exports.kanbn = kanbn;
+// Export only the Kanbn class and the config for test manipulation
+module.exports = { Kanbn, config };
