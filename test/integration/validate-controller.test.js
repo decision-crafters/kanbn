@@ -47,7 +47,7 @@ QUnit.module('Validate controller with valid files', {
 
 QUnit.test('should exit with code 0 when all files are valid', function(assert) {
   const done = assert.async();
-  exec(`${KANBN_BIN} validate`, (error, stdout, stderr) => {
+  exec(`${KANBN_BIN} validate`, (error, stdout, _stderr) => {
     assert.strictEqual(error, null, 'Expected no error');
     assert.ok(stdout.includes('Everything OK'), 'Expected "Everything OK" in output');
     done();
@@ -56,7 +56,7 @@ QUnit.test('should exit with code 0 when all files are valid', function(assert) 
 
 QUnit.test('should exit with code 0 when using --save flag', function(assert) {
   const done = assert.async();
-  exec(`${KANBN_BIN} validate --save`, (error, stdout, stderr) => {
+  exec(`${KANBN_BIN} validate --save`, (error, stdout, _stderr) => {
     assert.strictEqual(error, null, 'Expected no error');
     assert.ok(stdout.includes('Everything OK'), 'Expected "Everything OK" in output');
     done();
@@ -65,7 +65,7 @@ QUnit.test('should exit with code 0 when using --save flag', function(assert) {
 
 QUnit.test('should fix issues and exit with code 0 when using --save flag', function(assert) {
   const done = assert.async();
-  exec(`${KANBN_BIN} validate --save`, (error, stdout, stderr) => {
+  exec(`${KANBN_BIN} validate --save`, (error, stdout, _stderr) => {
     assert.strictEqual(error, null, 'Expected no error');
     assert.ok(stdout.includes('Everything OK'), 'Expected "Everything OK" in output');
     done();
@@ -97,27 +97,27 @@ QUnit.module('Validate controller with invalid files', {
 
 QUnit.test('should exit with non-zero code when tasks folder is missing', function(assert) {
   const done = assert.async();
-  exec(`${KANBN_BIN} validate`, (error, stdout, stderr) => {
+  exec(`${KANBN_BIN} validate`, (error, stdout, _stderr) => {
     assert.notStrictEqual(error, null, 'Expected an error');
     assert.strictEqual(error.code, 1, 'Expected exit code 1');
-    assert.match(stderr, /errors found in task files/, 'Expected error message about task files');
+    assert.match(_stderr, /errors found in task files/, 'Expected error message about task files');
     done();
   });
 });
 
 QUnit.test('should exit with non-zero code when index.json is missing', function(assert) {
   const done = assert.async();
-  exec(`${KANBN_BIN} validate`, (error, stdout, stderr) => {
+  exec(`${KANBN_BIN} validate`, (error, stdout, _stderr) => {
     assert.notStrictEqual(error, null, 'Expected an error');
     assert.strictEqual(error.code, 1, 'Expected exit code 1');
-    assert.match(stderr, /errors found in task files/, 'Expected error message about task files');
+    assert.match(_stderr, /errors found in task files/, 'Expected error message about task files');
     done();
   });
 });
 
 QUnit.test('should exit with non-zero code when a task is missing from the index', function(assert) {
   const done = assert.async();
-  exec(`${KANBN_BIN} validate`, (error, stdout, stderr) => {
+  exec(`${KANBN_BIN} validate`, (error, stdout, _stderr) => {
     assert.notStrictEqual(error, null, 'Expected an error');
     assert.ok(stdout.includes('Error: .kanbn/tasks folder does not exist'), 'Expected error message about missing tasks folder');
     done();
@@ -126,22 +126,22 @@ QUnit.test('should exit with non-zero code when a task is missing from the index
 
 QUnit.test('should list the specific errors in the output', function(assert) {
   const done = assert.async();
-  exec(`${KANBN_BIN} validate`, (error, stdout, stderr) => {
-    assert.match(stderr, /invalid-task/, 'Expected error to mention the invalid task');
-    assert.match(stderr, /Unable to parse task/, 'Expected error about parsing the task');
+  exec(`${KANBN_BIN} validate`, (error, stdout, _stderr) => {
+    assert.match(_stderr, /invalid-task/, 'Expected error to mention the invalid task');
+    assert.match(_stderr, /Unable to parse task/, 'Expected error about parsing the task');
     done();
   });
 });
 
 QUnit.test('should output JSON format when --json flag is used', function(assert) {
   const done = assert.async();
-  exec(`${KANBN_BIN} validate --json`, (error, stdout, stderr) => {
+  exec(`${KANBN_BIN} validate --json`, (error, stdout, _stderr) => {
     assert.notStrictEqual(error, null, 'Expected an error');
     assert.strictEqual(error.code, 1, 'Expected exit code 1');
 
     // Verify JSON output
     try {
-      const jsonOutput = JSON.parse(stderr.substring(stderr.indexOf('[')));
+      const jsonOutput = JSON.parse(_stderr.substring(_stderr.indexOf('[')));
       assert.strictEqual(Array.isArray(jsonOutput), true, 'Expected JSON array in output');
       assert.strictEqual(jsonOutput.length > 0, true, 'Expected at least one error in JSON output');
       assert.strictEqual(jsonOutput[0].task, 'invalid-task', 'Expected error for invalid-task');
@@ -171,9 +171,9 @@ QUnit.module('Validate controller with non-initialized directory', {
 
 QUnit.test('should exit with an error when directory is not initialized', function(assert) {
   const done = assert.async();
-  exec(`${KANBN_BIN} validate`, (error, stdout, stderr) => {
+  exec(`${KANBN_BIN} validate`, (error, stdout, _stderr) => {
     assert.notStrictEqual(error, null, 'Expected an error');
-    assert.match(stderr, /not been initialised/, 'Expected error about not being initialized');
+    assert.match(_stderr, /not been initialised/, 'Expected error about not being initialized');
     done();
   });
 });

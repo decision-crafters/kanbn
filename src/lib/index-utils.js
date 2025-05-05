@@ -1,4 +1,3 @@
-const fs = require('fs');
 const path = require('path');
 const utility = require('../utility');
 const fileUtils = require('./file-utils');
@@ -454,12 +453,16 @@ function normaliseDate(date, resolution = 'minutes') {
   switch (resolution) {
     case 'days':
       result.setHours(0);
+      // falls through
     case 'hours':
       result.setMinutes(0);
+      // falls through
     case 'minutes':
       result.setSeconds(0);
+      // falls through
     case 'seconds':
       result.setMilliseconds(0);
+      // falls through
     default:
       break;
   }
@@ -537,7 +540,6 @@ function updateColumnLinkedCustomField(index, taskData, columnName, fieldName, u
  */
 async function saveIndex(indexData, loadAllTrackedTasks, configExists, saveConfig, getIndexPath, ignoreOptions = false) {
   const parseIndex = require('../parse-index');
-  const fs = require('fs');
 
   if ("columnSorting" in indexData.options && Object.keys(indexData.options.columnSorting).length) {
     for (let columnName in indexData.options.columnSorting) {
@@ -555,7 +557,7 @@ async function saveIndex(indexData, loadAllTrackedTasks, configExists, saveConfi
     ignoreOptions = true;
   }
 
-  await fs.promises.writeFile(await getIndexPath(), parseIndex.json2md(indexData, ignoreOptions));
+  await require('fs').promises.writeFile(await getIndexPath(), parseIndex.json2md(indexData, ignoreOptions));
 }
 
 /**
@@ -566,11 +568,10 @@ async function saveIndex(indexData, loadAllTrackedTasks, configExists, saveConfi
  */
 async function loadIndex(getIndexPath, getConfig) {
   const parseIndex = require('../parse-index');
-  const fs = require('fs');
 
   let indexData = "";
   try {
-    indexData = await fs.promises.readFile(await getIndexPath(), { encoding: "utf-8" });
+    indexData = await require('fs').promises.readFile(await getIndexPath(), { encoding: "utf-8" });
   } catch (error) {
     throw new Error(`Couldn't access index file: ${error.message}`);
   }
@@ -610,8 +611,6 @@ async function addUntrackedTaskToIndex(
   saveTask,
   saveIndex
 ) {
-  const fs = require('fs');
-
   if (!(await initialised())) {
     throw new Error("Not initialised in this folder");
   }
@@ -666,9 +665,6 @@ async function findTrackedTasks(index, initialised, columnName = null) {
  * @return {Promise<Set>} A set of untracked task IDs
  */
 async function findUntrackedTasks(index, initialised, getTaskFolderPath) {
-  const fs = require('fs');
-  const path = require('path');
-
   // Check if this folder has been initialised
   if (!(await initialised())) {
     throw new Error("Not initialised in this folder");
@@ -679,14 +675,14 @@ async function findUntrackedTasks(index, initialised, getTaskFolderPath) {
   try {
     // Use fs.readdir instead of glob to avoid dependency issues
     const taskFolderPath = await getTaskFolderPath();
-    const files = await fs.promises.readdir(taskFolderPath, { withFileTypes: true });
+    const files = await require('fs').promises.readdir(taskFolderPath, { withFileTypes: true });
 
     // Filter for markdown files only
     const mdFiles = files
       .filter(file => file.isFile() && file.name.endsWith('.md'))
-      .map(file => path.join(taskFolderPath, file.name));
+      .map(file => path.parse(file.name).name);
 
-    const untrackedTasks = new Set(mdFiles.map((task) => path.parse(task).name));
+    const untrackedTasks = new Set(mdFiles);
     return new Set([...untrackedTasks].filter((x) => !trackedTasks.has(x)));
   } catch (error) {
     console.error(`Error finding untracked tasks: ${error.message}`);
@@ -722,9 +718,6 @@ async function updateTask(
   moveTask,
   saveIndex
 ) {
-  const fileUtils = require('./file-utils');
-  const taskUtils = require('./task-utils');
-
   // Check if this folder has been initialised
   if (!(await initialised())) {
     throw new Error("Not initialised in this folder");
@@ -790,11 +783,6 @@ async function renameTask(
   saveTask,
   saveIndex
 ) {
-  const fs = require('fs');
-  const utility = require('../utility');
-  const fileUtils = require('./file-utils');
-  const taskUtils = require('./task-utils');
-
   // Check if this folder has been initialised
   if (!(await initialised())) {
     throw new Error("Not initialised in this folder");
@@ -824,7 +812,7 @@ async function renameTask(
   taskData = taskUtils.setTaskMetadata(taskData, "updated", new Date());
   await saveTask(fileUtils.getTaskPath(await getTaskFolderPath(), taskId), taskData);
 
-  await fs.promises.rename(
+  await require('fs').promises.rename(
     fileUtils.getTaskPath(await getTaskFolderPath(), taskId),
     newTaskPath
   );
@@ -861,9 +849,6 @@ async function moveTask(
   saveTask,
   saveIndex
 ) {
-  const fileUtils = require('./file-utils');
-  const taskUtils = require('./task-utils');
-
   // Check if this folder has been initialised
   if (!(await initialised())) {
     throw new Error("Not initialised in this folder");
@@ -925,10 +910,6 @@ async function deleteTask(
   getTaskFolderPath,
   saveIndex
 ) {
-  const fs = require('fs');
-  const fileUtils = require('./file-utils');
-  const taskUtils = require('./task-utils');
-
   // Check if this folder has been initialised
   if (!(await initialised())) {
     throw new Error("Not initialised in this folder");
@@ -942,7 +923,7 @@ async function deleteTask(
   index = taskUtils.removeTaskFromIndex(index, taskId);
 
   if (removeFile && (await fileUtils.exists(fileUtils.getTaskPath(await getTaskFolderPath(), taskId)))) {
-    await fs.promises.unlink(fileUtils.getTaskPath(await getTaskFolderPath(), taskId));
+    await require('fs').promises.unlink(fileUtils.getTaskPath(await getTaskFolderPath(), taskId));
   }
 
   await saveIndex(index);
@@ -967,8 +948,6 @@ async function search(
   loadAllTrackedTasks,
   hydrateTask
 ) {
-  const utility = require('../utility');
-
   // Check if this folder has been initialised
   if (!(await initialised())) {
     throw new Error("Not initialised in this folder");

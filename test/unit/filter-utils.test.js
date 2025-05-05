@@ -1,3 +1,4 @@
+/* global QUnit */
 const filterUtils = require('../../src/lib/filter-utils');
 
 QUnit.module('filter-utils tests');

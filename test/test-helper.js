@@ -5,47 +5,81 @@
  * This centralizes test-specific code that was previously included in production files.
  */
 
-const kanbnModule = require('../src/main');
 const AIService = require('../src/lib/ai-service');
 const ProjectContext = require('../src/lib/project-context');
 const AILogging = require('../src/lib/ai-logging');
 const InteractiveChat = require('../src/lib/interactive-chat');
-const fs = require('fs');
-const path = require('path');
 
 /**
- * Get project context for testing
- * @param {boolean} includeReferences Whether to include references in the context
- * @returns {Promise<Object>} Project context
+ * Retrieves the project context using the provided Kanbn instance, returning a minimal mock context if the instance is invalid or an error occurs.
+ *
+ * @param {Object} kanbnInstance - A Kanbn instance (mock or real) used to obtain project context.
+ * @param {boolean} [includeReferences=false] - Whether to include reference data in the context.
+ * @returns {Promise<Object>} The project context object, or a default mock context on failure.
+ *
+ * @remark
+ * If the Kanbn instance is invalid or an error occurs during context retrieval, a minimal mock context is returned instead of throwing.
  */
-async function getProjectContext(includeReferences = false) {
-  const kanbn = typeof kanbnModule === 'function' ? kanbnModule() : kanbnModule;
-  const projectContextHelper = new ProjectContext(kanbn);
-  return await projectContextHelper.getContext(includeReferences);
+async function getProjectContext(kanbnInstance, includeReferences = false) {
+  if (!kanbnInstance || typeof kanbnInstance.loadIndex !== 'function') {
+      console.error("Error: getProjectContext received invalid kanbn instance!");
+      // Provide a default minimal context on error to prevent cascading failures
+      return {
+          projectName: 'Mock Project',
+          projectDescription: 'Mock Description',
+          columns: ['Backlog'],
+          tasks: [],
+          tags: [],
+          repositoryContext: ''
+      };
+  }
+  const projectContextHelper = new ProjectContext(kanbnInstance);
+  try {
+      return await projectContextHelper.getContext(includeReferences);
+  } catch (e) {
+      console.error("Error getting project context in test-helper:", e);
+      // Provide a default minimal context on error to prevent cascading failures
+      return {
+          projectName: 'Mock Project',
+          projectDescription: 'Mock Description',
+          columns: ['Backlog'],
+          tasks: [],
+          tags: [],
+          repositoryContext: ''
+      };
+  }
 }
 
 /**
- * Call AI service API for testing
- * @param {string} message User message
- * @param {Object} context Project context
- * @param {string} apiKey API key
- * @param {string} model Model name
- * @param {string} boardFolder Board folder path
- * @param {string} conversationId Conversation ID
- * @param {Function} streamCallback Optional callback for streaming responses
- * @returns {Promise<string>} AI response
+ * Sends a user message and project context to the AI service and returns the AI's response.
+ *
+ * Throws an error if the provided Kanbn instance is invalid.
+ *
+ * @param {string} message - The user's message to send to the AI.
+ * @param {Object} context - The project context to include in the system prompt.
+ * @param {Object} kanbnInstance - The Kanbn instance used to generate the system message.
+ * @param {string} apiKey - API key for the AI service.
+ * @param {string} model - The AI model to use.
+ * @param {Function} [streamCallback] - Optional callback for streaming partial responses.
+ * @returns {Promise<string>} The AI assistant's response.
+ *
+ * @throws {Error} If {@link kanbnInstance} is missing or does not have a valid `loadIndex` method.
  */
-async function callAIService(message, context, apiKey, model, boardFolder, conversationId, streamCallback = null) {
+async function callAIService(message, context, kanbnInstance, apiKey, model, _boardFolder, _conversationId, streamCallback = null) {
   const aiService = new AIService({
     apiKey: apiKey,
-    model: model
+    model: model,
+    // Pass mock kanbn if needed by AIService dependencies
   });
-  
-  // Create system message using ProjectContext
-  const kanbn = typeof kanbnModule === 'function' ? kanbnModule() : kanbnModule;
-  const projectContextHelper = new ProjectContext(kanbn);
+
+  // Create system message using ProjectContext with the provided Kanbn instance
+  if (!kanbnInstance || typeof kanbnInstance.loadIndex !== 'function') { // Basic check
+      console.error("Error: callAIService received invalid kanbn instance for ProjectContext!");
+      // Handle error appropriately, maybe throw or return default
+      throw new Error("Invalid Kanbn instance provided to callAIService");
+  }
+  const projectContextHelper = new ProjectContext(kanbnInstance);
   const systemMessage = projectContextHelper.createSystemMessage(context);
-  
   // Create user message
   const userMessage = {
     role: 'user',
@@ -57,36 +91,49 @@ async function callAIService(message, context, apiKey, model, boardFolder, conve
 }
 
 /**
- * Log AI interaction for testing
- * @param {string} boardFolder Board folder path
- * @param {string} type Interaction type
- * @param {Object} data Interaction data
- * @returns {Promise<void>}
+ * Logs an AI interaction to the specified board folder using the provided Kanbn instance.
+ *
+ * @param {string} boardFolder - Path to the board folder where the interaction will be logged.
+ * @param {string} type - The type of AI interaction being logged.
+ * @param {Object} data - The data associated with the AI interaction.
+ *
+ * @remark
+ * If the provided Kanbn instance is invalid or missing the required method, the function logs an error and does not perform logging.
  */
-async function logAIInteraction(boardFolder, type, data) {
-  const kanbn = typeof kanbnModule === 'function' ? kanbnModule() : kanbnModule;
-  const aiLogging = new AILogging(kanbn);
+async function logAIInteraction(boardFolder, kanbnInstance, type, data) {
+  if (!kanbnInstance || typeof kanbnInstance.createTask !== 'function') { // Basic check
+      console.error("Error: logAIInteraction received invalid kanbn instance!");
+      return; // Or throw
+  }
+  const aiLogging = new AILogging(kanbnInstance);
   return await aiLogging.logInteraction(boardFolder, type, data);
 }
 
 /**
- * Run interactive chat session for testing
- * @param {Object} projectContext Project context
- * @param {Object} chatHandler Chat handler
- * @param {Object} args Command arguments
- * @returns {Promise<string>} Session result
+ * Runs an interactive AI chat session using the provided Kanbn instance and project context.
+ *
+ * @param {Object} kanbnInstance - A Kanbn instance with a `createTask` method.
+ * @param {Object} projectContext - The context of the project for the chat session.
+ * @param {Object} chatHandler - Handler for processing chat messages.
+ * @param {Object} args - Command arguments, including conversation ID and other options.
+ * @returns {Promise<string>} The result of the chat session.
+ *
+ * @throws {Error} If an invalid Kanbn instance is provided.
  */
-async function interactiveChat(projectContext, chatHandler, args) {
-  const kanbn = typeof kanbnModule === 'function' ? kanbnModule() : kanbnModule;
-  const boardFolder = process.cwd();
-  
+async function interactiveChat(kanbnInstance, projectContext, chatHandler, args) {
+  if (!kanbnInstance || typeof kanbnInstance.createTask !== 'function') { // Basic check
+      console.error("Error: interactiveChat received invalid kanbn instance!");
+      throw new Error("Invalid Kanbn instance provided to interactiveChat");
+  }
+  const boardFolder = process.cwd(); // Or use a mock path if needed
+
   const aiService = new AIService({
     apiKey: process.env.OPENROUTER_API_KEY,
     model: process.env.OPENROUTER_MODEL
   });
-  
-  const aiLogging = new AILogging(kanbn);
-  
+
+  const aiLogging = new AILogging(kanbnInstance);
+
   const interactiveChat = new InteractiveChat({
     chatHandler,
     aiService,
@@ -100,9 +147,12 @@ async function interactiveChat(projectContext, chatHandler, args) {
 }
 
 /**
- * Create a mock AI service for testing
- * @param {string} responseText The text to return from the mock AI service
- * @returns {Object} Mock AI service
+ * Creates a mock AI service object for testing AI-related functionality.
+ *
+ * The mock service simulates AI chat completions, conversation history loading, and saving, returning preset responses and supporting optional streaming and logging callbacks.
+ *
+ * @param {string} [responseText="This is a test response from the mock AI assistant."] - The response text returned by the mock AI service.
+ * @returns {Object} A mock AI service implementing chat completion and conversation history methods.
  */
 function createMockAIService(responseText = "This is a test response from the mock AI assistant.") {
   return {
@@ -132,7 +182,7 @@ function createMockAIService(responseText = "This is a test response from the mo
       return responseText;
     },
     
-    loadConversationHistory: (boardFolder, conversationId) => {
+    loadConversationHistory: (_boardFolder, _conversationId) => {
       return [];
     },
     

@@ -27,30 +27,30 @@ md.use(require('markdown-it-task-lists'), {
 /**
  * Parse markdown to HTML
  * @param {string} src - Markdown source
- * @param {object} options - Options (optional)
+ * @param {object} _options - Options (optional)
  * @returns {string} - HTML output
  */
-function parse(src, options = {}) {
+function parse(src, _options = {}) {
   return md.render(src);
 }
 
 /**
  * Parse inline markdown to HTML
  * @param {string} src - Markdown source
- * @param {object} options - Options (optional)
+ * @param {object} _options - Options (optional)
  * @returns {string} - HTML output
  */
-function parseInline(src, options = {}) {
+function parseInline(src, _options = {}) {
   return md.renderInline(src);
 }
 
 /**
  * Lexical analysis of markdown (tokenization)
  * @param {string} src - Markdown source
- * @param {object} options - Options (optional)
+ * @param {object} _options - Options (optional)
  * @returns {Array} - Array of tokens
  */
-function lexer(src, options = {}) {
+function lexer(src, _options = {}) {
   // Handle empty or whitespace-only input
   if (!src || src.trim() === '') {
     return [];

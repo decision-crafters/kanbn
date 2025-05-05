@@ -166,11 +166,14 @@ const sorterFields = [
 ];
 
 /**
- * Sort a column interactively
- * @param {string} columnName
- * @param {string[]} columnNames
- * @param {object[]} sorters
- * @return {Promise<any>}
+ * Prompts the user to interactively select a column and configure sorting criteria for that column.
+ *
+ * Allows the user to choose a column, add multiple sorters with optional filters, and specify sort order for each field.
+ *
+ * @param {string} columnName - The default column to preselect.
+ * @param {string[]} columnNames - List of available columns to choose from.
+ * @param {object[]} sorters - Existing sorters to prepopulate the prompt.
+ * @returns {Promise<any>} A promise resolving to the user's sorting selections, including column and sorter configurations.
  */
 async function interactive(columnName, columnNames, sorters) {
   const sorterNameToField = Object.fromEntries(sorterFields.map(sorterField => [sorterField.name, sorterField.field]));
@@ -195,7 +198,7 @@ async function interactive(columnName, columnNames, sorters) {
           message: 'Field:',
           default: 'Name',
           choices: sorterFields.map(sorterField => sorterField.name),
-          filter: (value, answers) => sorterNameToField[value]
+          filter: (value, _answers) => sorterNameToField[value]
         },
         {
           type: 'confirm',
@@ -230,7 +233,7 @@ async function interactive(columnName, columnNames, sorters) {
             'Ascending',
             'Descending'
           ],
-          filter: (value, answers) => ({
+          filter: (value, _answers) => ({
             'Ascending': 'ascending',
             'Descending': 'descending'
           })[value]
@@ -371,7 +374,7 @@ module.exports = async (args, argv) => {
   // Build sorters interactively
   if (args.interactive) {
     interactive(columnName, columnNames, sorters)
-    .then(answers => {
+    .then(_answers => {
       inquirer
       .prompt({
         type: 'confirm',
@@ -380,7 +383,7 @@ module.exports = async (args, argv) => {
         default: args.save
       })
       .then(saveAnswer => {
-        sortColumn(answers.column, answers.sorters, saveAnswer.save, kanbn);
+        sortColumn(_answers.column, _answers.sorters, saveAnswer.save, kanbn);
       })
       .catch(error => {
         utility.error(error);

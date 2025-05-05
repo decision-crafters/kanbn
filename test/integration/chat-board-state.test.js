@@ -34,7 +34,7 @@ class MockKanbn {
         return Array.from(this.tasks.values());
     }
 
-    async createTask(taskData, column, skipValidation = false) {
+    async createTask(taskData, column, _skipValidation = false) { // Prefix with underscore to indicate intentionally unused
         let taskId;
         if (taskData.name) {
             taskId = taskData.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');

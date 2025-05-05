@@ -5,10 +5,7 @@
  */
 
 const eventBus = require('./event-bus');
-const Handlebars = require('handlebars');
 const RAGManager = require('./rag-manager');
-const main = require('../main');
-const path = require('path');
 const utility = require('../utility');
 
 class ProjectContext {
@@ -240,9 +237,6 @@ ${taskSummary}`;
     // Check if we have tasks in context
     const hasTasks = context.tasks && Object.keys(context.tasks).length > 0;
 
-    // Handle test environment and missing tasks
-    const isTestEnvironment = process.env.KANBN_ENV === 'test';
-
     if (!hasTasks) {
       try {
         // Check filesystem for tasks
@@ -451,10 +445,10 @@ ${taskSummary}`;
 
   /**
    * Load tasks from the filesystem directly
-   * @param {Object} index - The board index
+   * @param {Object} _index - The board index
    * @returns {Object} Object with task ID as keys and task data as values
    */
-  async loadTasksFromFilesystem(index) {
+  async loadTasksFromFilesystem(_index) {
     try {
       const fs = require('fs');
       const path = require('path');

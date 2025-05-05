@@ -1,121 +1,113 @@
 const mockRequire = require('mock-require');
 const mockArgv = require('mock-argv');
 const captureConsole = require('capture-console');
-const {
-  config: mockConfig,
-  kanbn: mockKanbn
-} = require('../mock-kanbn');
+const { config: mockConfig } = require('../mock-kanbn');
 
 let kanbn;
 
-QUnit.module('restore controller tests', {
-  before() {
+describe('restore controller tests', () => {
+  beforeAll(() => {
     require('../qunit-contains');
     const mockKanbnModule = require('../mock-kanbn');
     mockRequire('../../src/main', mockKanbnModule);
     kanbn = require('../../index');
-  },
-  beforeEach() {
+  });
+  
+  beforeEach(() => {
     mockConfig.initialised = false;
     mockConfig.output = null;
-  }
-});
-
-QUnit.test('Restore task in uninitialised folder', async assert => {
-  const output = [];
-  captureConsole.startIntercept(process.stderr, s => {
-    output.push(s);
   });
 
-  await mockArgv(['restore'], kanbn);
+  test('Restore task in uninitialised folder', async () => {
+    const output = [];
+    captureConsole.startIntercept(process.stderr, s => {
+      output.push(s);
+    });
 
-  captureConsole.stopIntercept(process.stderr);
-  assert.contains(output, /Kanbn has not been initialised in this folder/);
-});
+    await mockArgv(['restore'], kanbn);
 
-QUnit.test('Restore a task with no task specified', async assert => {
-  const output = [];
-  captureConsole.startIntercept(process.stderr, s => {
-    output.push(s);
+    captureConsole.stopIntercept(process.stderr);
+    expect(output.some(s => /Kanbn has not been initialised in this folder/.test(s))).toBe(true);
   });
 
-  mockConfig.initialised = true;
-  await mockArgv(['restore'], kanbn);
+  test('Restore a task with no task specified', async () => {
+    const output = [];
+    captureConsole.startIntercept(process.stderr, s => {
+      output.push(s);
+    });
 
-  captureConsole.stopIntercept(process.stderr);
-  assert.contains(output, /No task id specified/);
-});
+    mockConfig.initialised = true;
+    await mockArgv(['restore'], kanbn);
 
-QUnit.test('Restore a task with no columns defined in the index', async assert => {
-  const output = [];
-  captureConsole.startIntercept(process.stderr, s => {
-    output.push(s);
+    captureConsole.stopIntercept(process.stderr);
+    expect(output.some(s => /No task id specified/.test(s))).toBe(true);
   });
 
-  const backupIndex = mockConfig.index;
-  mockConfig.index = {
-    name: 'Test Project',
-    description: 'Test description',
-    columns: [],
-    options: {}
-  };
-  mockConfig.initialised = true;
-  await mockArgv(['restore', 'task-1'], kanbn);
-  mockConfig.index = backupIndex;
+  test('Restore a task with no columns defined in the index', async () => {
+    const output = [];
+    captureConsole.startIntercept(process.stderr, s => {
+      output.push(s);
+    });
 
-  captureConsole.stopIntercept(process.stderr);
-  assert.contains(output, /No columns defined in the index/);
-});
+    const backupIndex = mockConfig.index;
+    mockConfig.index = {
+      name: 'Test Project',
+      description: 'Test description',
+      columns: [],
+      options: {}
+    };
+    mockConfig.initialised = true;
+    await mockArgv(['restore', 'task-1'], kanbn);
+    mockConfig.index = backupIndex;
 
-QUnit.test("Restore a task into a column that doesn't exist", async assert => {
-  const output = [];
-  captureConsole.startIntercept(process.stderr, s => {
-    output.push(s);
+    captureConsole.stopIntercept(process.stderr);
+    expect(output.some(s => /No columns defined in the index/.test(s))).toBe(true);
   });
 
-  mockConfig.initialised = true;
-  await mockArgv(['restore', 'task-1', '-c', 'Test Column 2'], kanbn);
+  test("Restore a task into a column that doesn't exist", async () => {
+    const output = [];
+    captureConsole.startIntercept(process.stderr, s => {
+      output.push(s);
+    });
 
-  captureConsole.stopIntercept(process.stderr);
-  assert.contains(output, /Column "Test Column 2" doesn't exist/);
-});
+    mockConfig.initialised = true;
+    await mockArgv(['restore', 'task-1', '-c', 'Test Column 2'], kanbn);
 
-QUnit.test('Restore a task', async assert => {
-  const output = [];
-  captureConsole.startIntercept(process.stdout, s => {
-    output.push(s);
+    captureConsole.stopIntercept(process.stderr);
+    expect(output.some(s => /Column "Test Column 2" doesn't exist/.test(s))).toBe(true);
   });
 
-  mockConfig.initialised = true;
-  await mockArgv(['restore', 'task-1'], kanbn);
+  test('Restore a task', async () => {
+    const output = [];
+    captureConsole.startIntercept(process.stdout, s => {
+      output.push(s);
+    });
 
-  captureConsole.stopIntercept(process.stdout);
-  assert.contains(output, /Restored task "task-1" from the archive/);
-  assert.deepEqual(
-    mockConfig.output,
-    {
+    mockConfig.initialised = true;
+    await mockArgv(['restore', 'task-1'], kanbn);
+
+    captureConsole.stopIntercept(process.stdout);
+    expect(output.some(s => /Restored task "task-1" from the archive/.test(s))).toBe(true);
+    expect(mockConfig.output).toEqual({
       taskId: 'task-1',
       columnName: null
-    }
-  );
-});
-
-QUnit.test('Restore a task into a custom column', async assert => {
-  const output = [];
-  captureConsole.startIntercept(process.stdout, s => {
-    output.push(s);
+    });
   });
 
-  mockConfig.initialised = true;
-  await mockArgv(['restore', 'task-1', '-c', 'Test Column'], kanbn);
+  test('Restore a task into a custom column', async () => {
+    const output = [];
+    captureConsole.startIntercept(process.stdout, s => {
+      output.push(s);
+    });
 
-  captureConsole.stopIntercept(process.stdout);
-  assert.contains(output, /Restored task "task-1" from the archive/);
-  assert.deepEqual(
-    mockConfig.output,
-    {
+    mockConfig.initialised = true;
+    await mockArgv(['restore', 'task-1', '-c', 'Test Column'], kanbn);
+
+    captureConsole.stopIntercept(process.stdout);
+    expect(output.some(s => /Restored task "task-1" from the archive/.test(s))).toBe(true);
+    expect(mockConfig.output).toEqual({
       taskId: 'task-1',
       columnName: 'Test Column'
-    }
-  );
+    });
+  });
 });

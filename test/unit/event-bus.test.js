@@ -1,7 +1,6 @@
 const QUnit = require('qunit');
 const eventBus = require('../../src/lib/event-bus');
 const ChatHandler = require('../../src/lib/chat-handler');
-const mockKanbn = require('../mock-kanbn');
 
 // Mock task data for testing
 const mockTaskData = {

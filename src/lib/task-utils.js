@@ -1,5 +1,3 @@
-const path = require('path');
-
 /**
  * Check if a task id exists in the index
  * @param {object} index The index object

@@ -8,20 +8,20 @@ const utility = require('../src/utility');
 
 /**
  * Generate a random task
- * @param {number} i The task index
+ * @param {number} _i The task index
  * @return {object} A random task object
  */
-function generateTask(i) {
+function generateTask(_i) {
   const COUNT_TAGS = faker.datatype.number(5);
 
   return {
-    name: `Task ${i + 1}`,
+    name: `Task ${_i + 1}`,
     description: faker.lorem.paragraph(),
     metadata: {
       created: faker.date.past(),
       update: faker.date.past(),
       due: faker.date.future(),
-      tags: new Array(COUNT_TAGS).fill(null).map(i => faker.lorem.word())
+      tags: new Array(COUNT_TAGS).fill(null).map(_i => faker.lorem.word())
     },
     subTasks: generateSubTasks(),
     relations: []
@@ -35,7 +35,7 @@ function generateTask(i) {
 function generateSubTasks() {
   const COUNT_SUB_TASKS = faker.datatype.number(10);
 
-  return new Array(COUNT_SUB_TASKS).fill(null).map(i => ({
+  return new Array(COUNT_SUB_TASKS).fill(null).map(_i => ({
     text: faker.lorem.sentence(),
     completed: faker.datatype.boolean()
   }));
@@ -50,7 +50,7 @@ function addRelations(taskIds) {
   const COUNT_RELATIONS = faker.datatype.number(4);
 
   const relationTypes = ['', 'blocks ', 'duplicates ', 'requires ', 'obsoletes '];
-  return new Array(COUNT_RELATIONS).fill(null).map(i => ({
+  return new Array(COUNT_RELATIONS).fill(null).map(_i => ({
     task: taskIds[Math.floor(Math.random() * taskIds.length)],
     type: relationTypes[Math.floor(Math.random() * relationTypes.length)]
   }));
@@ -77,16 +77,16 @@ const createFixtures = (options = {}) => {
 
   // Generate tasks
   if ('tasks' in options) {
-    tasks = new Array(options.tasks.length).fill(null).map((v, i) => Object.assign(
-      options.noRandom ? {} : generateTask(i),
-      options.tasks[i]
+    tasks = new Array(options.tasks.length).fill(null).map((v, _i) => Object.assign(
+      options.noRandom ? {} : generateTask(_i),
+      options.tasks[_i]
     ));
     taskIds = tasks.filter(i => !i.untracked).map(i => utility.getTaskId(i.name));
   } else {
     const COUNT_TASKS = options.countTasks || faker.datatype.number(9) + 1;
-    tasks = new Array(COUNT_TASKS).fill(null).map((v, i) => generateTask(i));
+    tasks = new Array(COUNT_TASKS).fill(null).map((v, _i) => generateTask(_i));
     taskIds = tasks.filter(i => !i.untracked).map(i => utility.getTaskId(i.name));
-    tasks.forEach(i => addRelations(taskIds));
+    tasks.forEach(() => addRelations(taskIds));
   }
 
   // Generate and populate columns
@@ -95,7 +95,7 @@ const createFixtures = (options = {}) => {
   } else {
     const COUNT_COLUMNS = options.countColumns || faker.datatype.number(4) + 1;
     const TASKS_PER_COLUMN = options.tasksPerColumn || -1;
-    const columnNames = options.columnNames || new Array(COUNT_COLUMNS).fill(null).map((v, i) => `Column ${i + 1}`);
+    const columnNames = options.columnNames || new Array(COUNT_COLUMNS).fill(null).map((v, _i) => `Column ${_i + 1}`);
     columns = Object.fromEntries(columnNames.map(i => [i, []]));
     let currentColumn = 0;
     for (let taskId of taskIds) {

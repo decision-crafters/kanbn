@@ -9,9 +9,10 @@ const rimraf = require('rimraf');
 const FIXTURES_DIR = path.join(__dirname, 'real-fs-fixtures');
 
 /**
- * Generate a random task
- * @param {number} i The task index
- * @return {object} A random task object
+ * Generates a random task object with a name, description, metadata, subtasks, and empty relations.
+ *
+ * @param {number} i - Index used to generate the task's name.
+ * @returns {object} A randomly generated task object suitable for test fixtures.
  */
 function generateTask(i) {
   const COUNT_TAGS = faker.datatype.number(5);
@@ -23,7 +24,7 @@ function generateTask(i) {
       created: faker.date.past(),
       update: faker.date.past(),
       due: faker.date.future(),
-      tags: new Array(COUNT_TAGS).fill(null).map(i => faker.lorem.word())
+      tags: new Array(COUNT_TAGS).fill(null).map(_i => faker.lorem.word())
     },
     subTasks: generateSubTasks(),
     relations: []
@@ -31,28 +32,32 @@ function generateTask(i) {
 }
 
 /**
- * Generate random sub-tasks
- * @return {object[]} Random sub-tasks
+ * Generates an array of random subtask objects, each with text and completion status.
+ *
+ * @returns {object[]} An array of subtasks with randomly generated text and a boolean indicating completion.
  */
 function generateSubTasks() {
   const COUNT_SUB_TASKS = faker.datatype.number(10);
 
-  return new Array(COUNT_SUB_TASKS).fill(null).map(i => ({
+  return new Array(COUNT_SUB_TASKS).fill(null).map(_i => ({
     text: faker.lorem.sentence(),
     completed: faker.datatype.boolean()
   }));
 }
 
 /**
- * Generate random relations
- * @param {} taskIds A list of existing task ids
- * @return {object[]} Random relations
+ * Generates a random set of task relations linking to provided task IDs.
+ *
+ * Each relation randomly selects a target task ID and a relation type from a predefined set.
+ *
+ * @param {string[]} taskIds - List of available task IDs to relate to.
+ * @returns {Object[]} Array of relation objects, each with a {@link task} and {@link type} property.
  */
 function addRelations(taskIds) {
   const COUNT_RELATIONS = faker.datatype.number(4);
 
   const relationTypes = ['', 'blocks ', 'duplicates ', 'requires ', 'obsoletes '];
-  return new Array(COUNT_RELATIONS).fill(null).map(i => ({
+  return new Array(COUNT_RELATIONS).fill(null).map(_i => ({
     task: taskIds[Math.floor(Math.random() * taskIds.length)],
     type: relationTypes[Math.floor(Math.random() * relationTypes.length)]
   }));
@@ -91,10 +96,13 @@ function createTestDirectory(testName) {
  */
 
 /**
- * Generate an index and tasks in a real file system
- * @param {string} testName Name of the test (used for directory name)
- * @param {fixtureOptions} [options={}]
- * @return {object} The generated index and test directory path
+ * Generates a test fixture directory with a kanbn-style index and tasks.
+ *
+ * Creates a directory structure for the test, generates tasks and columns (either randomly or from provided options), writes the kanbn index and each task as markdown files, and returns the index object along with the test directory path.
+ *
+ * @param {string} testName - Name used for the test directory.
+ * @param {fixtureOptions} [options={}] - Options to customize task and column generation.
+ * @returns {{ index: object, testDir: string }} The generated kanbn index object and the path to the test directory.
  */
 function createFixtures(testName, options = {}) {
   const testDir = createTestDirectory(testName);
@@ -105,12 +113,12 @@ function createFixtures(testName, options = {}) {
       options.noRandom ? {} : generateTask(i),
       options.tasks[i]
     ));
-    taskIds = tasks.filter(i => !i.untracked).map(i => utility.getTaskId(i.name));
+    taskIds = tasks.filter(_i => !_i.untracked).map(_i => utility.getTaskId(_i.name));
   } else {
     const COUNT_TASKS = options.countTasks || faker.datatype.number(9) + 1;
     tasks = new Array(COUNT_TASKS).fill(null).map((v, i) => generateTask(i));
-    taskIds = tasks.filter(i => !i.untracked).map(i => utility.getTaskId(i.name));
-    tasks.forEach(i => addRelations(taskIds));
+    taskIds = tasks.filter(_i => !_i.untracked).map(_i => utility.getTaskId(_i.name));
+    tasks.forEach(_i => addRelations(taskIds));
   }
 
   if ('columns' in options) {
@@ -118,7 +126,7 @@ function createFixtures(testName, options = {}) {
   } else {
     const COUNT_COLUMNS = options.countColumns || faker.datatype.number(4) + 1;
     const TASKS_PER_COLUMN = options.tasksPerColumn || -1;
-    const columnNames = options.columnNames || new Array(COUNT_COLUMNS).fill(null).map((v, i) => `Column ${i + 1}`);
+    const columnNames = options.columnNames || new Array(COUNT_COLUMNS).fill(null).map((v, _i) => `Column ${_i + 1}`);
     columns = Object.fromEntries(columnNames.map(i => [i, []]));
     let currentColumn = 0;
     for (let taskId of taskIds) {

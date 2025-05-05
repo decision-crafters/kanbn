@@ -3,7 +3,6 @@ const utility = require('../utility');
 const inquirer = require('inquirer');
 const fuzzy = require('fuzzy');
 const axios = require('axios');
-const getGitUsername = require('git-user-name');
 const AILogging = require('../lib/ai-logging');
 
 inquirer.registerPrompt('autocomplete', require('inquirer-autocomplete-prompt'));

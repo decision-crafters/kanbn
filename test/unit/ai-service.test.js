@@ -9,7 +9,7 @@ process.env.OPENROUTER_API_KEY = 'test-api-key';
 
 // Mock axios for API calls
 const mockAxios = {
-  post: async (url, data) => {
+  post: async (url, _data) => {
     if (url.includes('openrouter.ai')) {
       return {
         data: {

@@ -7,8 +7,6 @@
 const QUnit = require('qunit');
 const ContextSerializer = require('../../src/lib/context-serializer');
 
-const { test } = QUnit;
-
 QUnit.module('ContextSerializer');
 
 QUnit.test('createContextObject', (assert) => {

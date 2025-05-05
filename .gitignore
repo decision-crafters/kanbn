@@ -38,3 +38,4 @@ test-debug-*.js
 # Ad-hoc scripts
 test-advisor.sh
 generate-html-report.js
+.aider*

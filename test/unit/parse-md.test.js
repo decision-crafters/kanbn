@@ -1,3 +1,4 @@
+/* global QUnit */
 const parseMarkdown = require('../../src/parse-markdown.js');
 
 QUnit.module('General markdown to JSON conversion tests');

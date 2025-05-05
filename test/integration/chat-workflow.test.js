@@ -1,6 +1,5 @@
 const QUnit = require('qunit');
 const mockRequire = require('mock-require');
-const EventEmitter = require('events');
 const testHelper = require('../test-helper');
 const dotenv = require('dotenv');
 

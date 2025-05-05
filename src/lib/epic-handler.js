@@ -9,6 +9,7 @@ const AIService = require('./ai-service');
 const PromptLoader = require('./prompt-loader');
 const AILogging = require('./ai-logging');
 const utility = require('../utility');
+const path = require('path');
 
 /**
  * Handle epic decomposition and creation
@@ -31,10 +32,10 @@ class EpicHandler {
    * Decompose an epic into child tasks
    * @param {string} epicDescription The epic description
    * @param {Object} integrations Integration content
-   * @param {Object} options Additional options
+   * @param {Object} _options Additional options
    * @return {Promise<Object>} The decomposed epic with child tasks
    */
-  async decomposeEpic(epicDescription, integrations = null, options = {}) {
+  async decomposeEpic(epicDescription, integrations = null, _options = {}) {
     try {
       // Enhanced debugging for API access
       console.log(`[DEBUG] EpicHandler.decomposeEpic called with description: ${epicDescription.substring(0, 50)}...`);
@@ -153,20 +154,77 @@ class EpicHandler {
       // Create child tasks
       const childTaskIds = [];
       
-      for (const taskData of tasksData) {
-        // Prepare child task data
+      // Define a context variable for research references if needed
+      let researchContext = null;
+
+      for (const task of tasksData) {
+        // Create task data
         const childTaskData = {
-          name: taskData.name,
-          description: taskData.description || "",
+          name: task.name,
+          description: task.description || task.name,
           metadata: {
-            ...(taskData.metadata || {}),
             parent: epicId,
             created: new Date(),
-            tags: [...(taskData.metadata?.tags || []), "story"]
+            tags: task.metadata?.tags || ['subtask'],
+            sprintSuggestion: task.sprintSuggestion,
+            estimatedWorkload: task.estimatedWorkload
           }
         };
-        
-        // Create the child task
+
+        // Add references from research if available
+        if (researchContext?.research?.references?.length > 0) {
+          console.log('Found research references:', researchContext.research.references.length);
+          const relevantRefs = researchContext.research.references.filter(ref => {
+            const lowerTitle = ref.title?.toLowerCase() || '';
+            const lowerDesc = ref.description?.toLowerCase() || '';
+            const lowerTaskName = task.name.toLowerCase();
+            const lowerTaskDesc = task.description?.toLowerCase() || '';
+            const isRelevant = lowerTitle.includes(lowerTaskName) ||
+                   lowerDesc.includes(lowerTaskName) ||
+                   lowerTitle.includes(lowerTaskDesc) ||
+                   lowerDesc.includes(lowerTaskDesc);
+            if (isRelevant) {
+              console.log('Found relevant reference for task:', task.name, ref);
+            }
+            return isRelevant;
+          });
+
+          if (relevantRefs.length > 0) {
+            childTaskData.metadata.references = {
+              research: relevantRefs.map(ref => ({
+                title: ref.title || ref.url,
+                url: ref.url,
+                description: ref.description
+              }))
+            };
+            console.log('Added references to task:', task.name, childTaskData.metadata.references);
+          }
+        }
+
+        // Add references from research if available
+        if (epicData.research?.references) {
+          const relevantRefs = epicData.research.references.filter(ref => {
+            const lowerTitle = ref.title?.toLowerCase() || '';
+            const lowerDesc = ref.description?.toLowerCase() || '';
+            const lowerTaskName = task.name.toLowerCase();
+            const lowerTaskDesc = task.description?.toLowerCase() || '';
+            return lowerTitle.includes(lowerTaskName) ||
+                   lowerDesc.includes(lowerTaskName) ||
+                   lowerTitle.includes(lowerTaskDesc) ||
+                   lowerDesc.includes(lowerTaskDesc);
+          });
+
+          if (relevantRefs.length > 0) {
+            childTaskData.metadata.references = {
+              research: relevantRefs.map(ref => ({
+                title: ref.title || ref.url,
+                url: ref.url,
+                description: ref.description
+              }))
+            };
+          }
+        }
+
         const childTaskId = await this.kanbn.createTask(childTaskData, columnName);
         childTaskIds.push(childTaskId);
         

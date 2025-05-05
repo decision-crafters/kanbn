@@ -1,5 +1,5 @@
 const { version } = require('../../package.json');
 
-module.exports = args => {
+module.exports = (_args, _argv, _id) => {
   console.log(`v${version}`);
 };
