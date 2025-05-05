@@ -169,6 +169,8 @@ describe('Chat controller tests', () => {
     } else {
       delete require.cache[mainModulePath];
     }
+  });
+  
   beforeEach(async () => {
     if (!fs.existsSync(testFolder)) {
       fs.mkdirSync(testFolder);
