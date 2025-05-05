@@ -46,25 +46,64 @@ class Kanbn {
     return config.index;
   }
 
-  async loadIndex() {
+  async loadIndex() { // Already exists, ensure it's correct
     return config.index;
   }
+
+  async getTaskPath(taskId) {
+    return path.join(await this.getMainFolder(), 'tasks', `${taskId}.md`);
+  }
+
+  async getTaskFilePath(taskId) {
+    return this.getTaskPath(taskId); // Alias for compatibility
+  }
+
+  async getIndexPath() {
+    return path.join(await this.getMainFolder(), 'index.md');
+  }
+
+  async saveIndex(index) {
+    config.index = index; // Mock saving
+  }
+
+  async saveTask(taskId, taskData) {
+    config.task = taskData; // Mock saving
+    config.output = { taskId, taskData };
+  }
+
+  async deleteTask(taskId) {
+    config.output = { taskId }; // Mock deletion
+  }
+
+  async moveTask(taskId, columnName) {
+    config.output = { taskId, columnName }; // Mock moving
+  }
+
   async findTrackedTasks() {
     return config.trackedTasks;
   }
   async findUntrackedTasks() {
     return config.untrackedTasks;
   }
-  async taskExists(taskId) {
+  async taskExists(taskId) { // Already exists, ensure it's correct
+    // Allow specific task IDs to exist for testing purposes if needed
+    if (config.existingTaskIds && config.existingTaskIds.includes(taskId)) {
+      return true;
+    }
     if (!config.taskExists) {
-      throw new Error(`No task file found with id "${taskId}"`);
+      // Don't throw error by default, just return false for mock flexibility
+      // throw new Error(`Mock Error: No task file found with id "${taskId}"`);
+      return false;
     }
     return true;
   }
-  async getTask(taskId) {
+  async getTask(taskId) { // Already exists, ensure it's correct
+    if (!await this.taskExists(taskId) && !(config.existingTaskIds && config.existingTaskIds.includes(taskId))) {
+       throw new Error(`Mock Error: Task ${taskId} does not exist.`);
+    }
     return config.task;
   }
-  async loadTask(taskId) {
+  async loadTask(taskId) { // Already exists, ensure it's correct
     return config.task;
   }
   async findTaskColumn(taskId) {
@@ -82,9 +121,17 @@ class Kanbn {
       taskData,
       columnName
     };
-    return 'new-task-' + Math.random().toString(36).substring(7);
+    const newTaskId = 'new-task-' + Math.random().toString(36).substring(7);
+    // Simulate adding to index for mock consistency
+    if (config.index && config.index.columns && config.index.columns[columnName]) {
+        config.index.columns[columnName].push(newTaskId);
+    } else if (config.index && config.index.columns) {
+        // Handle case where column might not exist in mock index yet
+        config.index.columns[columnName] = [newTaskId];
+    }
+    return newTaskId;
   }
-  async addUntrackedTaskToIndex(untrackedTask, columnName) {
+  async addUntrackedTaskToIndex(untrackedTask, columnName) { // Already exists, ensure it's correct
     config.output = {
       untrackedTask,
       columnName
@@ -166,6 +213,13 @@ const kanbn = {
   initialise: async (options = {}) => await new Kanbn().initialise(options),
   getIndex: async () => await new Kanbn().getIndex(),
   loadIndex: async () => await new Kanbn().loadIndex(),
+  getTaskPath: async (taskId) => await new Kanbn().getTaskPath(taskId),
+  getTaskFilePath: async (taskId) => await new Kanbn().getTaskFilePath(taskId),
+  getIndexPath: async () => await new Kanbn().getIndexPath(),
+  saveIndex: async (index) => await new Kanbn().saveIndex(index),
+  saveTask: async (taskId, taskData) => await new Kanbn().saveTask(taskId, taskData),
+  deleteTask: async (taskId) => await new Kanbn().deleteTask(taskId),
+  moveTask: async (taskId, columnName) => await new Kanbn().moveTask(taskId, columnName),
   findTrackedTasks: async () => await new Kanbn().findTrackedTasks(),
   findUntrackedTasks: async () => await new Kanbn().findUntrackedTasks(),
   taskExists: async (taskId) => await new Kanbn().taskExists(taskId),

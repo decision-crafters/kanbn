@@ -114,15 +114,29 @@ QUnit.module('Chat Domain Events', {
       return new MockKanbnWithEvents(eventBus);
     };
     
-    mockKanbnFunction.Kanbn = MockKanbnWithEvents;
-    
-    mockKanbnFunction.findTaskColumn = () => 'Backlog';
-    mockKanbnFunction.getProjectContext = async () => {
-      const kanbn = new MockKanbnWithEvents(eventBus);
-      return kanbn.getProjectContext();
-    };
-    
-    mockRequire('../../src/main', mockKanbnFunction);
+   mockKanbnFunction.Kanbn = MockKanbnWithEvents; // Ensure the class is exported correctly
+
+   // Add other necessary mock methods directly to the function object if needed elsewhere
+   mockKanbnFunction.findTaskColumn = async () => 'Backlog'; // Make async if needed
+   mockKanbnFunction.getProjectContext = async () => {
+     const kanbn = new MockKanbnWithEvents(eventBus);
+     return await kanbn.getProjectContext(); // Ensure await is used
+   };
+   mockKanbnFunction.loadIndex = async () => { // Add missing mock methods
+       const kanbn = new MockKanbnWithEvents(eventBus);
+       return await kanbn.loadIndex();
+   };
+    mockKanbnFunction.taskExists = async (taskId) => {
+       const kanbn = new MockKanbnWithEvents(eventBus);
+       return await kanbn.taskExists(taskId);
+   };
+    mockKanbnFunction.createTask = async (taskData, column) => {
+       const kanbn = new MockKanbnWithEvents(eventBus);
+       return await kanbn.createTask(taskData, column);
+   };
+
+
+   mockRequire('../../src/main', mockKanbnFunction);
 
     // Reset cache for chat controller
     delete require.cache[require.resolve('../../src/controller/chat')];
@@ -156,19 +170,34 @@ QUnit.module('Chat Domain Events', {
         const mockKanbnFunction = function() {
           return new MockKanbnWithEvents(eventBus);
         };
-        
-        mockKanbnFunction.Kanbn = function() {
-            return new MockKanbnWithEvents(eventBus);
+
+        // Create a function that returns our mock instance
+        const mockKanbnFunction = function() {
+          return new MockKanbnWithEvents(eventBus);
         };
-        
-        mockKanbnFunction.findTaskColumn = () => 'Backlog';
+
+        mockKanbnFunction.Kanbn = MockKanbnWithEvents; // Ensure the class is exported correctly
+
+        // Add other necessary mock methods directly to the function object
+        mockKanbnFunction.findTaskColumn = async () => 'Backlog'; // Make async
         mockKanbnFunction.getProjectContext = async () => {
           const kanbn = new MockKanbnWithEvents(eventBus);
-          return kanbn.getProjectContext();
+          return await kanbn.getProjectContext(); // Ensure await
         };
-        
+        mockKanbnFunction.loadIndex = async () => { // Add missing mock methods
+            const kanbn = new MockKanbnWithEvents(eventBus);
+            return await kanbn.loadIndex();
+        };
+         mockKanbnFunction.taskExists = async (taskId) => {
+            const kanbn = new MockKanbnWithEvents(eventBus);
+            return await kanbn.taskExists(taskId);
+        };
+         mockKanbnFunction.createTask = async (taskData, column) => {
+            const kanbn = new MockKanbnWithEvents(eventBus);
+            return await kanbn.createTask(taskData, column);
+        };
+
         mockRequire('../../src/main', mockKanbnFunction);
-        
         // Reset cache for chat controller
         delete require.cache[require.resolve('../../src/controller/chat')];
     },

@@ -1,19 +1,20 @@
-const assert = require('assert');
+const QUnit = require('qunit');
+const assert = QUnit.assert; // Use QUnit's assertion library
 const MCPClient = require('../src/lib/mcp/client');
 
-describe('MCPClient', () => {
+QUnit.module('MCPClient', hooks => {
   let client;
 
-  beforeEach(() => {
+  hooks.beforeEach(() => {
     client = new MCPClient();
   });
 
-  afterEach(async () => {
+  hooks.afterEach(async () => {
     await client.stopAll();
   });
 
-  describe('loadConfig', () => {
-    it('should load valid configuration', async () => {
+  QUnit.module('loadConfig', () => {
+    QUnit.test('should load valid configuration', async assert => {
       const config = {
         mcpServers: {
           test: {
@@ -27,23 +28,24 @@ describe('MCPClient', () => {
       };
 
       await client.loadConfig(config);
-      assert.strictEqual(client.config, config);
+      assert.strictEqual(client.config, config, 'Client config should match loaded config');
     });
 
-    it('should reject invalid configuration', async () => {
+    QUnit.test('should reject invalid configuration', async assert => {
       const config = {
         // Missing mcpServers
       };
 
       await assert.rejects(
-        async () => await client.loadConfig(config),
-        /No MCP servers configured/
+        client.loadConfig(config),
+        /No MCP servers configured/,
+        'Should reject config without mcpServers'
       );
     });
   });
 
-  describe('startServer', () => {
-    it('should start configured server', async () => {
+  QUnit.module('startServer', () => {
+    QUnit.test('should start configured server', async assert => {
       const config = {
         mcpServers: {
           test: {
@@ -55,19 +57,20 @@ describe('MCPClient', () => {
 
       await client.loadConfig(config);
       const server = await client.startServer('test');
-      assert(server);
-      assert(client.servers.has('test'));
+      assert.ok(server, 'Server object should be returned');
+      assert.ok(client.servers.has('test'), 'Client should track the started server');
     });
 
-    it('should reject unknown server', async () => {
+    QUnit.test('should reject unknown server', async assert => {
       const config = {
         mcpServers: {}
       };
 
       await client.loadConfig(config);
       await assert.rejects(
-        async () => await client.startServer('unknown'),
-        /MCP server "unknown" not found/
+        client.startServer('unknown'),
+        /MCP server "unknown" not found/,
+        'Should reject starting an unknown server'
       );
     });
   });

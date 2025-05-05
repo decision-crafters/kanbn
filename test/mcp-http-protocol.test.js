@@ -1,13 +1,15 @@
-const assert = require('assert');
+const QUnit = require('qunit');
+const assert = QUnit.assert; // Use QUnit's assertion library
 const http = require('http');
 const HTTPProtocolHandler = require('../src/lib/mcp/protocols/http');
 
-describe('HTTPProtocolHandler', () => {
+QUnit.module('HTTPProtocolHandler', hooks => {
   let server;
   let handler;
   const port = 3001;
 
-  beforeEach((done) => {
+  hooks.beforeEach(async assert => { // Use async hooks for setup/teardown
+    const done = assert.async(); // QUnit way to handle async setup
     // Create a test HTTP server
     server = http.createServer((req, res) => {
       if (req.url === '/health') {
@@ -42,20 +44,22 @@ describe('HTTPProtocolHandler', () => {
         timeout: 1000,
         retries: 2
       });
-      done();
+      done(); // Signal async setup complete
     });
   });
 
-  afterEach((done) => {
+  hooks.afterEach(async assert => {
+    const done = assert.async();
     server.close(done);
   });
 
-  describe('initialize', () => {
-    it('should initialize and check health', async () => {
+  QUnit.module('initialize', () => {
+    QUnit.test('should initialize and check health', async assert => {
       await handler.initialize();
+      assert.ok(true, 'Initialization should complete without error'); // Add an assertion
     });
 
-    it('should fail if server is not healthy', async () => {
+    QUnit.test('should fail if server is not healthy', async assert => {
       handler = new HTTPProtocolHandler({
         baseUrl: 'http://localhost:9999', // Wrong port
         timeout: 100,
@@ -63,33 +67,34 @@ describe('HTTPProtocolHandler', () => {
       });
 
       await assert.rejects(
-        async () => await handler.initialize(),
-        /ECONNREFUSED/
+        handler.initialize(),
+        /ECONNREFUSED/,
+        'Initialization should fail with connection refused'
       );
     });
   });
 
-  describe('request', () => {
-    it('should make successful GET request', async () => {
+  QUnit.module('request', () => {
+    QUnit.test('should make successful GET request', async assert => {
       const response = await handler.request('GET', '/test');
       assert.deepStrictEqual(response, {
         method: 'GET',
         path: '/test',
         body: null
-      });
+      }, 'GET response should match expected structure');
     });
 
-    it('should make successful POST request with data', async () => {
+    QUnit.test('should make successful POST request with data', async assert => {
       const data = { test: 'data' };
       const response = await handler.request('POST', '/test', data);
       assert.deepStrictEqual(response, {
         method: 'POST',
         path: '/test',
         body: data
-      });
+      }, 'POST response should match expected structure with body');
     });
 
-    it('should retry failed requests', async () => {
+    QUnit.test('should retry failed requests', async assert => {
       // Create a server that fails first request
       let attempts = 0;
       const tempServer = http.createServer((req, res) => {
@@ -103,7 +108,8 @@ describe('HTTPProtocolHandler', () => {
         }
       });
 
-      await new Promise(resolve => tempServer.listen(3002, resolve));
+      const doneListen = assert.async();
+      await new Promise(resolve => tempServer.listen(3002, resolve)).then(doneListen);
 
       const tempHandler = new HTTPProtocolHandler({
         baseUrl: 'http://localhost:3002',
@@ -113,19 +119,21 @@ describe('HTTPProtocolHandler', () => {
 
       try {
         const response = await tempHandler.request('GET', '/test');
-        assert.deepStrictEqual(response, { ok: true });
-        assert.strictEqual(attempts, 2);
+        assert.deepStrictEqual(response, { ok: true }, 'Response after retry should be ok');
+        assert.strictEqual(attempts, 2, 'Should have made 2 attempts');
       } finally {
-        await new Promise(resolve => tempServer.close(resolve));
+        const doneClose = assert.async();
+        await new Promise(resolve => tempServer.close(resolve)).then(doneClose);
       }
     });
 
-    it('should handle timeout', async () => {
+    QUnit.test('should handle timeout', async assert => {
       const tempServer = http.createServer((req, res) => {
         // Never respond
       });
 
-      await new Promise(resolve => tempServer.listen(3002, resolve));
+      const doneListen = assert.async();
+      await new Promise(resolve => tempServer.listen(3002, resolve)).then(doneListen);
 
       const tempHandler = new HTTPProtocolHandler({
         baseUrl: 'http://localhost:3002',
@@ -135,11 +143,13 @@ describe('HTTPProtocolHandler', () => {
 
       try {
         await assert.rejects(
-          async () => await tempHandler.request('GET', '/test'),
-          /timeout/i
+          tempHandler.request('GET', '/test'),
+          /timeout/i,
+          'Request should reject with timeout error'
         );
       } finally {
-        await new Promise(resolve => tempServer.close(resolve));
+        const doneClose = assert.async();
+        await new Promise(resolve => tempServer.close(resolve)).then(doneClose);
       }
     });
   });
