@@ -10,14 +10,14 @@ const commandPatterns = {
   complete: /^(complete|finish|mark done) "?([^"]+)"?/i,
   listTasksInColumn: /^(what|which|list|show)( tasks| items)( are)? in (the )?["']?([\w\s]+)["']?$/i,
   status: /^(show )?(status|progress|board)/i,
-  
+
   // Epic commands
   createEpic: /^(create|add|new) epic( called| named)? "?([^"]+)"?/i,
   decomposeEpic: /^(decompose|break down|analyze)( epic)? "?([^"]+)"?/i,
   listEpics: /^(list|show) (all )?epics/i,
   showEpicDetails: /^(show|tell me about|details for|details of) epic "?([^"]+)"?/i,
   listEpicTasks: /^(list|show)( tasks| stories)? (for|in|of) epic "?([^"]+)"?/i,
-  
+
   // New commands
   deleteTask: /^(delete|remove) (task|issue) "?([^"]+)"?/i,
   searchTasks: /^(search|find)( for)? tasks( containing| with| having) "?([^"]+)"?/i,
@@ -29,7 +29,7 @@ const commandPatterns = {
   removeTaskTag: /^(remove|delete) tag "?([^"]+)"? from (task|issue) "?([^"]+)"?/i,
   assignTask: /^(assign) (task|issue)? "?([^"]+)"? to "?([^"]+)"?/i,
   unassignTask: /^(unassign) (task|issue)? "?([^"]+)"?/i,
-  updateTaskDescription: /^(update|change|set) description of "?([^"]+)"? to "?([^"]+)"?/i
+  updateTaskDescription: /^(update|change|set) description of "?([^"]+)"? to "?([^"]+)"?/i,
 };
 
 /**
@@ -42,7 +42,7 @@ function parseMessage(message) {
     const match = message.match(pattern);
     if (match) {
       // Remove undefined/empty captures and the full match
-      const params = match.slice(1).filter(param => param !== undefined);
+      const params = match.slice(1).filter((param) => param !== undefined);
       return { intent, params };
     }
   }
@@ -51,5 +51,5 @@ function parseMessage(message) {
 
 module.exports = {
   parseMessage,
-  commandPatterns
+  commandPatterns,
 };

@@ -1,7 +1,7 @@
 const yaml = require('yamljs');
 const fm = require('front-matter');
+const { validate } = require('jsonschema');
 const markdown = require('./lib/markdown');
-const validate = require('jsonschema').validate;
 const parseMarkdown = require('./parse-markdown');
 
 /**
@@ -12,38 +12,38 @@ function validateOptions(options) {
   const result = validate(options, {
     type: 'object',
     properties: {
-      'hiddenColumns': {
+      hiddenColumns: {
         type: 'array',
-        items: { type: 'string' }
+        items: { type: 'string' },
       },
-      'startedColumns': {
+      startedColumns: {
         type: 'array',
-        items: { type: 'string' }
+        items: { type: 'string' },
       },
-      'completedColumns': {
+      completedColumns: {
         type: 'array',
-        items: { type: 'string' }
+        items: { type: 'string' },
       },
-      'sprints': {
+      sprints: {
         type: 'array',
         items: {
           type: 'object',
           properties: {
-            'start': { type: 'date' },
-            'name': { type: 'string' },
-            'description': { type: 'string' }
+            start: { type: 'date' },
+            name: { type: 'string' },
+            description: { type: 'string' },
           },
-          required: ['start', 'name']
-        }
+          required: ['start', 'name'],
+        },
       },
-      'defaultTaskWorkload': { type: 'number' },
-      'taskWorkloadTags': {
+      defaultTaskWorkload: { type: 'number' },
+      taskWorkloadTags: {
         type: 'object',
         patternProperties: {
-          '^[\w ]+$': { type: 'number' }
-        }
+          '^[\w ]+$': { type: 'number' },
+        },
       },
-      'columnSorting': {
+      columnSorting: {
         type: 'object',
         patternProperties: {
           '^[\w ]+$': {
@@ -51,106 +51,106 @@ function validateOptions(options) {
             items: {
               type: 'object',
               properties: {
-                'field': { type: 'string' },
-                'filter': { type: 'string' },
-                'order': {
+                field: { type: 'string' },
+                filter: { type: 'string' },
+                order: {
                   type: 'string',
                   enum: [
                     'ascending',
-                    'descending'
-                  ]
-                }
+                    'descending',
+                  ],
+                },
               },
-              required: ['field']
-            }
-          }
-        }
+              required: ['field'],
+            },
+          },
+        },
       },
-      'taskTemplate': { type: 'string' },
-      'dateFormat': { type: 'string' },
-      'customFields': {
+      taskTemplate: { type: 'string' },
+      dateFormat: { type: 'string' },
+      customFields: {
         type: 'array',
         items: {
           type: 'object',
           properties: {
-            'name': { type: 'string' },
-            'type': {
+            name: { type: 'string' },
+            type: {
               type: 'string',
               enum: [
                 'boolean',
                 'string',
                 'number',
-                'date'
-              ]
+                'date',
+              ],
             },
-            'updateDate': {
+            updateDate: {
               type: 'string',
               enum: [
                 'always',
                 'once',
-                'none'
-              ]
-            }
+                'none',
+              ],
+            },
           },
-          required: ['name', 'type']
-        }
+          required: ['name', 'type'],
+        },
       },
-      'views': {
+      views: {
         type: 'array',
         items: {
           type: 'object',
           properties: {
-            'name': { type: 'string' },
-            'filters': { type: 'object' },
-            'columns': {
+            name: { type: 'string' },
+            filters: { type: 'object' },
+            columns: {
               type: 'array',
               items: {
                 type: 'object',
                 properties: {
-                  'name': { type: 'string' },
-                  'filters': { type: 'object' },
-                  'sorters': {
+                  name: { type: 'string' },
+                  filters: { type: 'object' },
+                  sorters: {
                     type: 'array',
                     items: {
                       type: 'object',
                       properties: {
-                        'field': { type: 'string' },
-                        'filter': { type: 'string' },
-                        'order': {
+                        field: { type: 'string' },
+                        filter: { type: 'string' },
+                        order: {
                           type: 'string',
                           enum: [
                             'ascending',
-                            'descending'
-                          ]
-                        }
+                            'descending',
+                          ],
+                        },
                       },
-                      required: ['field']
-                    }
-                  }
+                      required: ['field'],
+                    },
+                  },
                 },
-                required: ['name']
+                required: ['name'],
               },
-              minItems: 1
+              minItems: 1,
             },
-            'lanes': {
+            lanes: {
               type: 'array',
               items: {
                 type: 'object',
                 properties: {
-                  'name': { type: 'string' },
-                  'filters': { type: 'object' }
+                  name: { type: 'string' },
+                  filters: { type: 'object' },
                 },
-                required: ['name']
-              }
-            }
+                required: ['name'],
+              },
+            },
           },
-          required: ['name']
-        }
-      }
-    }
+          required: ['name'],
+        },
+      },
+    },
   });
   if (result.errors.length) {
-    throw new Error(result.errors.map(error => `\n${error.property} ${error.message}`).join(''));
+    throw new Error(result.errors.map((error) => `\n${error.property} ${error.message}`).join(''));
   }
 }
 
@@ -164,12 +164,12 @@ function validateColumns(columns) {
     patternProperties: {
       '^[\w ]+$': {
         type: 'array',
-        items: { type: 'string' }
-      }
-    }
+        items: { type: 'string' },
+      },
+    },
   });
   if (result.errors.length) {
-    throw new Error(result.errors.map(error => `${error.property} ${error.message}`).join('\n'));
+    throw new Error(result.errors.map((error) => `${error.property} ${error.message}`).join('\n'));
   }
 }
 
@@ -181,9 +181,9 @@ module.exports = {
    * @return {object}
    */
   md2json(data) {
-    let name = '', description = '', options = {}, columns = {};
+    let name = ''; let description = ''; let options = {}; let
+      columns = {};
     try {
-
       // Check data type
       if (!data) {
         throw new Error('data is null or empty');
@@ -227,7 +227,7 @@ module.exports = {
       if ('Options' in index) {
         try {
           // Get embedded options and make sure it's an object
-          const embeddedOptions = yaml.parse(index['Options'].content.trim().replace(/```(yaml|yml)?/g, ''));
+          const embeddedOptions = yaml.parse(index.Options.content.trim().replace(/```(yaml|yml)?/g, ''));
           if (typeof embeddedOptions !== 'object') {
             throw new Error('invalid options content');
           }
@@ -246,10 +246,10 @@ module.exports = {
       }
 
       // Parse columns
-      const columnNames = Object.keys(index).filter(column => ['raw', 'Options', name].indexOf(column) === -1);
+      const columnNames = Object.keys(index).filter((column) => ['raw', 'Options', name].indexOf(column) === -1);
       if (columnNames.length) {
         try {
-          columns = Object.fromEntries(columnNames.map(columnName => {
+          columns = Object.fromEntries(columnNames.map((columnName) => {
             try {
               // If the column content is empty or just whitespace, return an empty array
               if (!index[columnName].content || index[columnName].content.trim() === '') {
@@ -265,28 +265,27 @@ module.exports = {
                   // Safely extract text from tokens with proper error handling
                   return [
                     columnName,
-                    tokens[0].items.map(item => {
+                    tokens[0].items.map((item) => {
                       try {
                         // Check if the token structure is as expected
-                        if (item &&
-                            item.tokens &&
-                            item.tokens[0] &&
-                            item.tokens[0].tokens &&
-                            item.tokens[0].tokens[0] &&
-                            typeof item.tokens[0].tokens[0].text === 'string') {
+                        if (item
+                            && item.tokens
+                            && item.tokens[0]
+                            && item.tokens[0].tokens
+                            && item.tokens[0].tokens[0]
+                            && typeof item.tokens[0].tokens[0].text === 'string') {
                           return item.tokens[0].tokens[0].text;
-                        } else if (item && item.text) {
+                        } if (item && item.text) {
                           // Fallback to item.text if available
                           return item.text;
-                        } else {
-                          // Return empty string as a last resort
-                          return '';
                         }
+                        // Return empty string as a last resort
+                        return '';
                       } catch (err) {
                         console.warn(`Warning: Error extracting text from list item: ${err.message}`);
                         return '';
                       }
-                    })
+                    }),
                   ];
                 } catch (err) {
                   console.warn(`Warning: Error processing list items: ${err.message}`);
@@ -313,7 +312,9 @@ module.exports = {
     }
 
     // Assemble index object
-    return { name, description, options, columns };
+    return {
+      name, description, options, columns,
+    };
   },
 
   /**
@@ -325,7 +326,6 @@ module.exports = {
   json2md(data, ignoreOptions = false) {
     const result = [];
     try {
-
       // Check data type
       if (!data) {
         throw new Error('data is null or empty');
@@ -344,7 +344,7 @@ module.exports = {
         validateOptions(data.options);
         if (Object.keys(data.options).length) {
           result.push(
-            `---\n${yaml.stringify(data.options, 4, 2).trim()}\n---`
+            `---\n${yaml.stringify(data.options, 4, 2).trim()}\n---`,
           );
         }
       }
@@ -362,16 +362,16 @@ module.exports = {
       validateColumns(data.columns);
 
       // Add columns
-      for (let column in data.columns) {
+      for (const column in data.columns) {
         result.push(
           `## ${column}`,
-          data.columns[column].length > 0 ?
-            data.columns[column].map(task => {
+          data.columns[column].length > 0
+            ? data.columns[column].map((task) => {
               // Ensure task is a simple string without markdown formatting
               const taskId = task.replace(/[\[\]\(\)]/g, '').split('/').pop().replace(/\.md$/, '');
               return `- ${taskId}`;
-            }).join('\n') :
-            ''
+            }).join('\n')
+            : '',
         );
       }
     } catch (error) {
@@ -379,6 +379,6 @@ module.exports = {
     }
 
     // Filter empty lines and join into a string
-    return `${result.filter(l => !!l).join('\n\n')}\n`;
-  }
+    return `${result.filter((l) => !!l).join('\n\n')}\n`;
+  },
 };

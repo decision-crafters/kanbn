@@ -1,6 +1,6 @@
+const inquirer = require('inquirer');
 const kanbnModule = require('../main');
 const utility = require('../utility');
-const inquirer = require('inquirer');
 
 inquirer.registerPrompt('selectLine', require('inquirer-select-line'));
 
@@ -21,17 +21,17 @@ async function interactive(columns, columnName, columnNames, sortedColumnNames, 
       name: 'column',
       message: 'Column:',
       default: columnName,
-      choices: columnNames
+      choices: columnNames,
     },
     {
       type: 'selectLine',
       name: 'position',
       message: 'Move task:',
-      default: answers => Math.max(Math.min(position, columns[answers.column].length), 0),
-      choices: answers => columns[answers.column].filter(t => t !== taskId),
+      default: (answers) => Math.max(Math.min(position, columns[answers.column].length), 0),
+      choices: (answers) => columns[answers.column].filter((t) => t !== taskId),
       placeholder: taskId,
-      when: answers => sortedColumnNames.indexOf(answers.column) === -1
-    }
+      when: (answers) => sortedColumnNames.indexOf(answers.column) === -1,
+    },
   ]);
 }
 
@@ -45,22 +45,22 @@ async function interactive(columns, columnName, columnNames, sortedColumnNames, 
  */
 function moveTask(taskId, columnName, position = null, relative = false, kanbnInstance) {
   kanbnInstance
-  .moveTask(taskId, columnName, position, relative)
-  .then(taskId => {
+    .moveTask(taskId, columnName, position, relative)
+    .then((taskId) => {
     // Get the index to verify the task was moved to the correct column
-    kanbnInstance.getIndex().then(index => {
-      const actualColumn = Object.entries(index.columns).find(([_, tasks]) => tasks.includes(taskId))?.[0] || null;
-      console.log(`Moved task "${taskId}" to column "${actualColumn}"`);
-    }).catch(error => {
-      console.log(`Moved task "${taskId}" to column "${columnName}"`);
+      kanbnInstance.getIndex().then((index) => {
+        const actualColumn = Object.entries(index.columns).find(([_, tasks]) => tasks.includes(taskId))?.[0] || null;
+        console.log(`Moved task "${taskId}" to column "${actualColumn}"`);
+      }).catch((error) => {
+        console.log(`Moved task "${taskId}" to column "${columnName}"`);
+      });
+    })
+    .catch((error) => {
+      utility.error(error);
     });
-  })
-  .catch(error => {
-    utility.error(error);
-  });
 }
 
-module.exports = async args => {
+module.exports = async (args) => {
   // Create a Kanbn instance
   const kanbn = kanbnModule();
 
@@ -147,14 +147,14 @@ module.exports = async args => {
       taskId,
       newPosition === null
         ? currentPosition
-        : (args.relative ? (currentPosition + newPosition) : newPosition)
+        : (args.relative ? (currentPosition + newPosition) : newPosition),
     )
-    .then(answers => {
-      moveTask(taskId, answers.column, answers.position, false, kanbn);
-    })
-    .catch(error => {
-      utility.error(error);
-    });
+      .then((answers) => {
+        moveTask(taskId, answers.column, answers.position, false, kanbn);
+      })
+      .catch((error) => {
+        utility.error(error);
+      });
 
   // Otherwise move task non-interactively
   } else {

@@ -9,7 +9,7 @@ const indexUtils = require('./index-utils');
  */
 function calculateAssignedTaskStats(tasks) {
   return tasks.reduce((a, task) => {
-    if ("assigned" in task.metadata) {
+    if ('assigned' in task.metadata) {
       if (!(task.metadata.assigned in a)) {
         a[task.metadata.assigned] = {
           total: 0,
@@ -31,10 +31,8 @@ function calculateAssignedTaskStats(tasks) {
  * @return {object|null} AI metrics object or null if no AI interactions
  */
 function calculateAIMetrics(tasks) {
-  const aiInteractions = tasks.filter(task =>
-    task.metadata.tags &&
-    task.metadata.tags.includes('ai-interaction')
-  );
+  const aiInteractions = tasks.filter((task) => task.metadata.tags
+    && task.metadata.tags.includes('ai-interaction'));
 
   if (aiInteractions.length === 0) {
     return null;
@@ -42,12 +40,12 @@ function calculateAIMetrics(tasks) {
 
   const metrics = {
     total: aiInteractions.length,
-    byType: {}
+    byType: {},
   };
 
-  for (let interaction of aiInteractions) {
+  for (const interaction of aiInteractions) {
     if (interaction.metadata.tags) {
-      for (let tag of interaction.metadata.tags) {
+      for (const tag of interaction.metadata.tags) {
         if (tag !== 'ai-interaction') {
           if (!(tag in metrics.byType)) {
             metrics.byType[tag] = 0;
@@ -67,15 +65,11 @@ function calculateAIMetrics(tasks) {
  * @return {object|null} Relationship metrics or null if no relationships
  */
 function calculateRelationMetrics(tasks) {
-  const parentTasks = tasks.filter(task =>
-    task.relations &&
-    task.relations.some(relation => relation.type === 'parent-of')
-  );
+  const parentTasks = tasks.filter((task) => task.relations
+    && task.relations.some((relation) => relation.type === 'parent-of'));
 
-  const childTasks = tasks.filter(task =>
-    task.relations &&
-    task.relations.some(relation => relation.type === 'child-of')
-  );
+  const childTasks = tasks.filter((task) => task.relations
+    && task.relations.some((relation) => relation.type === 'child-of'));
 
   if (parentTasks.length === 0 && childTasks.length === 0) {
     return null;
@@ -83,7 +77,7 @@ function calculateRelationMetrics(tasks) {
 
   return {
     parentTasks: parentTasks.length,
-    childTasks: childTasks.length
+    childTasks: childTasks.length,
   };
 }
 
@@ -96,7 +90,7 @@ function calculateRelationMetrics(tasks) {
 function calculateColumnWorkloads(tasks, columnNames) {
   let totalWorkload = 0;
   let totalRemainingWorkload = 0;
-  
+
   const columnWorkloads = tasks.reduce(
     (a, task) => {
       totalWorkload += task.workload;
@@ -112,14 +106,14 @@ function calculateColumnWorkloads(tasks, columnNames) {
           workload: 0,
           remainingWorkload: 0,
         },
-      ])
-    )
+      ]),
+    ),
   );
-  
+
   return {
     totalWorkload,
     totalRemainingWorkload,
-    columnWorkloads
+    columnWorkloads,
   };
 }
 
@@ -139,7 +133,7 @@ function calculateTaskWorkloads(index, tasks) {
         remainingWorkload: task.remainingWorkload,
         completed: taskUtils.taskCompleted(index, task),
       },
-    ])
+    ]),
   );
 }
 
@@ -151,23 +145,23 @@ function calculateTaskWorkloads(index, tasks) {
  * @return {object|null} Sprint statistics or null if no sprints defined
  */
 function calculateSprintStats(index, tasks, sprint = null) {
-  if (!("sprints" in index.options) || !index.options.sprints.length) {
+  if (!('sprints' in index.options) || !index.options.sprints.length) {
     return null;
   }
 
-  const sprints = index.options.sprints;
-  
+  const { sprints } = index.options;
+
   const currentSprint = index.options.sprints.length;
   let sprintIndex = currentSprint - 1;
 
   if (sprint !== null) {
-    if (typeof sprint === "number") {
+    if (typeof sprint === 'number') {
       if (sprint < 1 || sprint > sprints.length) {
         throw new Error(`Sprint ${sprint} does not exist`);
       } else {
         sprintIndex = sprint - 1;
       }
-    } else if (typeof sprint === "string") {
+    } else if (typeof sprint === 'string') {
       sprintIndex = sprints.findIndex((s) => s.name === sprint);
       if (sprintIndex === -1) {
         throw new Error(`No sprint found with name "${sprint}"`);
@@ -180,18 +174,25 @@ function calculateSprintStats(index, tasks, sprint = null) {
     name: sprints[sprintIndex].name,
     start: sprints[sprintIndex].start,
   };
-  
-  if (currentSprint - 1 !== sprintIndex) {
-    if (sprintIndex === sprints.length - 1) {
-      result.end = sprints[sprintIndex + 1].start;
-    }
-    result.current = currentSprint;
+
+  // Determine sprint end date
+  if (sprintIndex < sprints.length - 1) {
+    // If not the last sprint, end date is the start of the next sprint
+    result.end = sprints[sprintIndex + 1].start;
+  } else {
+    // If it is the last (and current) sprint, end date is effectively "now" (or undefined/null)
+    // Leaving result.end undefined is the current behavior for the last sprint.
   }
-  
+
+  // Mark if it's the currently active sprint
+  if (sprintIndex === currentSprint - 1) {
+    result.current = true;
+  }
+
   if (sprints[sprintIndex].description) {
     result.description = sprints[sprintIndex].description;
   }
-  
+
   const sprintStartDate = sprints[sprintIndex].start;
   const sprintEndDate = sprintIndex === sprints.length - 1 ? new Date() : sprints[sprintIndex + 1].start;
 
@@ -202,19 +203,19 @@ function calculateSprintStats(index, tasks, sprint = null) {
     round: true,
   });
 
-  result.created = indexUtils.taskWorkloadInPeriod(tasks, "created", sprintStartDate, sprintEndDate);
-  result.started = indexUtils.taskWorkloadInPeriod(tasks, "started", sprintStartDate, sprintEndDate);
-  result.completed = indexUtils.taskWorkloadInPeriod(tasks, "completed", sprintStartDate, sprintEndDate);
-  result.due = indexUtils.taskWorkloadInPeriod(tasks, "due", sprintStartDate, sprintEndDate);
+  result.created = indexUtils.taskWorkloadInPeriod(tasks, 'created', sprintStartDate, sprintEndDate);
+  result.started = indexUtils.taskWorkloadInPeriod(tasks, 'started', sprintStartDate, sprintEndDate);
+  result.completed = indexUtils.taskWorkloadInPeriod(tasks, 'completed', sprintStartDate, sprintEndDate);
+  result.due = indexUtils.taskWorkloadInPeriod(tasks, 'due', sprintStartDate, sprintEndDate);
 
-  if ("customFields" in index.options) {
-    for (let customField of index.options.customFields) {
-      if (customField.type === "date") {
+  if ('customFields' in index.options) {
+    for (const customField of index.options.customFields) {
+      if (customField.type === 'date') {
         result[customField.name] = indexUtils.taskWorkloadInPeriod(
           tasks,
           customField.name,
           sprintStartDate,
-          sprintEndDate
+          sprintEndDate,
         );
       }
     }
@@ -236,8 +237,9 @@ function calculatePeriodStats(index, tasks, dates) {
   }
 
   const result = {};
-  let periodStart, periodEnd;
-  
+  let periodStart; let
+    periodEnd;
+
   if (dates.length === 1) {
     periodStart = new Date(+dates[0]);
     periodStart.setHours(0, 0, 0, 0);
@@ -249,20 +251,20 @@ function calculatePeriodStats(index, tasks, dates) {
     result.start = periodStart = new Date(Math.min(...dates));
     result.end = periodEnd = new Date(Math.max(...dates));
   }
-  
-  result.created = indexUtils.taskWorkloadInPeriod(tasks, "created", periodStart, periodEnd);
-  result.started = indexUtils.taskWorkloadInPeriod(tasks, "started", periodStart, periodEnd);
-  result.completed = indexUtils.taskWorkloadInPeriod(tasks, "completed", periodStart, periodEnd);
-  result.due = indexUtils.taskWorkloadInPeriod(tasks, "due", periodStart, periodEnd);
 
-  if ("customFields" in index.options) {
-    for (let customField of index.options.customFields) {
-      if (customField.type === "date") {
+  result.created = indexUtils.taskWorkloadInPeriod(tasks, 'created', periodStart, periodEnd);
+  result.started = indexUtils.taskWorkloadInPeriod(tasks, 'started', periodStart, periodEnd);
+  result.completed = indexUtils.taskWorkloadInPeriod(tasks, 'completed', periodStart, periodEnd);
+  result.due = indexUtils.taskWorkloadInPeriod(tasks, 'due', periodStart, periodEnd);
+
+  if ('customFields' in index.options) {
+    for (const customField of index.options.customFields) {
+      if (customField.type === 'date') {
         result[customField.name] = indexUtils.taskWorkloadInPeriod(
-          tasks, 
-          customField.name, 
-          periodStart, 
-          periodEnd
+          tasks,
+          customField.name,
+          periodStart,
+          periodEnd,
         );
       }
     }
@@ -278,9 +280,9 @@ function calculatePeriodStats(index, tasks, dates) {
  */
 function calculateDueTasks(tasks) {
   const dueTasks = [];
-  
+
   tasks.forEach((task) => {
-    if ("dueData" in task) {
+    if ('dueData' in task) {
       dueTasks.push({
         task: task.id,
         workload: task.workload,
@@ -290,7 +292,7 @@ function calculateDueTasks(tasks) {
       });
     }
   });
-  
+
   return dueTasks;
 }
 
@@ -302,5 +304,5 @@ module.exports = {
   calculateTaskWorkloads,
   calculateSprintStats,
   calculatePeriodStats,
-  calculateDueTasks
+  calculateDueTasks,
 };

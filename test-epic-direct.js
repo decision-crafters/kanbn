@@ -40,9 +40,9 @@ async function testEpicDecomposition() {
       description: 'Testing epic functionality',
       options: {
         startedColumns: ['In Progress'],
-        completedColumns: ['Done']
+        completedColumns: ['Done'],
       },
-      columns: ['Backlog', 'Todo', 'In Progress', 'Done']
+      columns: ['Backlog', 'Todo', 'In Progress', 'Done'],
     });
 
     // Create epic task
@@ -53,8 +53,8 @@ async function testEpicDecomposition() {
       metadata: {
         type: 'epic',
         created: new Date(),
-        tags: ['epic']
-      }
+        tags: ['epic'],
+      },
     };
 
     const epicId = await kanbn.createTask(epicData, 'Backlog');
@@ -72,7 +72,7 @@ async function testEpicDecomposition() {
     console.log('Prompts path:', promptsPath);
     const epicHandler = new EpicHandler(kanbn, projectContext, promptsPath);
     console.log('Epic handler initialized');
-    
+
     try {
       // Get epic task for decomposition
       console.log('\n=== Decomposing Epic ===');
@@ -103,8 +103,8 @@ async function testEpicDecomposition() {
             metadata: {
               parent: epicId,
               created: new Date(),
-              tags: ['subtask']
-            }
+              tags: ['subtask'],
+            },
           };
 
           // Create task
@@ -135,7 +135,6 @@ async function testEpicDecomposition() {
     for (const [taskId, task] of Object.entries(tasks)) {
       console.log(`- ${taskId}: ${task.name} (${task.metadata?.type || 'task'})`);
     }
-
   } catch (error) {
     console.error('Test failed:', error);
   }

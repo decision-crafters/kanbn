@@ -1,6 +1,6 @@
 /**
  * Simple Interactive Chat Module
- * 
+ *
  * A simplified, robust implementation of interactive chat that works reliably
  * across different Node.js versions
  */
@@ -17,7 +17,7 @@ const colors = {
   green: '\x1b[32m',
   gray: '\x1b[90m',
   cyan: '\x1b[36m',
-  red: '\x1b[31m'
+  red: '\x1b[31m',
 };
 
 class SimpleInteractive {
@@ -50,32 +50,32 @@ class SimpleInteractive {
     try {
       // Validate components with detailed logging
       console.log('Debug: Validating components:');
-      
+
       if (!this.chatHandler) {
         console.error('ERROR: chatHandler is missing');
         throw new Error('Chat handler is required but not provided');
       }
       console.log('- chatHandler:', typeof this.chatHandler, 'with handleMessage:', typeof this.chatHandler.handleMessage === 'function');
-      
+
       if (!this.aiService) {
         console.log('WARNING: aiService is missing');
       } else {
         console.log('- aiService:', typeof this.aiService, 'with options:', JSON.stringify(this.aiService.options || {}, null, 2));
       }
-      
+
       if (!this.projectContext) {
         console.error('ERROR: projectContext is missing');
         throw new Error('Project context is required but not provided');
       }
       console.log('- projectContext:', typeof this.projectContext);
-      
+
       console.log('- aiLogging:', typeof this.aiLogging);
       console.log('- boardFolder:', this.boardFolder);
-      
+
       // Get the model information
       console.log('Debug: Getting model information');
       const model = this.aiService?.options?.model || 'default model';
-      
+
       // Show welcome message
       console.log(`${colors.blue}\n📊 Kanbn Project Assistant 📊${colors.reset}`);
       console.log(`${colors.gray}Using model: ${model}${colors.reset}`);
@@ -84,54 +84,53 @@ class SimpleInteractive {
       const rl = readline.createInterface({
         input: process.stdin,
         output: process.stdout,
-        terminal: true
+        terminal: true,
       });
-      
+
       // Create chat loop
       let chatActive = true;
-      
+
       while (chatActive) {
         try {
           // Get user input
           console.log('Debug: Waiting for user input...');
-          const message = await new Promise(resolve => {
-            rl.question(`${colors.green}You: ${colors.reset}`, answer => {
+          const message = await new Promise((resolve) => {
+            rl.question(`${colors.green}You: ${colors.reset}`, (answer) => {
               resolve(answer.trim());
             });
           });
           console.log('Debug: Received user input:', message);
-          
+
           // Check for exit commands
           if (message.toLowerCase() === 'exit' || message.toLowerCase() === 'quit') {
             console.log(`${colors.blue}Project Assistant: Goodbye! Happy organizing!${colors.reset}`);
             chatActive = false;
             continue;
           }
-          
+
           // Show thinking message
           process.stdout.write(`${colors.yellow}Project Assistant: ${colors.gray}Thinking...${colors.reset}`);
-          
+
           // Verify chatHandler exists and has handleMessage method
           if (!this.chatHandler || typeof this.chatHandler.handleMessage !== 'function') {
             throw new Error('Chat handler is not properly initialized');
           }
-          
+
           console.log('\nDebug: Calling chatHandler.handleMessage with message:', message);
           // Process the message with ChatHandler
           const response = await this.chatHandler.handleMessage(message);
           console.log('Debug: Received response from chatHandler');
-          
+
           // Clear the thinking message and show the response
-          process.stdout.write('\r' + ' '.repeat(100) + '\r');
+          process.stdout.write(`\r${' '.repeat(100)}\r`);
           console.log(`${colors.yellow}Project Assistant: ${colors.reset}${response}`);
-          
         } catch (messageError) {
           console.error('Error processing message:', messageError);
           console.log(`${colors.red}Error: ${colors.reset}${messageError.message || 'Unknown error'}`);
           // Continue the chat loop despite errors
         }
       }
-      
+
       rl.close();
       return 'Chat session ended';
     } catch (error) {

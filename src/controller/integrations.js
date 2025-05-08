@@ -13,7 +13,7 @@ const colors = {
   green: (text) => `\x1b[32m${text}\x1b[0m`,
   gray: (text) => `\x1b[90m${text}\x1b[0m`,
   red: (text) => `\x1b[31m${text}\x1b[0m`,
-  yellow: (text) => `\x1b[33m${text}\x1b[0m`
+  yellow: (text) => `\x1b[33m${text}\x1b[0m`,
 };
 const path = require('path');
 const RAGManager = require('../lib/rag-manager');
@@ -23,14 +23,14 @@ const RAGManager = require('../lib/rag-manager');
  * @param {Object} args Command arguments
  * @returns {Promise<string>} Command result
  */
-module.exports = async args => {
+module.exports = async (args) => {
   try {
     // Debug the args object to help diagnose issues
     if (process.env.DEBUG === 'true') {
       console.log('[DEBUG] Integrations controller args:', JSON.stringify(args));
     }
-    
-    // Fix for Docker container: Check if this is the 'list' command based on args._ 
+
+    // Fix for Docker container: Check if this is the 'list' command based on args._
     // This handles the case when args.list isn't properly set
     if (args._.includes('list') && !args.list) {
       args.list = true;
@@ -63,7 +63,7 @@ module.exports = async args => {
     }
 
     // Create RAG manager instance
-    const ragManager = new RAGManager({paths: {kanbn: boardFolder}});
+    const ragManager = new RAGManager({ paths: { kanbn: boardFolder } });
 
     // Initialize RAG manager and integrations directory
     await ragManager.initialize();
@@ -88,7 +88,7 @@ module.exports = async args => {
       // Print directly to console to ensure visibility
       console.log(result);
       return result;
-    } else if (args.add) {
+    } if (args.add) {
       // Add a new integration
       if (!args.name) {
         return 'Missing integration name. Usage: `kanbn integrations add --name <name> [--url <url>] [--content <content>]`';
@@ -111,17 +111,15 @@ module.exports = async args => {
             // Print directly to console to ensure visibility
             console.log(`Integration '${args.name}' added successfully from URL: ${args.url} (HTML converted to Markdown)`);
             return `Integration '${args.name}' added successfully from URL: ${args.url} (HTML converted to Markdown)`;
-          } else {
-            // Print directly to console to ensure visibility
-            console.log(`Integration '${args.name}' added successfully from URL: ${args.url}`);
-            return `Integration '${args.name}' added successfully from URL: ${args.url}`;
           }
-        } else {
           // Print directly to console to ensure visibility
-          console.error(`Failed to add integration '${args.name}' from URL: ${args.url}`);
-          return `Failed to add integration '${args.name}' from URL: ${args.url}`;
+          console.log(`Integration '${args.name}' added successfully from URL: ${args.url}`);
+          return `Integration '${args.name}' added successfully from URL: ${args.url}`;
         }
-      } else if (args.content) {
+        // Print directly to console to ensure visibility
+        console.error(`Failed to add integration '${args.name}' from URL: ${args.url}`);
+        return `Failed to add integration '${args.name}' from URL: ${args.url}`;
+      } if (args.content) {
         // Add integration from content
         const success = await ragManager.addIntegration(args.name, args.content);
 
@@ -129,15 +127,13 @@ module.exports = async args => {
           // Print directly to console to ensure visibility
           console.log(`Integration '${args.name}' added successfully with provided content`);
           return `Integration '${args.name}' added successfully with provided content`;
-        } else {
-          // Print directly to console to ensure visibility
-          console.error(`Failed to add integration '${args.name}' with provided content`);
-          return `Failed to add integration '${args.name}' with provided content`;
         }
-      } else {
-        return 'Missing URL or content. Usage: `kanbn integrations add --name <name> [--url <url>] [--content <content>]`';
+        // Print directly to console to ensure visibility
+        console.error(`Failed to add integration '${args.name}' with provided content`);
+        return `Failed to add integration '${args.name}' with provided content`;
       }
-    } else if (args.remove) {
+      return 'Missing URL or content. Usage: `kanbn integrations add --name <name> [--url <url>] [--content <content>]`';
+    } if (args.remove) {
       // Remove an integration
       if (!args.name) {
         return 'Missing integration name. Usage: `kanbn integrations remove --name <name>`';
@@ -149,14 +145,13 @@ module.exports = async args => {
         // Print directly to console to ensure visibility
         console.log(`Integration '${args.name}' removed successfully`);
         return `Integration '${args.name}' removed successfully`;
-      } else {
-        // Print directly to console to ensure visibility
-        console.error(`Failed to remove integration '${args.name}'`);
-        return `Failed to remove integration '${args.name}'`;
       }
-    } else {
-      // Show help information by default
-      return `
+      // Print directly to console to ensure visibility
+      console.error(`Failed to remove integration '${args.name}'`);
+      return `Failed to remove integration '${args.name}'`;
+    }
+    // Show help information by default
+    return `
 ${chalk.bold('Kanbn Integrations Commands')}
 
 Manage context integrations for AI assistance:
@@ -171,7 +166,6 @@ Use integrations with the chat command:
 - ${chalk.yellow('kanbn chat --with-integrations')} - Use all integrations in the chat context
 - ${chalk.yellow('kanbn chat --integration <name>')} - Use specific integration(s) by name
 `;
-    }
   } catch (error) {
     utility.error(`Error handling integrations: ${error.message}`, true);
     return `Error handling integrations: ${error.message}`;

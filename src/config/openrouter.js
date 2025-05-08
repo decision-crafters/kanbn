@@ -73,10 +73,10 @@ function getApiBaseUrl() {
  */
 function getApiHeaders(apiKey) {
   return {
-    'Authorization': `Bearer ${apiKey}`,
+    Authorization: `Bearer ${apiKey}`,
     'Content-Type': 'application/json',
     'HTTP-Referer': 'https://github.com/decision-crafters/kanbn',
-    'X-Title': 'Kanbn Project Assistant'
+    'X-Title': 'Kanbn Project Assistant',
   };
 }
 
@@ -86,5 +86,5 @@ module.exports = {
   useStreaming,
   validateApiKey,
   getApiBaseUrl,
-  getApiHeaders
+  getApiHeaders,
 };

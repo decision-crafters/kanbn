@@ -1,6 +1,6 @@
+const inquirer = require('inquirer');
 const Kanbn = require('../main');
 const utility = require('../utility');
-const inquirer = require('inquirer');
 
 /**
  * Nuke kanbn
@@ -8,15 +8,15 @@ const inquirer = require('inquirer');
 function removeAll() {
   const kanbn = Kanbn();
   kanbn.removeAll()
-  .then(() => {
-    console.log('kanbn has been removed');
-  })
-  .catch(error => {
-    utility.error(error);
-  });
+    .then(() => {
+      console.log('kanbn has been removed');
+    })
+    .catch((error) => {
+      utility.error(error);
+    });
 }
 
-module.exports = async args => {
+module.exports = async (args) => {
   // Create a Kanbn instance
   const kanbn = Kanbn();
 
@@ -42,14 +42,14 @@ module.exports = async args => {
         type: 'confirm',
         message: 'Are you sure you want to remove kanbn and all tasks?',
         name: 'sure',
-        default: false
-      }
-    ]).then(async answers => {
+        default: false,
+      },
+    ]).then(async (answers) => {
       if (answers.sure) {
         removeAll();
       }
-    }).catch(error => {
+    }).catch((error) => {
       utility.error(error);
-    })
+    });
   }
 };

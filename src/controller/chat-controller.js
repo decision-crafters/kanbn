@@ -13,6 +13,7 @@ if (!process.env.NODE_OPTIONS.includes('--no-deprecation')) {
   process.env.NODE_OPTIONS += ' --no-deprecation';
 }
 
+const { execSync } = require('child_process');
 const kanbnModule = require('../main');
 const utility = require('../utility');
 const AIService = require('../lib/ai-service');
@@ -25,7 +26,6 @@ const PromptLoader = require('../lib/prompt-loader');
 const MemoryManager = require('../lib/memory-manager');
 const eventBus = require('../lib/event-bus');
 
-const { execSync } = require('child_process');
 const { debugLog } = require('../utility');
 
 // Try to use the new SimpleInteractive class first, fall back to InteractiveChat if needed
@@ -50,7 +50,7 @@ const chalk = {
   gray: (text) => `\u001b[90m${text}\u001b[0m`,
   cyan: (text) => `\u001b[36m${text}\u001b[0m`,
   red: (text) => `\u001b[31m${text}\u001b[0m`,
-  reset: (text) => `\u001b[0m${text}\u001b[0m`
+  reset: (text) => `\u001b[0m${text}\u001b[0m`,
 };
 chalk.blue.bold = (text) => `\u001b[1;34m${text}\u001b[0m`;
 
@@ -65,7 +65,9 @@ chalk.blue.bold = (text) => `\u001b[1;34m${text}\u001b[0m`;
  */
 async function handleChatMessage(options) {
   try {
-    const { kanbn, boardFolder, message, parentContext } = options;
+    const {
+      kanbn, boardFolder, message, parentContext,
+    } = options;
     utility.debugLog(`Chat message: ${message}`);
 
     // Check if we have pre-serialized context from a parent process
@@ -95,7 +97,7 @@ async function handleChatMessage(options) {
       // We'll handle integrations after initializing the variables
       projectContext = await projectContextManager.getContext(
         true, // include references
-        true  // include system tasks
+        true, // include system tasks
       );
 
       // Integration handling will be done after the variables are defined
@@ -115,7 +117,7 @@ async function handleChatMessage(options) {
     // Initialize AI service
     const aiService = new AIService({
       apiKey: process.env.OPENROUTER_API_KEY,
-      model: process.env.OPENROUTER_MODEL
+      model: process.env.OPENROUTER_MODEL,
     });
 
     const aiLogging = new AILogging(kanbn);
@@ -124,9 +126,9 @@ async function handleChatMessage(options) {
     // Check if we're using integrations
     // Safely access options.args if available
     const useIntegrations = options && options.args ? (options.args['with-integrations'] || false) : false;
-    const specificIntegrations = options && options.args && options.args.integration ?
-      (Array.isArray(options.args.integration) ? options.args.integration : [options.args.integration]) :
-      [];
+    const specificIntegrations = options && options.args && options.args.integration
+      ? (Array.isArray(options.args.integration) ? options.args.integration : [options.args.integration])
+      : [];
     const isUsingIntegrations = useIntegrations || (specificIntegrations && specificIntegrations.length > 0);
 
     // Update project context with integrations if needed
@@ -148,7 +150,7 @@ async function handleChatMessage(options) {
         const contextWithIntegrations = await projectContextManager.getContext(
           true, // include references
           true, // include system tasks
-          integrationParam // Either specific integrations or all integrations with flag
+          integrationParam, // Either specific integrations or all integrations with flag
         );
 
         // Update the project context with integration content
@@ -177,183 +179,183 @@ async function handleChatMessage(options) {
 
     // Create system message - use enhanced context if available
     let systemMessage;
-      if (projectContext) {
-        const contextManager = new ProjectContext(kanbn);
+    if (projectContext) {
+      const contextManager = new ProjectContext(kanbn);
 
-        // Load memory context for task reference history if available
-        let memoryContext = null;
-        try {
-          // Use the project root directory for consistency with task reference recording
-          const projectRoot = process.cwd();
-          utility.debugLog(`Loading memory context using project root: ${projectRoot}`);
+      // Load memory context for task reference history if available
+      let memoryContext = null;
+      try {
+        // Use the project root directory for consistency with task reference recording
+        const projectRoot = process.cwd();
+        utility.debugLog(`Loading memory context using project root: ${projectRoot}`);
 
-          const memoryManager = new MemoryManager(projectRoot);
-          await memoryManager.loadMemory();
-          memoryContext = memoryManager.memory;
+        const memoryManager = new MemoryManager(projectRoot);
+        await memoryManager.loadMemory();
+        memoryContext = memoryManager.memory;
 
-          utility.debugLog(`Memory file location: ${memoryManager.memoryFile}`);
-          utility.debugLog(`Loaded memory context with ${Object.keys(memoryContext.taskReferences || {}).length} task references`);
-        } catch (memoryError) {
-          utility.debugLog(`Error loading memory context: ${memoryError.message}`);
-        }
+        utility.debugLog(`Memory file location: ${memoryManager.memoryFile}`);
+        utility.debugLog(`Loaded memory context with ${Object.keys(memoryContext.taskReferences || {}).length} task references`);
+      } catch (memoryError) {
+        utility.debugLog(`Error loading memory context: ${memoryError.message}`);
+      }
 
-        // Create system message with memory context if available
-        // Note: createSystemMessage is now async
-        try {
-          systemMessage = await contextManager.createSystemMessage(projectContext, memoryContext);
-          utility.debugLog('Successfully created system message with repository context');
-        } catch (systemMessageError) {
-          utility.debugLog(`Error creating system message: ${systemMessageError.message}`);
-          // Fallback to simple system message
-          systemMessage = {
-            role: 'system',
-            content: 'You are a helpful assistant for the Kanbn task management system.'
-          };
-        }
-      } else {
+      // Create system message with memory context if available
+      // Note: createSystemMessage is now async
+      try {
+        systemMessage = await contextManager.createSystemMessage(projectContext, memoryContext);
+        utility.debugLog('Successfully created system message with repository context');
+      } catch (systemMessageError) {
+        utility.debugLog(`Error creating system message: ${systemMessageError.message}`);
         // Fallback to simple system message
         systemMessage = {
           role: 'system',
-          content: 'You are a helpful assistant for the Kanbn task management system.'
+          content: 'You are a helpful assistant for the Kanbn task management system.',
         };
       }
+    } else {
+      // Fallback to simple system message
+      systemMessage = {
+        role: 'system',
+        content: 'You are a helpful assistant for the Kanbn task management system.',
+      };
+    }
 
-      // Load conversation history
-      const history = aiService.loadConversationHistory(boardFolder, conversationId);
+    // Load conversation history
+    const history = aiService.loadConversationHistory(boardFolder, conversationId);
 
-      // Check if the user is asking about a specific task
-      // Improved regex to more precisely extract just the task ID
-      const taskIdRegex = /(?:details|info|about|show|tell me about|status of|what is|describe)\s+(?:task|the task)?\s+["']?([a-zA-Z0-9-_]+)["']?/i;
+    // Check if the user is asking about a specific task
+    // Improved regex to more precisely extract just the task ID
+    const taskIdRegex = /(?:details|info|about|show|tell me about|status of|what is|describe)\s+(?:task|the task)?\s+["']?([a-zA-Z0-9-_]+)["']?/i;
 
-      // Direct task ID mention pattern (e.g., "test-feature task details")
-      const directTaskIdRegex = /["']?([a-zA-Z0-9-_]+)["']?\s+(?:task|details|info)/i;
+    // Direct task ID mention pattern (e.g., "test-feature task details")
+    const directTaskIdRegex = /["']?([a-zA-Z0-9-_]+)["']?\s+(?:task|details|info)/i;
 
-      // Try both patterns to find task ID
-      const taskMatch = message.match(taskIdRegex) || message.match(directTaskIdRegex);
-      let enhancedMessage = message;
+    // Try both patterns to find task ID
+    const taskMatch = message.match(taskIdRegex) || message.match(directTaskIdRegex);
+    let enhancedMessage = message;
 
-      // If a potential task ID was detected, try to fetch task details
-      if (taskMatch && taskMatch[1]) {
-        const potentialTaskId = taskMatch[1].trim();
-        utility.debugLog(`Potential task ID detected: ${potentialTaskId}`);
+    // If a potential task ID was detected, try to fetch task details
+    if (taskMatch && taskMatch[1]) {
+      const potentialTaskId = taskMatch[1].trim();
+      utility.debugLog(`Potential task ID detected: ${potentialTaskId}`);
 
+      try {
+        // Check if the task exists before trying to get details
+        let taskExists = false;
         try {
-          // Check if the task exists before trying to get details
-          let taskExists = false;
-          try {
-            // Use the safer task exists check first
-            taskExists = await kanbn.taskExists(potentialTaskId);
-            utility.debugLog(`Task existence check: ${potentialTaskId} exists = ${taskExists}`);
-          } catch (existsError) {
-            utility.debugLog(`Task existence check failed: ${existsError.message}`);
-            // Fall through to try reading the task directly
-          }
+          // Use the safer task exists check first
+          taskExists = await kanbn.taskExists(potentialTaskId);
+          utility.debugLog(`Task existence check: ${potentialTaskId} exists = ${taskExists}`);
+        } catch (existsError) {
+          utility.debugLog(`Task existence check failed: ${existsError.message}`);
+          // Fall through to try reading the task directly
+        }
 
-          // Only proceed if the task exists or we couldn't check
-          if (taskExists) {
-            // Create a ProjectContext instance if needed
-            const contextManager = new ProjectContext(kanbn);
-            const taskDetails = await contextManager.getTaskDetails(potentialTaskId);
+        // Only proceed if the task exists or we couldn't check
+        if (taskExists) {
+          // Create a ProjectContext instance if needed
+          const contextManager = new ProjectContext(kanbn);
+          const taskDetails = await contextManager.getTaskDetails(potentialTaskId);
 
-            // Only enhance the message if task details were found
-            if (taskDetails && !taskDetails.includes('not found')) {
-              utility.debugLog('Task details found, enhancing message');
-              enhancedMessage = `${message}\n\n${taskDetails}`;
+          // Only enhance the message if task details were found
+          if (taskDetails && !taskDetails.includes('not found')) {
+            utility.debugLog('Task details found, enhancing message');
+            enhancedMessage = `${message}\n\n${taskDetails}`;
 
-              // Record the task reference in memory if we have access to a memory manager
-              try {
-                // Create a memory manager for the board folder if we don't already have one
-                // Ensure we're using the project root directory
-                const projectRoot = process.cwd();
-                utility.debugLog(`Creating memory manager using project root: ${projectRoot}`);
+            // Record the task reference in memory if we have access to a memory manager
+            try {
+              // Create a memory manager for the board folder if we don't already have one
+              // Ensure we're using the project root directory
+              const projectRoot = process.cwd();
+              utility.debugLog(`Creating memory manager using project root: ${projectRoot}`);
 
-                const memoryManager = new MemoryManager(projectRoot);
-                await memoryManager.loadMemory();
+              const memoryManager = new MemoryManager(projectRoot);
+              await memoryManager.loadMemory();
 
-                // Get basic task data to store in the reference
-                const taskData = {
-                  taskId: potentialTaskId,
-                  taskName: taskDetails.match(/\*\*Name:\*\* ([^\n]+)/)?.[1] || potentialTaskId,
-                  column: taskDetails.match(/\*\*Column:\*\* ([^\n]+)/)?.[1] || 'Unknown'
-                };
+              // Get basic task data to store in the reference
+              const taskData = {
+                taskId: potentialTaskId,
+                taskName: taskDetails.match(/\*\*Name:\*\* ([^\n]+)/)?.[1] || potentialTaskId,
+                column: taskDetails.match(/\*\*Column:\*\* ([^\n]+)/)?.[1] || 'Unknown',
+              };
 
-                utility.debugLog(`Recording task reference for ${potentialTaskId}: ${JSON.stringify(taskData)}`);
+              utility.debugLog(`Recording task reference for ${potentialTaskId}: ${JSON.stringify(taskData)}`);
 
-                // Record this task reference
-                await memoryManager.addTaskReference(potentialTaskId, taskData, 'view');
+              // Record this task reference
+              await memoryManager.addTaskReference(potentialTaskId, taskData, 'view');
 
-                // Log memory file location for debugging
-                utility.debugLog(`Memory file location: ${memoryManager.memoryFile}`);
+              // Log memory file location for debugging
+              utility.debugLog(`Memory file location: ${memoryManager.memoryFile}`);
 
-                // Emit an event for tracking
-                eventBus.emit('taskDetailViewed', [{ taskId: potentialTaskId, taskName: taskData.taskName }]);
-              } catch (memoryError) {
-                utility.debugLog(`Error recording task reference: ${memoryError.message}`);
-              }
-            } else {
-              utility.debugLog(`No details found for task: ${potentialTaskId}`);
+              // Emit an event for tracking
+              eventBus.emit('taskDetailViewed', [{ taskId: potentialTaskId, taskName: taskData.taskName }]);
+            } catch (memoryError) {
+              utility.debugLog(`Error recording task reference: ${memoryError.message}`);
             }
           } else {
-            utility.debugLog(`Task ${potentialTaskId} does not exist, skipping details lookup`);
+            utility.debugLog(`No details found for task: ${potentialTaskId}`);
           }
-        } catch (taskError) {
-          utility.debugLog(`Error retrieving task details: ${taskError.message}`);
+        } else {
+          utility.debugLog(`Task ${potentialTaskId} does not exist, skipping details lookup`);
+        }
+      } catch (taskError) {
+        utility.debugLog(`Error retrieving task details: ${taskError.message}`);
+      }
+    }
+
+    // Create user message (possibly enhanced with task details)
+    const userMessage = {
+      role: 'user',
+      content: enhancedMessage,
+    };
+
+    // Call AI service
+    let response = await aiService.chatCompletion(
+      [systemMessage, ...history, userMessage],
+      {
+        logCallback: async (type, data) => {
+          await aiLogging.logInteraction(boardFolder, type, data);
+        },
+      },
+    );
+
+    // Fix for duplicate responses: Check if the response is duplicated
+    // This can happen in some environments due to how the response is processed
+    if (response) {
+      // Check if the response contains a duplicate of itself
+      const firstHundredChars = response.substring(0, 100).trim();
+      if (firstHundredChars.length > 20) {
+        // Look for the same text pattern later in the response
+        const secondHalfIndex = response.indexOf(firstHundredChars, 100);
+        if (secondHalfIndex > 0) {
+          // Found a potential duplicate
+          utility.debugLog('Detected potential duplicated response');
+
+          // Check if the second half is a complete duplicate of the first half
+          const firstHalf = response.substring(0, secondHalfIndex).trim();
+          const secondHalf = response.substring(secondHalfIndex).trim();
+
+          // If the second half starts with the same content as the first half,
+          // it's likely a duplicate
+          if (secondHalf.startsWith(firstHalf.substring(0, Math.min(firstHalf.length, 100)))) {
+            utility.debugLog('Confirmed duplicated response, using only the first half');
+            response = firstHalf;
+          }
         }
       }
+    }
 
-      // Create user message (possibly enhanced with task details)
-      const userMessage = {
-        role: 'user',
-        content: enhancedMessage
-      };
+    // Save conversation history
+    await aiService.saveConversationHistory(
+      boardFolder,
+      conversationId,
+      history,
+      userMessage,
+      response,
+    );
 
-      // Call AI service
-      let response = await aiService.chatCompletion(
-        [systemMessage, ...history, userMessage],
-        {
-          logCallback: async (type, data) => {
-            await aiLogging.logInteraction(boardFolder, type, data);
-          }
-        }
-      );
-
-      // Fix for duplicate responses: Check if the response is duplicated
-      // This can happen in some environments due to how the response is processed
-      if (response) {
-        // Check if the response contains a duplicate of itself
-        const firstHundredChars = response.substring(0, 100).trim();
-        if (firstHundredChars.length > 20) {
-          // Look for the same text pattern later in the response
-          const secondHalfIndex = response.indexOf(firstHundredChars, 100);
-          if (secondHalfIndex > 0) {
-            // Found a potential duplicate
-            utility.debugLog('Detected potential duplicated response');
-
-            // Check if the second half is a complete duplicate of the first half
-            const firstHalf = response.substring(0, secondHalfIndex).trim();
-            const secondHalf = response.substring(secondHalfIndex).trim();
-
-            // If the second half starts with the same content as the first half,
-            // it's likely a duplicate
-            if (secondHalf.startsWith(firstHalf.substring(0, Math.min(firstHalf.length, 100)))) {
-              utility.debugLog('Confirmed duplicated response, using only the first half');
-              response = firstHalf;
-            }
-          }
-        }
-      }
-
-      // Save conversation history
-      await aiService.saveConversationHistory(
-        boardFolder,
-        conversationId,
-        history,
-        userMessage,
-        response
-      );
-
-      utility.debugLog('AI service call completed successfully.');
-      return response;
+    utility.debugLog('AI service call completed successfully.');
+    return response;
   } catch (error) {
     console.error('Error handling chat message:', error);
     return `Error: ${error.message}. Please ensure either OpenRouter API key is set or Ollama is running.`;
@@ -365,7 +367,7 @@ async function handleChatMessage(options) {
  * @param {Object} args Command arguments
  * @returns {Promise<string>} Command result
  */
-module.exports = async args => {
+module.exports = async (args) => {
   utility.debugLog('Chat controller started');
   // Validate required modules are loaded correctly
   try {
@@ -475,13 +477,13 @@ module.exports = async args => {
           yellow: '\x1b[33m',
           blue: '\x1b[34m',
           green: '\x1b[32m',
-          gray: '\x1b[90m'
+          gray: '\x1b[90m',
         };
 
         // Create readline interface
         const rl = readline.createInterface({
           input: process.stdin,
-          output: process.stdout
+          output: process.stdout,
         });
 
         // Show welcome message
@@ -494,8 +496,8 @@ module.exports = async args => {
         while (chatActive) {
           try {
             // Get user input
-            const message = await new Promise(resolve => {
-              rl.question(`${colors.green}You: ${colors.reset}`, answer => {
+            const message = await new Promise((resolve) => {
+              rl.question(`${colors.green}You: ${colors.reset}`, (answer) => {
                 resolve(answer.trim());
               });
             });
@@ -516,7 +518,7 @@ module.exports = async args => {
               const contextObject = ContextSerializer.createContextObject(
                 projectContext,
                 null, // We don't have access to memory directly from ChatHandler
-                { interactive: true }
+                { interactive: true },
               );
 
               // Validate the context to ensure it's properly structured
@@ -545,7 +547,7 @@ module.exports = async args => {
               const envWithContext = {
                 ...process.env,
                 KANBN_CONTEXT_DIR: currentDir,
-                [contextVar]: serializedContext
+                [contextVar]: serializedContext,
               };
 
               // Force KANBN_QUIET=true and explicitly disable DEBUG output in the subprocess
@@ -556,7 +558,7 @@ module.exports = async args => {
                 const result = execSync(cmd, {
                   cwd: currentDir,
                   env: envWithContext,
-                  maxBuffer: 1024 * 1024 // Increase buffer size for large responses
+                  maxBuffer: 1024 * 1024, // Increase buffer size for large responses
                 }).toString();
 
                 // Log context transfer details for debugging
@@ -564,7 +566,7 @@ module.exports = async args => {
                   contextSize: serializedContext.length,
                   hasProject: contextObject.project !== null,
                   hasMemory: contextObject.memory !== null,
-                  taskCount: contextObject.project?.tasks?.length || 0
+                  taskCount: contextObject.project?.tasks?.length || 0,
                 };
                 utility.debugLog(`Context transfer stats: ${JSON.stringify(contextStats)}`);
 
@@ -598,7 +600,7 @@ module.exports = async args => {
                   // Fall back to the raw result if regex doesn't match, but clean it first
                   const cleanedResult = result
                     .split('\n')
-                    .filter(line => !line.includes('[DEBUG]') && !line.startsWith('DEBUG:'))
+                    .filter((line) => !line.includes('[DEBUG]') && !line.startsWith('DEBUG:'))
                     .join('\n')
                     .trim();
 
@@ -629,7 +631,7 @@ module.exports = async args => {
               // Filter out any remaining DEBUG lines and clean up HTML/markdown artifacts from the response
               let filteredResponse = aiResponse
                 .split('\n')
-                .filter(line => !line.includes('[DEBUG]') && !line.match(/^DEBUG:/))
+                .filter((line) => !line.includes('[DEBUG]') && !line.match(/^DEBUG:/))
                 .join('\n');
 
               // Remove HTML doctype and common markup if present
@@ -643,7 +645,7 @@ module.exports = async args => {
                 .replace(/AI (?:request|response) interaction at [\w-\.:]+/g, '[system task]');
 
               // Clear the thinking message and display response
-              process.stdout.write('\r' + ' '.repeat(80) + '\r');
+              process.stdout.write(`\r${' '.repeat(80)}\r`);
               // For interactive mode, keep the prefix for context
               console.log(`${colors.yellow}Project Assistant: ${colors.reset}${filteredResponse}`);
             } catch (execError) {
@@ -690,9 +692,9 @@ module.exports = async args => {
         kanbn,
         boardFolder,
         message: args.message,
-        parentContext: parentContext,
+        parentContext,
         conversationId: args.conversationId,
-        args: args // Pass the full args object
+        args, // Pass the full args object
       });
 
       if (response) {
@@ -745,6 +747,6 @@ Optional Environment Variables:
       console.error('Full error object:', JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
     }
 
-    return 'Error: ' + error.message;
+    return `Error: ${error.message}`;
   }
 };

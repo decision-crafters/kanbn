@@ -1,23 +1,23 @@
-const fs = require("fs");
-const path = require("path");
-const glob = require("glob-promise");
-const parseIndex = require("./parse-index");
-const parseTask = require("./parse-task");
-const utility = require("./utility");
-const yaml = require("yamljs");
-const humanizeDuration = require("humanize-duration");
-const rimraf = require("rimraf");
+const fs = require('fs');
+const path = require('path');
+const glob = require('glob-promise');
+const yaml = require('yamljs');
+const humanizeDuration = require('humanize-duration');
+const rimraf = require('rimraf');
+const parseIndex = require('./parse-index');
+const parseTask = require('./parse-task');
+const utility = require('./utility');
 
-const fileUtils = require("./lib/file-utils");
-const taskUtils = require("./lib/task-utils");
-const filterUtils = require("./lib/filter-utils");
-const indexUtils = require("./lib/index-utils");
-const statusUtils = require("./lib/status-utils");
+const fileUtils = require('./lib/file-utils');
+const taskUtils = require('./lib/task-utils');
+const filterUtils = require('./lib/filter-utils');
+const indexUtils = require('./lib/index-utils');
+const statusUtils = require('./lib/status-utils');
 
-const DEFAULT_FOLDER_NAME = ".kanbn";
-const DEFAULT_INDEX_FILE_NAME = "index.md";
-const DEFAULT_TASKS_FOLDER_NAME = "tasks";
-const DEFAULT_ARCHIVE_FOLDER_NAME = "archive";
+const DEFAULT_FOLDER_NAME = '.kanbn';
+const DEFAULT_INDEX_FILE_NAME = 'index.md';
+const DEFAULT_TASKS_FOLDER_NAME = 'tasks';
+const DEFAULT_ARCHIVE_FOLDER_NAME = 'archive';
 
 // Date normalisation intervals measured in milliseconds
 const SECOND = 1000;
@@ -35,20 +35,20 @@ const DEFAULT_TASK_WORKLOAD_TAGS = {
   Large: 5,
   Huge: 8,
 };
-const DEFAULT_DATE_FORMAT = "d mmm yy, H:MM";
+const DEFAULT_DATE_FORMAT = 'd mmm yy, H:MM';
 const DEFAULT_TASK_TEMPLATE = "^+^_${overdue ? '^R' : ''}${name}^: ${created ? ('\\n^-^/' + created) : ''}";
 
 /**
  * Default options for the initialise command
  */
 const defaultInitialiseOptions = {
-  name: "Project Name",
-  description: "",
+  name: 'Project Name',
+  description: '',
   options: {
-    startedColumns: ["In Progress"],
-    completedColumns: ["Done"],
+    startedColumns: ['In Progress'],
+    completedColumns: ['Done'],
   },
-  columns: ["Backlog", "Todo", "In Progress", "Done"],
+  columns: ['Backlog', 'Todo', 'In Progress', 'Done'],
 };
 
 /**
@@ -301,23 +301,25 @@ function updateColumnLinkedCustomFields(index, taskData, columnName) {
  * @param {string} fieldName
  * @param {string} [updateCriteria='none']
  */
-function updateColumnLinkedCustomField(index, taskData, columnName, fieldName, updateCriteria = "none") {
+function updateColumnLinkedCustomField(index, taskData, columnName, fieldName, updateCriteria = 'none') {
   return indexUtils.updateColumnLinkedCustomField(index, taskData, columnName, fieldName, updateCriteria);
 }
 
 class Kanbn {
   ROOT = process.cwd();
-  CONFIG_YAML = path.join(this.ROOT, "kanbn.yml");
-  CONFIG_JSON = path.join(this.ROOT, "kanbn.json");
+
+  CONFIG_YAML = path.join(this.ROOT, 'kanbn.yml');
+
+  CONFIG_JSON = path.join(this.ROOT, 'kanbn.json');
 
   // Memoize config
   configMemo = null;
 
   constructor(root = null) {
-    if(root) {
-      this.ROOT = root
-      this.CONFIG_YAML = path.join(this.ROOT, "kanbn.yml");
-      this.CONFIG_JSON = path.join(this.ROOT, "kanbn.json");
+    if (root) {
+      this.ROOT = root;
+      this.CONFIG_YAML = path.join(this.ROOT, 'kanbn.yml');
+      this.CONFIG_JSON = path.join(this.ROOT, 'kanbn.json');
     }
   }
 
@@ -355,7 +357,7 @@ class Kanbn {
         }
       } else if (await fileUtils.exists(this.CONFIG_JSON)) {
         try {
-          config = JSON.parse(await fs.promises.readFile(this.CONFIG_JSON, { encoding: "utf-8" }));
+          config = JSON.parse(await fs.promises.readFile(this.CONFIG_JSON, { encoding: 'utf-8' }));
         } catch (error) {
           throw new Error(`Couldn't load config file: ${error.message}`);
         }
@@ -459,7 +461,7 @@ class Kanbn {
   async getIndex() {
     // Check if this folder has been initialised
     if (!(await this.initialised())) {
-      throw new Error("Not initialised in this folder");
+      throw new Error('Not initialised in this folder');
     }
 
     return this.loadIndex();
@@ -491,12 +493,12 @@ class Kanbn {
     task.remainingWorkload = Math.ceil(task.workload * (1 - task.progress));
 
     // Add due information
-    if ("due" in task.metadata) {
+    if ('due' in task.metadata) {
       const dueData = {};
 
       // A task is overdue if it's due date is in the past and the task is not in a completed column
       // or doesn't have a completed dates
-      const completedDate = "completed" in task.metadata ? task.metadata.completed : null;
+      const completedDate = 'completed' in task.metadata ? task.metadata.completed : null;
 
       // Get task due delta - this is the difference between now and the due date, or if the task is completed
       // this is the difference between the completed and due dates
@@ -515,14 +517,14 @@ class Kanbn {
       dueData.dueDelta = delta;
 
       // Prepare a due message for the task
-      let dueMessage = "";
+      let dueMessage = '';
       if (completed) {
-        dueMessage += "Completed ";
+        dueMessage += 'Completed ';
       }
       dueMessage += `${humanizeDuration(delta, {
         largest: 3,
         round: true,
-      })} ${delta > 0 ? "overdue" : "remaining"}`;
+      })} ${delta > 0 ? 'overdue' : 'remaining'}`;
       dueData.dueMessage = dueMessage;
       task.dueData = dueData;
     }
@@ -551,7 +553,7 @@ class Kanbn {
       this.loadAllTrackedTasks.bind(this),
       this.configExists.bind(this),
       this.saveConfig.bind(this),
-      this.getIndexPath.bind(this)
+      this.getIndexPath.bind(this),
     );
   }
 
@@ -562,7 +564,7 @@ class Kanbn {
   async loadIndex() {
     return indexUtils.loadIndex(
       this.getIndexPath.bind(this),
-      this.getConfig.bind(this)
+      this.getConfig.bind(this),
     );
   }
 
@@ -582,9 +584,9 @@ class Kanbn {
    */
   async loadTask(taskId) {
     const taskPath = path.join(await this.getTaskFolderPath(), addFileExtension(taskId));
-    let taskData = "";
+    let taskData = '';
     try {
-      taskData = await fs.promises.readFile(taskPath, { encoding: "utf-8" });
+      taskData = await fs.promises.readFile(taskPath, { encoding: 'utf-8' });
     } catch (error) {
       throw new Error(`Couldn't access task file: ${error.message}`);
     }
@@ -618,7 +620,7 @@ class Kanbn {
     let failedTaskCount = 0;
     const totalTaskCount = trackedTasks.size;
 
-    for (let taskId of trackedTasks) {
+    for (const taskId of trackedTasks) {
       try {
         const task = await this.loadTask(taskId);
         allTasks[taskId] = task;
@@ -707,9 +709,9 @@ class Kanbn {
    */
   async loadArchivedTask(taskId) {
     const taskPath = path.join(await this.getArchiveFolderPath(), addFileExtension(taskId));
-    let taskData = "";
+    let taskData = '';
     try {
-      taskData = await fs.promises.readFile(taskPath, { encoding: "utf-8" });
+      taskData = await fs.promises.readFile(taskPath, { encoding: 'utf-8' });
     } catch (error) {
       throw new Error(`Couldn't access archived task file: ${error.message}`);
     }
@@ -722,7 +724,7 @@ class Kanbn {
    * @return {string} The date format
    */
   getDateFormat(index) {
-    return "dateFormat" in index.options ? index.options.dateFormat : DEFAULT_DATE_FORMAT;
+    return 'dateFormat' in index.options ? index.options.dateFormat : DEFAULT_DATE_FORMAT;
   }
 
   /**
@@ -731,7 +733,7 @@ class Kanbn {
    * @return {string} The task template
    */
   getTaskTemplate(index) {
-    return "taskTemplate" in index.options ? index.options.taskTemplate : DEFAULT_TASK_TEMPLATE;
+    return 'taskTemplate' in index.options ? index.options.taskTemplate : DEFAULT_TASK_TEMPLATE;
   }
 
   /**
@@ -764,37 +766,36 @@ class Kanbn {
     // Create index if one doesn't already exist
     let index;
     if (!(await fileUtils.exists(await this.getIndexPath()))) {
-
       // If config already exists in a separate file, merge it into the options
       const config = await this.getConfig();
 
       // Create initial options
-      const opts = Object.assign({}, defaultInitialiseOptions, options);
+      const opts = { ...defaultInitialiseOptions, ...options };
       index = {
         name: opts.name,
         description: opts.description,
-        options: Object.assign({}, opts.options, config || {}),
+        options: { ...opts.options, ...config || {} },
         columns: Object.fromEntries(opts.columns.map((columnName) => [columnName, []])),
       };
 
       // Otherwise, if index already exists and we have specified new settings, re-write the index file
     } else if (Object.keys(options).length > 0) {
       index = await this.loadIndex();
-      "name" in options && (index.name = options.name);
-      "description" in options && (index.description = options.description);
-      "options" in options && (index.options = Object.assign(index.options, options.options));
-      "columns" in options &&
-        (index.columns = Object.assign(
+      'name' in options && (index.name = options.name);
+      'description' in options && (index.description = options.description);
+      'options' in options && (index.options = Object.assign(index.options, options.options));
+      'columns' in options
+        && (index.columns = Object.assign(
           index.columns,
           Object.fromEntries(
             options.columns.map((columnName) => [
               columnName,
               columnName in index.columns ? index.columns[columnName] : [],
-            ])
-          )
+            ]),
+          ),
         ));
     }
-    
+
     // Ensure all columns have proper array representation
     if (index && index.columns) {
       for (const column in index.columns) {
@@ -804,7 +805,7 @@ class Kanbn {
         }
       }
     }
-    
+
     await this.saveIndex(index);
   }
 
@@ -815,7 +816,7 @@ class Kanbn {
   async taskExists(taskId) {
     // Check if this folder has been initialised
     if (!(await this.initialised())) {
-      throw new Error("Not initialised in this folder");
+      throw new Error('Not initialised in this folder');
     }
 
     // Check if the task file exists
@@ -824,7 +825,7 @@ class Kanbn {
     }
 
     // Check that the task is indexed
-    let index = await this.loadIndex();
+    const index = await this.loadIndex();
     if (!taskInIndex(index, taskId)) {
       throw new Error(`No task with id "${taskId}" found in the index`);
     }
@@ -838,7 +839,7 @@ class Kanbn {
   async findTaskColumn(taskId) {
     // Check if this folder has been initialised
     if (!(await this.initialised())) {
-      throw new Error("Not initialised in this folder");
+      throw new Error('Not initialised in this folder');
     }
 
     // Check if taskId is a string
@@ -852,7 +853,7 @@ class Kanbn {
     }
 
     // Check that the task is indexed
-    let index = await this.loadIndex();
+    const index = await this.loadIndex();
     if (!taskInIndex(index, taskId)) {
       throw new Error(`No task with id "${taskId}" found in the index`);
     }
@@ -870,12 +871,12 @@ class Kanbn {
   async createTask(taskData, columnName) {
     // Check if this folder has been initialised
     if (!(await this.initialised())) {
-      throw new Error("Not initialised in this folder");
+      throw new Error('Not initialised in this folder');
     }
 
     // Make sure the task has a name
     if (!taskData.name) {
-      throw new Error("Task name cannot be blank");
+      throw new Error('Task name cannot be blank');
     }
 
     // Make sure a task doesn't already exist with the same name
@@ -897,7 +898,7 @@ class Kanbn {
     }
 
     // Set the created date
-    taskData = setTaskMetadata(taskData, "created", new Date());
+    taskData = setTaskMetadata(taskData, 'created', new Date());
 
     // Update task metadata dates
     taskData = updateColumnLinkedCustomFields(index, taskData, columnName);
@@ -925,7 +926,7 @@ class Kanbn {
       this.getTaskFolderPath.bind(this),
       this.loadTask.bind(this),
       this.saveTask.bind(this),
-      this.saveIndex.bind(this)
+      this.saveIndex.bind(this),
     );
   }
 
@@ -939,7 +940,7 @@ class Kanbn {
     return indexUtils.findTrackedTasks(
       index,
       this.initialised.bind(this),
-      columnName
+      columnName,
     );
   }
 
@@ -952,7 +953,7 @@ class Kanbn {
     return indexUtils.findUntrackedTasks(
       index,
       this.initialised.bind(this),
-      this.getTaskFolderPath.bind(this)
+      this.getTaskFolderPath.bind(this),
     );
   }
 
@@ -976,7 +977,7 @@ class Kanbn {
       this.saveTask.bind(this),
       this.renameTask.bind(this),
       this.moveTask.bind(this),
-      this.saveIndex.bind(this)
+      this.saveIndex.bind(this),
     );
   }
 
@@ -996,7 +997,7 @@ class Kanbn {
       this.getTaskFolderPath.bind(this),
       this.loadTask.bind(this),
       this.saveTask.bind(this),
-      this.saveIndex.bind(this)
+      this.saveIndex.bind(this),
     );
   }
 
@@ -1020,7 +1021,7 @@ class Kanbn {
       this.getTaskFolderPath.bind(this),
       this.loadTask.bind(this),
       this.saveTask.bind(this),
-      this.saveIndex.bind(this)
+      this.saveIndex.bind(this),
     );
   }
 
@@ -1038,7 +1039,7 @@ class Kanbn {
       removeFile,
       this.initialised.bind(this),
       this.getTaskFolderPath.bind(this),
-      this.saveIndex.bind(this)
+      this.saveIndex.bind(this),
     );
   }
 
@@ -1056,7 +1057,7 @@ class Kanbn {
       quiet,
       this.initialised.bind(this),
       this.loadAllTrackedTasks.bind(this),
-      this.hydrateTask.bind(this)
+      this.hydrateTask.bind(this),
     );
   }
 
@@ -1072,7 +1073,7 @@ class Kanbn {
   async status(quiet = false, untracked = false, due = false, sprint = null, dates = null) {
     // Check if this folder has been initialised
     if (!(await this.initialised())) {
-      throw new Error("Not initialised in this folder");
+      throw new Error('Not initialised in this folder');
     }
 
     // Get index and column names
@@ -1097,14 +1098,14 @@ class Kanbn {
     // Get basic project status information
     result.tasks = columnNames.reduce((a, v) => a + index.columns[v].length, 0);
     result.columnTasks = Object.fromEntries(
-      columnNames.map((columnName) => [columnName, index.columns[columnName].length])
+      columnNames.map((columnName) => [columnName, index.columns[columnName].length]),
     );
-    if ("startedColumns" in index.options && index.options.startedColumns.length > 0) {
+    if ('startedColumns' in index.options && index.options.startedColumns.length > 0) {
       result.startedTasks = Object.entries(index.columns)
         .filter((c) => index.options.startedColumns.indexOf(c[0]) > -1)
         .reduce((a, c) => a + c[1].length, 0);
     }
-    if ("completedColumns" in index.options && index.options.completedColumns.length > 0) {
+    if ('completedColumns' in index.options && index.options.completedColumns.length > 0) {
       result.completedTasks = Object.entries(index.columns)
         .filter((c) => index.options.completedColumns.indexOf(c[0]) > -1)
         .reduce((a, c) => a + c[1].length, 0);
@@ -1168,7 +1169,7 @@ class Kanbn {
   async validate(save = false) {
     // Check if this folder has been initialised
     if (!(await this.initialised())) {
-      throw new Error("Not initialised in this folder");
+      throw new Error('Not initialised in this folder');
     }
     const errors = [];
 
@@ -1187,7 +1188,7 @@ class Kanbn {
         task: null,
         errors: error.message.includes('Unable to parse index')
           ? error.message
-          : `Unable to parse index: ${error.message}`
+          : `Unable to parse index: ${error.message}`,
       });
 
       // Exit early if any errors were found in the index
@@ -1196,7 +1197,7 @@ class Kanbn {
 
     // Load & parse tasks
     const trackedTasks = getTrackedTaskIds(index);
-    for (let taskId of trackedTasks) {
+    for (const taskId of trackedTasks) {
       try {
         const task = await this.loadTask(taskId);
 
@@ -1225,7 +1226,7 @@ class Kanbn {
   async sort(columnName, sorters, save = false) {
     // Check if this folder has been initialised
     if (!(await this.initialised())) {
-      throw new Error("Not initialised in this folder");
+      throw new Error('Not initialised in this folder');
     }
 
     // Get index and make sure the column exists
@@ -1236,14 +1237,14 @@ class Kanbn {
 
     // Save the sorter settings if required (the column will be sorted when saving the index)
     if (save) {
-      if (!("columnSorting" in index.options)) {
+      if (!('columnSorting' in index.options)) {
         index.options.columnSorting = {};
       }
       index.options.columnSorting[columnName] = sorters;
 
       // Otherwise, remove sorting settings for the specified column and manually sort the column
     } else {
-      if ("columnSorting" in index.options && columnName in index.options.columnSorting) {
+      if ('columnSorting' in index.options && columnName in index.options.columnSorting) {
         delete index.options.columnSorting[columnName];
       }
       const tasks = await this.loadAllTrackedTasks(index, columnName);
@@ -1262,17 +1263,17 @@ class Kanbn {
   async sprint(name, description, start) {
     // Check if this folder has been initialised
     if (!(await this.initialised())) {
-      throw new Error("Not initialised in this folder");
+      throw new Error('Not initialised in this folder');
     }
 
     // Get index and make sure it has a list of sprints in the options
     const index = await this.loadIndex();
-    if (!("sprints" in index.options)) {
+    if (!('sprints' in index.options)) {
       index.options.sprints = [];
     }
     const sprintNumber = index.options.sprints.length + 1;
     const sprint = {
-      start: start,
+      start,
     };
 
     // If the name is blank, generate a default name
@@ -1306,44 +1307,43 @@ class Kanbn {
   async burndown(sprints = null, dates = null, assigned = null, columns = null, normalise = null) {
     // Check if this folder has been initialised
     if (!(await this.initialised())) {
-      throw new Error("Not initialised in this folder");
+      throw new Error('Not initialised in this folder');
     }
 
     // Get index and tasks
     const index = await this.loadIndex();
     const tasks = [...(await this.loadAllTrackedTasks(index))]
       .map((task) => {
-        const created = "created" in task.metadata ? task.metadata.created : new Date(0);
+        const created = 'created' in task.metadata ? task.metadata.created : new Date(0);
         return {
           ...task,
           created,
           started:
-            "started" in task.metadata
+            'started' in task.metadata
               ? task.metadata.started
-              : "startedColumns" in index.options && index.options.startedColumns.indexOf(task.column) !== -1
-              ? created
-              : false,
+              : 'startedColumns' in index.options && index.options.startedColumns.indexOf(task.column) !== -1
+                ? created
+                : false,
           completed:
-            "completed" in task.metadata
+            'completed' in task.metadata
               ? task.metadata.completed
-              : "completedColumns" in index.options && index.options.completedColumns.indexOf(task.column) !== -1
-              ? created
-              : false,
+              : 'completedColumns' in index.options && index.options.completedColumns.indexOf(task.column) !== -1
+                ? created
+                : false,
           progress: taskProgress(index, task),
-          assigned: "assigned" in task.metadata ? task.metadata.assigned : null,
+          assigned: 'assigned' in task.metadata ? task.metadata.assigned : null,
           workload: taskWorkload(index, task),
           column: findTaskColumn(index, task.id),
         };
       })
       .filter(
-        (task) =>
-          (assigned === null || task.assigned === assigned) &&
-          (columns === null || columns.indexOf(task.column) !== -1)
+        (task) => (assigned === null || task.assigned === assigned)
+          && (columns === null || columns.indexOf(task.column) !== -1),
       );
 
     // Get sprints and dates to plot from arguments
     const series = [];
-    const indexSprints = "sprints" in index.options && index.options.sprints.length ? index.options.sprints : null;
+    const indexSprints = 'sprints' in index.options && index.options.sprints.length ? index.options.sprints : null;
     if (sprints === null && dates === null) {
       if (indexSprints !== null) {
         // Show current sprint
@@ -1359,15 +1359,13 @@ class Kanbn {
           from: new Date(
             Math.min(
               ...tasks
-                .map((t) =>
-                  [
-                    "created" in t.metadata && t.metadata.created,
-                    "started" in t.metadata && t.metadata.started,
-                    "completed" in t.metadata && (t.metadata.completed || new Date(8640000000000000))
-                  ].filter((d) => d)
-                )
-                .flat()
-            )
+                .map((t) => [
+                  'created' in t.metadata && t.metadata.created,
+                  'started' in t.metadata && t.metadata.started,
+                  'completed' in t.metadata && (t.metadata.completed || new Date(8640000000000000)),
+                ].filter((d) => d))
+                .flat(),
+            ),
           ),
           to: new Date(),
         });
@@ -1376,13 +1374,13 @@ class Kanbn {
       // Show specified sprint
       if (sprints !== null) {
         if (indexSprints === null) {
-          throw new Error(`No sprints defined`);
+          throw new Error('No sprints defined');
         } else {
           for (const sprint of sprints) {
             let sprintIndex = null;
 
             // Select sprint by number (1-based index)
-            if (typeof sprint === "number") {
+            if (typeof sprint === 'number') {
               if (sprint < 1 || sprint > indexSprints.length) {
                 throw new Error(`Sprint ${sprint} does not exist`);
               } else {
@@ -1390,7 +1388,7 @@ class Kanbn {
               }
 
               // Or select sprint by name
-            } else if (typeof sprint === "string") {
+            } else if (typeof sprint === 'string') {
               sprintIndex = indexSprints.findIndex((s) => s.name === sprint);
               if (sprintIndex === -1) {
                 throw new Error(`No sprint found with name "${sprint}"`);
@@ -1426,14 +1424,13 @@ class Kanbn {
         normalise = 'days';
       } else if (delta >= DAY) {
         normalise = 'hours';
-      } else if (delta >= HOUR ) {
+      } else if (delta >= HOUR) {
         normalise = 'minutes';
       } else {
         normalise = 'seconds';
       }
     }
     if (normalise !== null) {
-
       // Normalize series from and to dates
       series.forEach((s) => {
         s.from = normaliseDate(s.from, normalise);
@@ -1480,7 +1477,7 @@ class Kanbn {
           .map((task) => [
             task.created,
             task.started,
-            task.completed
+            task.completed,
           ])
           .flat()
           .filter((d) => d)
@@ -1511,7 +1508,7 @@ class Kanbn {
   async comment(taskId, text, author) {
     // Check if this folder has been initialised
     if (!(await this.initialised())) {
-      throw new Error("Not initialised in this folder");
+      throw new Error('Not initialised in this folder');
     }
     taskId = removeFileExtension(taskId);
 
@@ -1521,14 +1518,14 @@ class Kanbn {
     }
 
     // Get index and make sure the task is indexed
-    let index = await this.loadIndex();
+    const index = await this.loadIndex();
     if (!taskInIndex(index, taskId)) {
       throw new Error(`Task "${taskId}" is not in the index`);
     }
 
     // Make sure the comment text isn't empty
     if (!text) {
-      throw new Error("Comment text cannot be empty");
+      throw new Error('Comment text cannot be empty');
     }
 
     // Add the comment
@@ -1552,7 +1549,7 @@ class Kanbn {
   async listArchivedTasks() {
     // Check if this folder has been initialised
     if (!(await this.initialised())) {
-      throw new Error("Not initialised in this folder");
+      throw new Error('Not initialised in this folder');
     }
 
     // Make sure the archive folder exists
@@ -1574,7 +1571,7 @@ class Kanbn {
   async archiveTask(taskId) {
     // Check if this folder has been initialised
     if (!(await this.initialised())) {
-      throw new Error("Not initialised in this folder");
+      throw new Error('Not initialised in this folder');
     }
     taskId = removeFileExtension(taskId);
 
@@ -1584,7 +1581,7 @@ class Kanbn {
     }
 
     // Get index and make sure the task is indexed
-    let index = await this.loadIndex();
+    const index = await this.loadIndex();
     if (!taskInIndex(index, taskId)) {
       throw new Error(`Task "${taskId}" is not in the index`);
     }
@@ -1603,7 +1600,7 @@ class Kanbn {
 
     // Save the column name in the task's metadata
     let taskData = await this.loadTask(taskId);
-    taskData = setTaskMetadata(taskData, "column", findTaskColumn(index, taskId));
+    taskData = setTaskMetadata(taskData, 'column', findTaskColumn(index, taskId));
 
     // Save the task inside the archive folder
     await this.saveTask(archivedTaskPath, taskData);
@@ -1623,7 +1620,7 @@ class Kanbn {
   async restoreTask(taskId, columnName = null) {
     // Check if this folder has been initialised
     if (!(await this.initialised())) {
-      throw new Error("Not initialised in this folder");
+      throw new Error('Not initialised in this folder');
     }
     taskId = removeFileExtension(taskId);
 
@@ -1660,8 +1657,8 @@ class Kanbn {
 
     // Load the task from the archive
     let taskData = await this.loadArchivedTask(taskId);
-    let actualColumnName = columnName || getTaskMetadata(taskData, "column") || columns[0];
-    taskData = setTaskMetadata(taskData, "column", undefined);
+    const actualColumnName = columnName || getTaskMetadata(taskData, 'column') || columns[0];
+    taskData = setTaskMetadata(taskData, 'column', undefined);
 
     // Update task metadata dates and save task
     taskData = updateColumnLinkedCustomFields(index, taskData, actualColumnName);
@@ -1683,11 +1680,11 @@ class Kanbn {
   async removeAll() {
     // Check if this folder has been initialised
     if (!(await this.initialised())) {
-      throw new Error("Not initialised in this folder");
+      throw new Error('Not initialised in this folder');
     }
     rimraf.sync(await this.getMainFolder());
   }
-};
+}
 
 /**
  * Factory function that creates and returns a new Kanbn instance

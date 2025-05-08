@@ -1,6 +1,6 @@
+const inquirer = require('inquirer');
 const kanbnModule = require('../main');
 const utility = require('../utility');
-const inquirer = require('inquirer');
 
 inquirer.registerPrompt('recursive', require('inquirer-recursive'));
 
@@ -9,160 +9,160 @@ const sorterFields = [
     name: 'Id',
     field: 'id',
     options: [
-      '--id'
+      '--id',
     ],
-    filterable: true
+    filterable: true,
   },
   {
     name: 'Name',
     field: 'name',
     options: [
       '--name',
-      '-n'
+      '-n',
     ],
-    filterable: true
+    filterable: true,
   },
   {
     name: 'Description',
     field: 'description',
     options: [
       '--desc',
-      '-d'
+      '-d',
     ],
-    filterable: true
+    filterable: true,
   },
   {
     name: 'Sub-tasks',
     field: 'subTasks',
     options: [
       '--sub-task',
-      '-s'
+      '-s',
     ],
-    filterable: true
+    filterable: true,
   },
   {
     name: 'Count sub-tasks',
     field: 'countSubTasks',
     options: [
-      '--count-sub-tasks'
+      '--count-sub-tasks',
     ],
-    filterable: false
+    filterable: false,
   },
   {
     name: 'Tags',
     field: 'tags',
     options: [
       '--tag',
-      '-t'
+      '-t',
     ],
-    filterable: true
+    filterable: true,
   },
   {
     name: 'Count tags',
     field: 'countTags',
     options: [
-      '--count-tags'
+      '--count-tags',
     ],
-    filterable: false
+    filterable: false,
   },
   {
     name: 'Relations',
     field: 'relations',
     options: [
       '--relation',
-      '-r'
+      '-r',
     ],
-    filterable: true
+    filterable: true,
   },
   {
     name: 'Count relations',
     field: 'countRelations',
     options: [
-      '--count-relations'
+      '--count-relations',
     ],
-    filterable: false
+    filterable: false,
   },
   {
     name: 'Comments',
     field: 'comments',
     options: [
-      '--comment'
+      '--comment',
     ],
-    filterable: true
+    filterable: true,
   },
   {
     name: 'Count comments',
     field: 'countComments',
     options: [
-      '--count-comments'
+      '--count-comments',
     ],
-    filterable: false
+    filterable: false,
   },
   {
     name: 'Created date',
     field: 'created',
     options: [
-      '--created'
+      '--created',
     ],
-    filterable: false
+    filterable: false,
   },
   {
     name: 'Updated date',
     field: 'updated',
     options: [
-      '--updated'
+      '--updated',
     ],
-    filterable: false
+    filterable: false,
   },
   {
     name: 'Started date',
     field: 'started',
     options: [
-      '--started'
+      '--started',
     ],
-    filterable: false
+    filterable: false,
   },
   {
     name: 'Completed date',
     field: 'completed',
     options: [
-      '--completed'
+      '--completed',
     ],
-    filterable: false
+    filterable: false,
   },
   {
     name: 'Due date',
     field: 'due',
     options: [
-      '--due'
+      '--due',
     ],
-    filterable: false
+    filterable: false,
   },
   {
     name: 'Workload',
     field: 'workload',
     options: [
       '--workload',
-      '-w'
+      '-w',
     ],
-    filterable: false
+    filterable: false,
   },
   {
     name: 'Progress',
     field: 'progress',
     options: [
-      '--progress'
+      '--progress',
     ],
-    filterable: false
+    filterable: false,
   },
   {
     name: 'Assigned user',
     field: 'assigned',
     options: [
-      '--assigned'
+      '--assigned',
     ],
-    filterable: true
-  }
+    filterable: true,
+  },
 ];
 
 /**
@@ -173,14 +173,14 @@ const sorterFields = [
  * @return {Promise<any>}
  */
 async function interactive(columnName, columnNames, sorters) {
-  const sorterNameToField = Object.fromEntries(sorterFields.map(sorterField => [sorterField.name, sorterField.field]));
+  const sorterNameToField = Object.fromEntries(sorterFields.map((sorterField) => [sorterField.name, sorterField.field]));
   return await inquirer.prompt([
     {
       type: 'rawlist',
       name: 'column',
       message: 'Which column do you want to sort?',
       default: columnName,
-      choices: columnNames
+      choices: columnNames,
     },
     {
       type: 'recursive',
@@ -194,32 +194,32 @@ async function interactive(columnName, columnNames, sorters) {
           name: 'field',
           message: 'Field:',
           default: 'Name',
-          choices: sorterFields.map(sorterField => sorterField.name),
-          filter: (value, answers) => sorterNameToField[value]
+          choices: sorterFields.map((sorterField) => sorterField.name),
+          filter: (value, answers) => sorterNameToField[value],
         },
         {
           type: 'confirm',
           name: 'addFilter',
           message: 'Filter this field?',
           default: false,
-          when: answers => (
+          when: (answers) => (
             sorterFields
-            .filter(sorterField => sorterField.filterable)
-            .map(sorterField => sorterField.field)
-            .indexOf(answers.field) !== -1
-          )
+              .filter((sorterField) => sorterField.filterable)
+              .map((sorterField) => sorterField.field)
+              .indexOf(answers.field) !== -1
+          ),
         },
         {
           type: 'input',
           name: 'filter',
           message: 'Filter field:',
-          when: answers => answers.addFilter,
-          validate: value => {
+          when: (answers) => answers.addFilter,
+          validate: (value) => {
             if (!value) {
               return 'Filter cannot be empty';
             }
             return true;
-          }
+          },
         },
         {
           type: 'list',
@@ -228,15 +228,15 @@ async function interactive(columnName, columnNames, sorters) {
           default: 'Ascending',
           choices: [
             'Ascending',
-            'Descending'
+            'Descending',
           ],
           filter: (value, answers) => ({
-            'Ascending': 'ascending',
-            'Descending': 'descending'
-          })[value]
-        }
-      ]
-    }
+            Ascending: 'ascending',
+            Descending: 'descending',
+          })[value],
+        },
+      ],
+    },
   ]);
 }
 
@@ -249,13 +249,13 @@ async function interactive(columnName, columnNames, sorters) {
  */
 function sortColumn(columnName, sorters, save, kanbnInstance) {
   kanbnInstance
-  .sort(columnName, sorters, save)
-  .then(() => {
-    console.log(`Column "${columnName}" sorted`);
-  })
-  .catch(error => {
-    utility.error(error);
-  });
+    .sort(columnName, sorters, save)
+    .then(() => {
+      console.log(`Column "${columnName}" sorted`);
+    })
+    .catch((error) => {
+      utility.error(error);
+    });
 }
 
 module.exports = async (args, argv) => {
@@ -263,8 +263,8 @@ module.exports = async (args, argv) => {
 
   // Sortable fields and aliases
   const sortOptions = Object.fromEntries(utility.zip(
-    sorterFields.map(sorterField => sorterField.options).flat(),
-    sorterFields.map(sorterField => (new Array(sorterField.options.length)).fill(sorterField.field)).flat()
+    sorterFields.map((sorterField) => sorterField.options).flat(),
+    sorterFields.map((sorterField) => (new Array(sorterField.options.length)).fill(sorterField.field)).flat(),
   ));
 
   // Sorting order and aliases
@@ -272,14 +272,14 @@ module.exports = async (args, argv) => {
     '--ascending': 'ascending',
     '-a': 'ascending',
     '--descending': 'descending',
-    '-z': 'descending'
+    '-z': 'descending',
   };
 
   // Skip these options
   const skipOptions = [
     '--interactive',
     '-i',
-    '--save'
+    '--save',
   ];
 
   // Get the column that we're sorting
@@ -308,14 +308,14 @@ module.exports = async (args, argv) => {
 
   // Add custom fields to sort fields
   if ('customFields' in index.options) {
-    for (let customField of index.options.customFields) {
+    for (const customField of index.options.customFields) {
       sorterFields.push({
         name: customField.name,
         field: customField.name,
         options: [
-          `--${customField.name}`
+          `--${customField.name}`,
         ],
-        filterable: customField.type === 'string'
+        filterable: customField.type === 'string',
       });
     }
   }
@@ -330,7 +330,7 @@ module.exports = async (args, argv) => {
   }
 
   // Get the default sorting order
-  let defaultOrder = "ascending";
+  let defaultOrder = 'ascending';
   if (argv[0] in orderOptions) {
     defaultOrder = orderOptions[argv[0]];
     argv.shift();
@@ -338,8 +338,9 @@ module.exports = async (args, argv) => {
 
   // Create a list of fields to sort by
   const sorters = [];
-  let currentSorter = null, expectingFilter = false;
-  for (let arg of argv) {
+  let currentSorter = null; let
+    expectingFilter = false;
+  for (const arg of argv) {
     if (skipOptions.indexOf(arg) !== -1) {
       continue;
     }
@@ -350,7 +351,7 @@ module.exports = async (args, argv) => {
       currentSorter = {
         field: sortOptions[arg],
         filter: '',
-        order: defaultOrder
+        order: defaultOrder,
       };
       expectingFilter = true;
     } else if (currentSorter && currentSorter.field) {
@@ -371,24 +372,24 @@ module.exports = async (args, argv) => {
   // Build sorters interactively
   if (args.interactive) {
     interactive(columnName, columnNames, sorters)
-    .then(answers => {
-      inquirer
-      .prompt({
-        type: 'confirm',
-        name: 'save',
-        message: 'Save sort settings?',
-        default: args.save
+      .then((answers) => {
+        inquirer
+          .prompt({
+            type: 'confirm',
+            name: 'save',
+            message: 'Save sort settings?',
+            default: args.save,
+          })
+          .then((saveAnswer) => {
+            sortColumn(answers.column, answers.sorters, saveAnswer.save, kanbn);
+          })
+          .catch((error) => {
+            utility.error(error);
+          });
       })
-      .then(saveAnswer => {
-        sortColumn(answers.column, answers.sorters, saveAnswer.save, kanbn);
-      })
-      .catch(error => {
+      .catch((error) => {
         utility.error(error);
       });
-    })
-    .catch(error => {
-      utility.error(error);
-    });
 
   // Otherwise sort a column non-interactively
   } else {

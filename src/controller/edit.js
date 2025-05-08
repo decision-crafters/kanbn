@@ -1,9 +1,9 @@
-const Kanbn = require('../main');
-const utility = require('../utility');
 const inquirer = require('inquirer');
 const fuzzy = require('fuzzy');
 const chrono = require('chrono-node');
 const getGitUsername = require('git-user-name');
+const utility = require('../utility');
+const Kanbn = require('../main');
 
 inquirer.registerPrompt('datepicker', require('inquirer-datepicker'));
 inquirer.registerPrompt('recursive', require('inquirer-recursive'));
@@ -19,14 +19,14 @@ inquirer.registerPrompt('autocomplete', require('inquirer-autocomplete-prompt'))
  */
 async function interactive(taskData, taskIds, columnName, columnNames) {
   const dueDateExists = (
-    'metadata' in taskData &&
-    'due' in taskData.metadata &&
-    taskData.metadata.due != null
+    'metadata' in taskData
+    && 'due' in taskData.metadata
+    && taskData.metadata.due != null
   );
   const assignedExists = (
-    'metadata' in taskData &&
-    'assigned' in taskData.metadata &&
-    taskData.metadata.assigned != null
+    'metadata' in taskData
+    && 'assigned' in taskData.metadata
+    && taskData.metadata.assigned != null
   );
   return await inquirer.prompt([
     {
@@ -34,64 +34,64 @@ async function interactive(taskData, taskIds, columnName, columnNames) {
       name: 'name',
       message: 'Task name:',
       default: taskData.name || '',
-      validate: async value => {
+      validate: async (value) => {
         if (!value) {
           return 'Task name cannot be empty';
         }
         return true;
-      }
+      },
     },
     {
       type: 'confirm',
       name: 'editDescription',
       message: 'Edit description?',
-      default: false
+      default: false,
     },
     {
       type: 'editor',
       name: 'description',
       message: 'Task description:',
       default: taskData.description,
-      when: answers => answers.editDescription
+      when: (answers) => answers.editDescription,
     },
     {
       type: 'list',
       name: 'column',
       message: 'Column:',
       default: columnName,
-      choices: columnNames
+      choices: columnNames,
     },
     {
       type: 'expand',
       name: 'editDue',
       message: 'Edit or remove due date?',
       default: 'none',
-      when: answers => dueDateExists,
+      when: (answers) => dueDateExists,
       choices: [
         {
           key: 'e',
           name: 'Edit',
-          value: 'edit'
+          value: 'edit',
         },
         {
           key: 'r',
           name: 'Remove',
-          value: 'remove'
+          value: 'remove',
         },
         new inquirer.Separator(),
         {
           key: 'n',
           name: 'Do nothing',
-          value: 'none'
-        }
-      ]
+          value: 'none',
+        },
+      ],
     },
     {
       type: 'confirm',
       name: 'setDue',
       message: 'Set a due date?',
       default: false,
-      when: answers => !dueDateExists
+      when: (answers) => !dueDateExists,
     },
     {
       type: 'datepicker',
@@ -99,46 +99,46 @@ async function interactive(taskData, taskIds, columnName, columnNames) {
       message: 'Due date:',
       default: dueDateExists ? taskData.metadata.due : new Date(),
       format: ['Y', '/', 'MM', '/', 'DD'],
-      when: answers => answers.setDue || answers.editDue === 'edit'
+      when: (answers) => answers.setDue || answers.editDue === 'edit',
     },
     {
       type: 'expand',
       name: 'editAssigned',
       message: 'Edit or remove assigned user?',
       default: 'none',
-      when: answers => assignedExists,
+      when: (answers) => assignedExists,
       choices: [
         {
           key: 'e',
           name: 'Edit',
-          value: 'edit'
+          value: 'edit',
         },
         {
           key: 'r',
           name: 'Remove',
-          value: 'remove'
+          value: 'remove',
         },
         new inquirer.Separator(),
         {
           key: 'n',
           name: 'Do nothing',
-          value: 'none'
-        }
-      ]
+          value: 'none',
+        },
+      ],
     },
     {
       type: 'confirm',
       name: 'setAssigned',
       message: 'Assign this task?',
       default: false,
-      when: answers => !assignedExists
+      when: (answers) => !assignedExists,
     },
     {
       type: 'input',
       name: 'assigned',
       message: 'Assigned to:',
       default: assignedExists ? taskData.metadata.assigned : getGitUsername(),
-      when: answers => answers.setAssigned || answers.editAssigned === 'edit'
+      when: (answers) => answers.setAssigned || answers.editAssigned === 'edit',
     },
     {
       type: 'recursive',
@@ -151,20 +151,20 @@ async function interactive(taskData, taskIds, columnName, columnNames) {
           type: 'input',
           name: 'text',
           message: 'Sub-task text:',
-          validate: value => {
+          validate: (value) => {
             if (!value) {
               return 'Sub-task text cannot be empty';
             }
             return true;
-          }
+          },
         },
         {
           type: 'confirm',
           name: 'completed',
           message: 'Sub-task completed?',
-          default: false
-        }
-      ]
+          default: false,
+        },
+      ],
     },
     {
       type: 'recursive',
@@ -172,13 +172,13 @@ async function interactive(taskData, taskIds, columnName, columnNames) {
       initialMessage: 'Update or remove a sub-task?',
       message: 'Update or remove another sub-task?',
       default: false,
-      when: answers => taskData.subTasks.length > 0,
+      when: (answers) => taskData.subTasks.length > 0,
       prompts: [
         {
           type: 'list',
           name: 'selectSubTask',
           message: 'Which sub-task do you want to update or remove?',
-          choices: taskData.subTasks.map(subTask => subTask.text)
+          choices: taskData.subTasks.map((subTask) => subTask.text),
         },
         {
           type: 'expand',
@@ -189,29 +189,29 @@ async function interactive(taskData, taskIds, columnName, columnNames) {
             {
               key: 'e',
               name: 'Edit completion status',
-              value: 'edit'
+              value: 'edit',
             },
             {
               key: 'r',
               name: 'Remove',
-              value: 'remove'
+              value: 'remove',
             },
             new inquirer.Separator(),
             {
               key: 'n',
               name: 'Do nothing',
-              value: 'none'
-            }
-          ]
+              value: 'none',
+            },
+          ],
         },
         {
           type: 'confirm',
           name: 'completed',
           message: 'Sub-task completed?',
-          default: answers => taskData.subTasks.find(subTask => subTask.text === answers.selectSubTask).completed,
-          when: answers => answers.editSubTask === 'edit'
-        }
-      ]
+          default: (answers) => taskData.subTasks.find((subTask) => subTask.text === answers.selectSubTask).completed,
+          when: (answers) => answers.editSubTask === 'edit',
+        },
+      ],
     },
     {
       type: 'recursive',
@@ -224,14 +224,14 @@ async function interactive(taskData, taskIds, columnName, columnNames) {
           type: 'input',
           name: 'name',
           message: 'Tag name:',
-          validate: value => {
+          validate: (value) => {
             if (!value) {
               return 'Tag name cannot be empty';
             }
             return true;
-          }
-        }
-      ]
+          },
+        },
+      ],
     },
     {
       type: 'recursive',
@@ -239,19 +239,19 @@ async function interactive(taskData, taskIds, columnName, columnNames) {
       initialMessage: 'Remove a tag?',
       message: 'Remove another tag?',
       default: false,
-      when: answers => (
-        'metadata' in taskData &&
-        'tags' in taskData.metadata &&
-        taskData.metadata.tags.length > 0
+      when: (answers) => (
+        'metadata' in taskData
+        && 'tags' in taskData.metadata
+        && taskData.metadata.tags.length > 0
       ),
       prompts: [
         {
           type: 'list',
           name: 'selectTag',
           message: 'Which tag do you want to remove?',
-          choices: taskData.metadata.tags
-        }
-      ]
+          choices: taskData.metadata.tags,
+        },
+      ],
     },
     {
       type: 'recursive',
@@ -264,14 +264,14 @@ async function interactive(taskData, taskIds, columnName, columnNames) {
           type: 'input',
           name: 'url',
           message: 'Reference URL:',
-          validate: value => {
+          validate: (value) => {
             if (!value) {
               return 'Reference URL cannot be empty';
             }
             return true;
-          }
-        }
-      ]
+          },
+        },
+      ],
     },
     {
       type: 'recursive',
@@ -279,19 +279,19 @@ async function interactive(taskData, taskIds, columnName, columnNames) {
       initialMessage: 'Remove a reference?',
       message: 'Remove another reference?',
       default: false,
-      when: answers => (
-        'metadata' in taskData &&
-        'references' in taskData.metadata &&
-        taskData.metadata.references.length > 0
+      when: (answers) => (
+        'metadata' in taskData
+        && 'references' in taskData.metadata
+        && taskData.metadata.references.length > 0
       ),
       prompts: [
         {
           type: 'list',
           name: 'selectReference',
           message: 'Which reference do you want to remove?',
-          choices: taskData.metadata.references
-        }
-      ]
+          choices: taskData.metadata.references,
+        },
+      ],
     },
     {
       type: 'recursive',
@@ -299,7 +299,7 @@ async function interactive(taskData, taskIds, columnName, columnNames) {
       initialMessage: 'Add a relation?',
       message: 'Add another relation?',
       default: false,
-      when: answers => taskIds.length > 0,
+      when: (answers) => taskIds.length > 0,
       prompts: [
         {
           type: 'autocomplete',
@@ -308,17 +308,17 @@ async function interactive(taskData, taskIds, columnName, columnNames) {
           source: (answers, input) => {
             input = input || '';
             const result = fuzzy.filter(input, taskIds);
-            return new Promise(resolve => {
-              resolve(result.map(result => result.string));
+            return new Promise((resolve) => {
+              resolve(result.map((result) => result.string));
             });
-          }
+          },
         },
         {
           type: 'input',
           name: 'type',
-          message: 'Relation type:'
-        }
-      ]
+          message: 'Relation type:',
+        },
+      ],
     },
     {
       type: 'recursive',
@@ -326,13 +326,13 @@ async function interactive(taskData, taskIds, columnName, columnNames) {
       initialMessage: 'Update or remove a relation?',
       message: 'Update or remove another relation?',
       default: false,
-      when: answers => taskData.relations.length > 0,
+      when: (answers) => taskData.relations.length > 0,
       prompts: [
         {
           type: 'list',
           name: 'selectRelation',
           message: 'Which relation do you want to update or remove?',
-          choices: taskData.relations.map(relation => relation.task)
+          choices: taskData.relations.map((relation) => relation.task),
         },
         {
           type: 'expand',
@@ -343,30 +343,30 @@ async function interactive(taskData, taskIds, columnName, columnNames) {
             {
               key: 'e',
               name: 'Edit relation type',
-              value: 'edit'
+              value: 'edit',
             },
             {
               key: 'r',
               name: 'Remove',
-              value: 'remove'
+              value: 'remove',
             },
             new inquirer.Separator(),
             {
               key: 'n',
               name: 'Do nothing',
-              value: 'none'
-            }
-          ]
+              value: 'none',
+            },
+          ],
         },
         {
           type: 'input',
           name: 'type',
           message: 'Relation type:',
-          default: answers => taskData.relations.find(relation => relation.task === answers.selectRelation).task,
-          when: answers => answers.editRelation === 'edit'
-        }
-      ]
-    }
+          default: (answers) => taskData.relations.find((relation) => relation.task === answers.selectRelation).task,
+          when: (answers) => answers.editRelation === 'edit',
+        },
+      ],
+    },
   ]);
 }
 
@@ -379,17 +379,16 @@ async function interactive(taskData, taskIds, columnName, columnNames) {
 function updateTask(taskId, taskData, columnName) {
   const kanbn = Kanbn();
   kanbn
-  .updateTask(taskId, taskData, columnName)
-  .then(taskId => {
-    console.log(`Updated task "${taskId}"`);
-  })
-  .catch(error => {
-    utility.error(error);
-  });
+    .updateTask(taskId, taskData, columnName)
+    .then((taskId) => {
+      console.log(`Updated task "${taskId}"`);
+    })
+    .catch((error) => {
+      utility.error(error);
+    });
 }
 
-module.exports = async args => {
-
+module.exports = async (args) => {
   // Make sure kanbn has been initialised
   const kanbn = Kanbn();
   try {
@@ -442,7 +441,7 @@ module.exports = async args => {
 
   // Get column name if specified
   const { findTaskColumn } = require('../main');
-  let currentColumnName = findTaskColumn(index, taskId);
+  const currentColumnName = findTaskColumn(index, taskId);
   let columnName = currentColumnName;
   if (args.column) {
     columnName = utility.strArg(args.column);
@@ -511,39 +510,37 @@ module.exports = async args => {
     const removedSubTasks = utility.arrayArg(args['remove-sub-task']);
 
     // Check that the sub-tasks being removed currently exist
-    for (let removedSubTask of removedSubTasks) {
-      if (taskData.subTasks.find(subTask => subTask.text === removedSubTask.text) === undefined) {
+    for (const removedSubTask of removedSubTasks) {
+      if (taskData.subTasks.find((subTask) => subTask.text === removedSubTask.text) === undefined) {
         utility.error(`Sub-task "${removedSubTask.text}" doesn't exist`);
         return;
       }
     }
-    taskData.subTasks = taskData.subTasks.filter(subTask => removedSubTasks.indexOf(subTask.text) === -1);
+    taskData.subTasks = taskData.subTasks.filter((subTask) => removedSubTasks.indexOf(subTask.text) === -1);
   }
 
   // Add or update sub-tasks
   if (args['sub-task']) {
     const newSubTaskInputs = utility.arrayArg(args['sub-task']);
-    const newSubTasks = newSubTaskInputs.map(subTask => {
+    const newSubTasks = newSubTaskInputs.map((subTask) => {
       const match = subTask.match(/^\[([x ])\] (.*)/);
       if (match !== null) {
         return {
           completed: match[1] === 'x',
-          text: match[2]
+          text: match[2],
         };
       }
       return {
         completed: false,
-        text: subTask
+        text: subTask,
       };
     });
 
     // Add or update
-    for (let newSubTask of newSubTasks) {
-
+    for (const newSubTask of newSubTasks) {
       // Check if a sub-task already exists in the task with matching text
-      const foundSubTask = taskData.subTasks.find(subTask => subTask.text === newSubTask.text);
+      const foundSubTask = taskData.subTasks.find((subTask) => subTask.text === newSubTask.text);
       if (foundSubTask === undefined) {
-
         // The sub-task doesn't already exist
         taskData.subTasks.push(newSubTask);
 
@@ -565,13 +562,13 @@ module.exports = async args => {
     }
 
     // Check that the tags being removed currently exist
-    for (let removedTag of removedTags) {
+    for (const removedTag of removedTags) {
       if (taskData.metadata.tags.indexOf(removedTag) === -1) {
         utility.error(`Tag "${removedSubTask.text}" doesn't exist`);
         return;
       }
     }
-    taskData.metadata.tags = taskData.metadata.tags.filter(tag => removedTags.indexOf(tag) === -1);
+    taskData.metadata.tags = taskData.metadata.tags.filter((tag) => removedTags.indexOf(tag) === -1);
   }
 
   // Add tags and overwrite existing tags
@@ -611,13 +608,13 @@ module.exports = async args => {
     }
 
     // Check that the references being removed currently exist
-    for (let removedRef of removedRefs) {
+    for (const removedRef of removedRefs) {
       if (taskData.metadata.references.indexOf(removedRef) === -1) {
         utility.error(`Reference "${removedRef}" doesn't exist`);
         return;
       }
     }
-    taskData.metadata.references = taskData.metadata.references.filter(ref => removedRefs.indexOf(ref) === -1);
+    taskData.metadata.references = taskData.metadata.references.filter((ref) => removedRefs.indexOf(ref) === -1);
   }
 
   // Remove relations
@@ -625,38 +622,36 @@ module.exports = async args => {
     const removedRelations = utility.arrayArg(args['remove-relation']);
 
     // Check that the relations being removed currently exist
-    for (let removedRelation of removedRelations) {
-      if (taskData.relations.find(relation => relation.task === removedRelation.task) === undefined) {
+    for (const removedRelation of removedRelations) {
+      if (taskData.relations.find((relation) => relation.task === removedRelation.task) === undefined) {
         utility.error(`Relation "${removedRelation.task}" doesn't exist`);
         return;
       }
     }
-    taskData.relations = taskData.relations.filter(relation => removedRelations.indexOf(relation.task) === -1);
+    taskData.relations = taskData.relations.filter((relation) => removedRelations.indexOf(relation.task) === -1);
   }
 
   // Add or update relations
   if (args.relation) {
     const newRelationInputs = utility.arrayArg(args.relation);
-    const newRelations = newRelationInputs.map(relation => {
+    const newRelations = newRelationInputs.map((relation) => {
       const parts = relation.split(' ');
       return parts.length === 1
         ? {
           type: '',
-          task: parts[0].trim()
+          task: parts[0].trim(),
         }
         : {
           type: parts[0].trim(),
-          task: parts[1].trim()
+          task: parts[1].trim(),
         };
     });
 
     // Add or update
-    for (let newRelation of newRelations) {
-
+    for (const newRelation of newRelations) {
       // Check if a relation already exists in the task with matching task id
-      const foundRelation = taskData.relations.find(relation => relation.task === newRelation.task);
+      const foundRelation = taskData.relations.find((relation) => relation.task === newRelation.task);
       if (foundRelation === undefined) {
-
         // The relation doesn't already exist
         taskData.relations.push(newRelation);
 
@@ -672,10 +667,9 @@ module.exports = async args => {
     if (!('metadata' in taskData)) {
       taskData.metadata = {};
     }
-    for (let arg of Object.keys(args)) {
-
+    for (const arg of Object.keys(args)) {
       // Check if we're removing a custom field
-      const removeCustomField = index.options.customFields.find(p => `remove-${p.name}` === arg);
+      const removeCustomField = index.options.customFields.find((p) => `remove-${p.name}` === arg);
       if (removeCustomField !== undefined) {
         if (removeCustomField.name in taskData.metadata) {
           delete taskData.metadata[removeCustomField.name];
@@ -683,9 +677,8 @@ module.exports = async args => {
       }
 
       // Check if we're adding or modifying a custom field
-      const customField = index.options.customFields.find(p => p.name === arg);
+      const customField = index.options.customFields.find((p) => p.name === arg);
       if (customField !== undefined) {
-
         // Check value type
         switch (customField.type) {
           case 'boolean':
@@ -731,133 +724,132 @@ module.exports = async args => {
   // Update task interactively
   if (args.interactive) {
     interactive(taskData, taskIds, columnName, columnNames)
-    .then(answers => {
-
+      .then((answers) => {
       // Name
-      taskData.name = answers.name;
+        taskData.name = answers.name;
 
-      // Description
-      if ('description' in answers) {
-        taskData.description = answers.description;
-      }
+        // Description
+        if ('description' in answers) {
+          taskData.description = answers.description;
+        }
 
-      // Remove due date
-      if ('editDue' in answers && answers.editDue === 'remove') {
-        delete taskData.metadata.due;
-      }
+        // Remove due date
+        if ('editDue' in answers && answers.editDue === 'remove') {
+          delete taskData.metadata.due;
+        }
 
-      // Due date
-      if ('due' in answers) {
-        taskData.metadata.due = answers.due.toISOString();
-      }
+        // Due date
+        if ('due' in answers) {
+          taskData.metadata.due = answers.due.toISOString();
+        }
 
-      // Remove assigned
-      if ('editAssigned' in answers && answers.editAssigned === 'remove') {
-        delete taskData.metadata.assigned;
-      }
+        // Remove assigned
+        if ('editAssigned' in answers && answers.editAssigned === 'remove') {
+          delete taskData.metadata.assigned;
+        }
 
-      // Assigned
-      if ('assigned' in answers) {
-        taskData.metadata.assigned = answers.assigned;
-      }
+        // Assigned
+        if ('assigned' in answers) {
+          taskData.metadata.assigned = answers.assigned;
+        }
 
-      // Edit or remove sub-tasks
-      if ('editSubTasks' in answers) {
-        for (editSubTask of answers.editSubTasks) {
-          const i = taskData.subTasks.findIndex(subTask => subTask.task === editSubTask.selectSubTask);
-          if (i !== -1) {
-            switch (editSubTask.editSubTask) {
-              case 'remove':
-                taskData.subTasks.splice(i, 1);
-                break;
-              case 'edit':
-                taskData.subTasks[i].completed = editSubTask.completed;
-                break;
-              default:
-                break;
+        // Edit or remove sub-tasks
+        if ('editSubTasks' in answers) {
+          for (editSubTask of answers.editSubTasks) {
+            const i = taskData.subTasks.findIndex((subTask) => subTask.task === editSubTask.selectSubTask);
+            if (i !== -1) {
+              switch (editSubTask.editSubTask) {
+                case 'remove':
+                  taskData.subTasks.splice(i, 1);
+                  break;
+                case 'edit':
+                  taskData.subTasks[i].completed = editSubTask.completed;
+                  break;
+                default:
+                  break;
+              }
             }
           }
         }
-      }
 
-      // Add sub-tasks
-      if ('addSubTasks' in answers) {
-        taskData.subTasks.push(...answers.addSubTasks.map(addSubTask => ({
-          text: addSubTask.text,
-          completed: addSubTask.completed
-        })));
-      }
-
-      // Remove tags
-      if ('removeTags' in answers && 'metadata' in taskData && 'tags' in taskData.metadata) {
-        for (removeTag of answers.removeTags) {
-          const i = taskData.metadata.tags.indexOf(removeTag.name);
-          if (i !== -1) {
-            taskData.metadata.tags.splice(i, 1);
-          }
+        // Add sub-tasks
+        if ('addSubTasks' in answers) {
+          taskData.subTasks.push(...answers.addSubTasks.map((addSubTask) => ({
+            text: addSubTask.text,
+            completed: addSubTask.completed,
+          })));
         }
-      }
 
-      // Add tags
-      if ('addTags' in answers && 'metadata' in taskData && 'tags' in taskData.metadata) {
-        taskData.metadata.tags.push(...answers.addTags.map(tag => tag.name));
-      }
-
-      // Remove references
-      if ('removeReferences' in answers && 'metadata' in taskData && 'references' in taskData.metadata) {
-        for (removeReference of answers.removeReferences) {
-          const i = taskData.metadata.references.indexOf(removeReference.selectReference);
-          if (i !== -1) {
-            taskData.metadata.references.splice(i, 1);
-          }
-        }
-      }
-
-      // Add references
-      if ('addReferences' in answers) {
-        if (!('metadata' in taskData)) {
-          taskData.metadata = {};
-        }
-        if (!('references' in taskData.metadata)) {
-          taskData.metadata.references = [];
-        }
-        taskData.metadata.references.push(...answers.addReferences.map(ref => ref.url));
-      }
-
-      // Edit or remove relations
-      if ('editRelations' in answers) {
-        for (editRelation of answers.editRelations) {
-          const i = taskData.relations.findIndex(relation => relation.task === editRelation.selectRelation);
-          if (i !== -1) {
-            switch (editRelation.editRelation) {
-              case 'remove':
-                taskData.relations.splice(i, 1);
-                break;
-              case 'edit':
-                taskData.relations[i].type = editRelation.type;
-                break;
-              default:
-                break;
+        // Remove tags
+        if ('removeTags' in answers && 'metadata' in taskData && 'tags' in taskData.metadata) {
+          for (removeTag of answers.removeTags) {
+            const i = taskData.metadata.tags.indexOf(removeTag.name);
+            if (i !== -1) {
+              taskData.metadata.tags.splice(i, 1);
             }
           }
         }
-      }
 
-      // Add relations
-      if ('addRelations' in answers) {
-        taskData.relations.push(...answers.addRelations.map(addRelation => ({
-          task: addRelation.task,
-          type: addRelation.type
-        })));
-      }
+        // Add tags
+        if ('addTags' in answers && 'metadata' in taskData && 'tags' in taskData.metadata) {
+          taskData.metadata.tags.push(...answers.addTags.map((tag) => tag.name));
+        }
 
-      // Update task
-      columnName = answers.column !== currentColumnName ? answers.column : null;
-      updateTask(taskId, taskData, columnName);
-    })
-    .catch(error => {
-      utility.error(error);
-    });
+        // Remove references
+        if ('removeReferences' in answers && 'metadata' in taskData && 'references' in taskData.metadata) {
+          for (removeReference of answers.removeReferences) {
+            const i = taskData.metadata.references.indexOf(removeReference.selectReference);
+            if (i !== -1) {
+              taskData.metadata.references.splice(i, 1);
+            }
+          }
+        }
+
+        // Add references
+        if ('addReferences' in answers) {
+          if (!('metadata' in taskData)) {
+            taskData.metadata = {};
+          }
+          if (!('references' in taskData.metadata)) {
+            taskData.metadata.references = [];
+          }
+          taskData.metadata.references.push(...answers.addReferences.map((ref) => ref.url));
+        }
+
+        // Edit or remove relations
+        if ('editRelations' in answers) {
+          for (editRelation of answers.editRelations) {
+            const i = taskData.relations.findIndex((relation) => relation.task === editRelation.selectRelation);
+            if (i !== -1) {
+              switch (editRelation.editRelation) {
+                case 'remove':
+                  taskData.relations.splice(i, 1);
+                  break;
+                case 'edit':
+                  taskData.relations[i].type = editRelation.type;
+                  break;
+                default:
+                  break;
+              }
+            }
+          }
+        }
+
+        // Add relations
+        if ('addRelations' in answers) {
+          taskData.relations.push(...answers.addRelations.map((addRelation) => ({
+            task: addRelation.task,
+            type: addRelation.type,
+          })));
+        }
+
+        // Update task
+        columnName = answers.column !== currentColumnName ? answers.column : null;
+        updateTask(taskId, taskData, columnName);
+      })
+      .catch((error) => {
+        utility.error(error);
+      });
 
   // Otherwise edit task non-interactively
   } else {

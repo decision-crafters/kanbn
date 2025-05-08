@@ -60,5 +60,5 @@ module.exports = {
   exists,
   getTaskPath,
   addFileExtension,
-  removeFileExtension
+  removeFileExtension,
 };

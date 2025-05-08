@@ -180,12 +180,37 @@ The container mounts your current directory as `/workspace`, allowing Kanbn to m
 - [Docker Guide](docs/DOCKER.md)
 - [Podman Guide](docs/PODMAN.md)
 
+## 🛠️ Bootstrap & Development Scripts
+
+This project includes scripts to help with development, environment setup, and testing:
+
+- **`scripts/bootstrap_env.sh`**:
+    - Checks for essential dependencies (Node, npm, Git).
+    - Copies `.env.example` to `.env` if it doesn't exist.
+    - Installs npm dependencies via `npm install`.
+    - Usage: `cd scripts && ./bootstrap_env.sh`
+
+- **`scripts/bootstrap_validate.sh`**:
+    - Validates the Kanbn board using `kanbn validate` (if initialized).
+    - Performs placeholder checks for linting (`npm run lint`) and unit tests (`npm test`).
+    - Checks for the presence of API keys in `.env`.
+    - Usage: `cd scripts && ./bootstrap_validate.sh`
+
+- **`scripts/bootstrap_e2e.sh`**:
+    - Orchestrates a full end-to-end setup and test process.
+    - Prompts for user confirmation before proceeding.
+    - Runs `bootstrap_env.sh`.
+    - Runs `bootstrap_validate.sh`.
+    - Executes comprehensive project tests using `make test-all`.
+    - Reports overall success/failure and execution time.
+    - Usage: `cd scripts && ./bootstrap_e2e.sh`
+
 ## 🧪 Example Scripts
 
 Check out the `examples` directory for interactive scripts that demonstrate Kanbn's features:
 
 - `interactive-demo.sh` - A comprehensive demo of Kanbn's features
-- `bootstrap.sh` - Quickly set up a new Kanbn project with AI assistance
+- `bootstrap.sh` - Quickly set up a new Kanbn project with AI assistance (this is different from the development bootstrap scripts in `scripts/`)
 - `bootstrap_container.sh` - Set up a Kanbn project in a container environment
 - `github-repo-init.sh` - How to use Kanbn with existing GitHub repositories
 
@@ -194,6 +219,21 @@ Run any example with:
 ```bash
 ./examples/interactive-demo.sh
 ```
+
+## 🏛️ Architectural Decision Records (ADRs)
+
+Key architectural decisions for this project are documented in ADRs, located in the `docs/adrs/` directory. It is important to keep these ADRs up-to-date as the project evolves.
+
+- [ADR 001 - Project Goal and Value](./docs/adrs/001-project-goal-and-value.md)
+- [ADR 002 - File Relationships and Interaction](./docs/adrs/002-file-relationships-and-interaction.md)
+- [ADR 003 - Bounded Context Definition](./docs/adrs/003-bounded-context-definition.md)
+- [ADR 004 - Core Domain Identification](./docs/adrs/004-core-domain-identification.md)
+- [ADR 005 - Ubiquitous Language Strategy](./docs/adrs/005-ubiquitous-language-strategy.md)
+- [ADR 006 - Context Map for AI and Git Integration](./docs/adrs/006-context-map-ai-integration.md)
+- [ADR 007 - Aggregate Design for Task](./docs/adrs/007-aggregate-design-for-task.md)
+- [ADR 008 - ADR Update Strategy](./docs/adrs/008-adr-update-strategy.md)
+
+**Requirement:** When significant architectural changes are made or new patterns are introduced, a new ADR should be created or an existing one updated. Refer to [ADR 008 - ADR Update Strategy](./docs/adrs/008-adr-update-strategy.md) for more details.
 
 ## 📚 Documentation
 

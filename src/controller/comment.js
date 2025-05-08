@@ -1,7 +1,7 @@
-const kanbnModule = require('../main');
-const utility = require('../utility');
 const inquirer = require('inquirer');
 const getGitUsername = require('git-user-name');
+const kanbnModule = require('../main');
+const utility = require('../utility');
 
 /**
  * Add a comment interactively
@@ -16,19 +16,19 @@ async function interactive(text, author) {
       name: 'text',
       message: 'Comment text:',
       default: text || '',
-      validate: async value => {
+      validate: async (value) => {
         if (!value) {
           return 'Comment text cannot be empty';
         }
         return true;
-      }
+      },
     },
     {
       type: 'input',
       name: 'author',
       message: 'Author:',
-      default: author || ''
-    }
+      default: author || '',
+    },
   ]);
 }
 
@@ -41,16 +41,16 @@ async function interactive(text, author) {
  */
 function addComment(taskId, text, author, kanbnInstance) {
   kanbnInstance
-  .comment(taskId, text, author)
-  .then(taskId => {
-    console.log(`Added comment to task "${taskId}"`);
-  })
-  .catch(error => {
-    utility.error(error);
-  });
+    .comment(taskId, text, author)
+    .then((taskId) => {
+      console.log(`Added comment to task "${taskId}"`);
+    })
+    .catch((error) => {
+      utility.error(error);
+    });
 }
 
-module.exports = async args => {
+module.exports = async (args) => {
   const kanbn = kanbnModule();
 
   // Make sure kanbn has been initialised
@@ -75,7 +75,8 @@ module.exports = async args => {
   }
 
   // Get comment values from arguments
-  let commentText = '', commentAuthor = '';
+  let commentText = ''; let
+    commentAuthor = '';
 
   // Text
   if (args.text) {
@@ -88,7 +89,7 @@ module.exports = async args => {
   } else {
     commentAuthor = getGitUsername() || 'Anonymous';
   }
-  
+
   if (!commentAuthor || typeof commentAuthor !== 'string') {
     commentAuthor = 'Anonymous';
   }
@@ -96,12 +97,12 @@ module.exports = async args => {
   // Add comment interactively
   if (args.interactive) {
     interactive(commentText, commentAuthor)
-    .then(answers => {
-      addComment(taskId, answers.text, answers.author, kanbn);
-    })
-    .catch(error => {
-      utility.error(error);
-    });
+      .then((answers) => {
+        addComment(taskId, answers.text, answers.author, kanbn);
+      })
+      .catch((error) => {
+        utility.error(error);
+      });
 
   // Otherwise add comment non-interactively
   } else {

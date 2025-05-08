@@ -2,14 +2,29 @@
 
 /**
  * Centralized test runner for Kanbn
- * 
- * This script handles all test execution, providing consistent output and 
+ *
+ * This script handles all test execution, providing consistent output and
  * configurable test filtering with command line arguments.
  */
 
 const { spawnSync } = require('child_process');
 const path = require('path');
 const fs = require('fs');
+const mockRequire = require('mock-require'); // Added for global mocking
+
+// ---- BEGIN GLOBAL MOCK SETUP ----
+const globalKanbnMockPath = path.resolve(__dirname, '..', 'test', 'mocks', 'main.mock.js');
+try {
+  const mockFactory = require(globalKanbnMockPath);
+  // Resolve the actual path to src/main.js that other modules will use for require()
+  const actualMainPath = path.resolve(__dirname, '..', 'src', 'main.js');
+  mockRequire(actualMainPath, mockFactory);
+  console.log('[run-tests.js] Successfully applied global mock for src/main.js');
+} catch (e) {
+  console.error('[run-tests.js] FAILED to apply global mock for src/main.js:', e);
+  // process.exit(1); // Optional: exit if mock setup fails
+}
+// ---- END GLOBAL MOCK SETUP ----
 
 // Load environment variables from .env file
 try {
@@ -22,7 +37,7 @@ try {
     if (result.parsed.OPENROUTER_API_KEY) {
       // Mask most of the API key for security
       const keyLength = result.parsed.OPENROUTER_API_KEY.length;
-      const maskedKey = result.parsed.OPENROUTER_API_KEY.substring(0, 5) + '...' + ' (' + keyLength + ' chars)';
+      const maskedKey = `${result.parsed.OPENROUTER_API_KEY.substring(0, 5)}...` + ` (${keyLength} chars)`;
       console.log('OPENROUTER_API_KEY:', maskedKey);
     }
     if (result.parsed.OPENROUTER_MODEL) {
@@ -38,7 +53,7 @@ const TEST_ENV = 'test';
 const TEST_DIRS = {
   unit: path.join(__dirname, '..', 'test', 'unit'),
   integration: path.join(__dirname, '..', 'test', 'integration'),
-  root: path.join(__dirname, '..', 'test')
+  root: path.join(__dirname, '..', 'test'),
 };
 
 // Parse command line arguments
@@ -46,8 +61,8 @@ const args = process.argv.slice(2);
 const runUnitOnly = args.includes('--unit');
 const runIntegrationOnly = args.includes('--integration');
 const generateReport = args.includes('--report');
-const reportPath = args.includes('--report-path') 
-  ? args[args.indexOf('--report-path') + 1] 
+const reportPath = args.includes('--report-path')
+  ? args[args.indexOf('--report-path') + 1]
   : path.join(__dirname, '..', 'test-report.html');
 
 // Helper functions
@@ -56,18 +71,18 @@ function findTestFiles(dir) {
     console.error(`Error: Directory does not exist: ${dir}`);
     return [];
   }
-  
+
   const files = fs.readdirSync(dir, { withFileTypes: true });
-  
+
   return files.reduce((testFiles, file) => {
     const filePath = path.join(dir, file.name);
-    
+
     if (file.isDirectory()) {
       return [...testFiles, ...findTestFiles(filePath)];
-    } else if (file.name.endsWith('.test.js')) {
+    } if (file.name.endsWith('.test.js')) {
       return [...testFiles, filePath];
     }
-    
+
     return testFiles;
   }, []);
 }
@@ -79,11 +94,11 @@ function runTests(testFiles) {
   }
 
   console.log(`Running ${testFiles.length} test files...`);
-  
+
   // Create a temporary test runner file
   const tempRunnerFile = path.join(__dirname, 'temp-test-runner.js');
-  const testFilePaths = testFiles.map(file => `'${file}'`).join(',\n  ');
-  
+  const testFilePaths = testFiles.map((file) => `'${file}'`).join(',\n  ');
+
   const runnerContent = `
 // Temporary QUnit test runner
 const QUnit = require('qunit');
@@ -133,27 +148,33 @@ QUnit.start();
 `;
 
   fs.writeFileSync(tempRunnerFile, runnerContent);
-  
+
   try {
     // Run the temporary test runner
     // Ensure API key from .env is passed to the test process
-    const env = { 
-      ...process.env, 
+    const env = {
+      ...process.env,
       KANBN_ENV: TEST_ENV,
       // Copy over the API key explicitly if it exists in .env
-      OPENROUTER_API_KEY: process.env.OPENROUTER_API_KEY || ''
+      OPENROUTER_API_KEY: process.env.OPENROUTER_API_KEY || '',
     };
     const result = spawnSync('node', [tempRunnerFile], {
       env,
       stdio: 'pipe',
-      encoding: 'utf8'
+      encoding: 'utf8',
     });
-    
+
+    console.log('--- QUnit Process STDOUT ---');
+    console.log(result.stdout || '(empty)');
+    console.log('--- QUnit Process STDERR ---');
+    console.log(result.stderr || '(empty)');
+    console.log('--- QUnit Process END --- status code:', result.status);
+
     const output = result.stdout + (result.stderr || '');
-    
-    return { 
-      success: result.status === 0, 
-      output 
+
+    return {
+      success: result.status === 0,
+      output,
     };
   } finally {
     // Clean up the temporary file
@@ -201,7 +222,7 @@ function generateHtmlReport(testOutput, outputPath) {
 </body>
 </html>
   `;
-  
+
   fs.writeFileSync(outputPath, htmlTemplate);
   console.log(`HTML report generated at: ${outputPath}`);
 }
@@ -209,7 +230,7 @@ function generateHtmlReport(testOutput, outputPath) {
 // Main execution
 function main() {
   let testFiles = [];
-  
+
   if (runUnitOnly) {
     console.log('Running unit tests only');
     testFiles = findTestFiles(TEST_DIRS.unit);
@@ -219,20 +240,20 @@ function main() {
   } else {
     console.log('Running all tests');
     testFiles = [
-      ...findTestFiles(TEST_DIRS.root)
+      ...findTestFiles(TEST_DIRS.root),
     ];
   }
-  
+
   const testResult = runTests(testFiles);
-  
+
   // Display test results
   console.log(testResult.output);
-  
+
   // Generate HTML report if requested
   if (generateReport) {
     generateHtmlReport(testResult.output, reportPath);
   }
-  
+
   // Exit with appropriate code
   process.exit(testResult.success ? 0 : 1);
 }

@@ -1,9 +1,9 @@
-const Kanbn = require('../main');
-const utility = require('../utility');
 const inquirer = require('inquirer');
 const fuzzy = require('fuzzy');
 const axios = require('axios');
 const getGitUsername = require('git-user-name');
+const utility = require('../utility');
+const Kanbn = require('../main');
 const AILogging = require('../lib/ai-logging');
 
 inquirer.registerPrompt('autocomplete', require('inquirer-autocomplete-prompt'));
@@ -24,19 +24,19 @@ async function callOpenRouterAPI(kanbnInstance, description, task, includeRefere
       // Return a simple mock decomposition
       const mockSubtasks = [
         { text: `Subtask 1 for: ${description.substring(0, 30)}...`, completed: false },
-        { text: `Subtask 2 for: ${description.substring(0, 30)}...`, completed: false }
+        { text: `Subtask 2 for: ${description.substring(0, 30)}...`, completed: false },
       ];
 
       // Log the interaction
       const aiLogging = new AILogging(kanbnInstance);
       await aiLogging.logInteraction(process.cwd(), 'request', {
         message: description,
-        context: `You are a task decomposition assistant. Given a task description, break it down into smaller, actionable subtasks.`
+        context: 'You are a task decomposition assistant. Given a task description, break it down into smaller, actionable subtasks.',
       });
 
       await aiLogging.logInteraction(process.cwd(), 'response', {
         message: description,
-        response: JSON.stringify({ subtasks: mockSubtasks })
+        response: JSON.stringify({ subtasks: mockSubtasks }),
       });
 
       return mockSubtasks;
@@ -56,49 +56,49 @@ async function callOpenRouterAPI(kanbnInstance, description, task, includeRefere
     const systemMessage = {
       role: 'system',
       content: `You are a task decomposition assistant. Given a task description, break it down into smaller, actionable subtasks.
-      ${includeReferences && task.metadata && task.metadata.references && task.metadata.references.length > 0 ?
-        `\nHere are references that might be helpful:\n${task.metadata.references.map(ref => `- ${ref}`).join('\n')}` : ''}`
+      ${includeReferences && task.metadata && task.metadata.references && task.metadata.references.length > 0
+    ? `\nHere are references that might be helpful:\n${task.metadata.references.map((ref) => `- ${ref}`).join('\n')}` : ''}`,
     };
 
     // Log the interaction
     const aiLogging = new AILogging(kanbnInstance);
     await aiLogging.logInteraction(process.cwd(), 'request', {
       message: description,
-      context: systemMessage.content
+      context: systemMessage.content,
     });
 
     // Send request to OpenRouter API
     const response = await axios.post(
       'https://openrouter.ai/api/v1/chat/completions',
       {
-        model: model,
+        model,
         messages: [
           systemMessage,
           {
             role: 'user',
-            content: `Please decompose the following task into smaller, actionable subtasks:\n\n${description}`
-          }
+            content: `Please decompose the following task into smaller, actionable subtasks:\n\n${description}`,
+          },
         ],
-        response_format: { type: 'json_object' }
+        response_format: { type: 'json_object' },
       },
       {
         headers: {
-          'Authorization': `Bearer ${apiKey}`,
+          Authorization: `Bearer ${apiKey}`,
           'Content-Type': 'application/json',
           'HTTP-Referer': 'https://github.com/decision-crafters/kanbn',
-          'X-Title': 'Kanbn Task Decomposition'
-        }
-      }
+          'X-Title': 'Kanbn Task Decomposition',
+        },
+      },
     );
 
     console.log('OpenRouter API call completed successfully.');
-    const content = response.data.choices[0].message.content;
+    const { content } = response.data.choices[0].message;
     const parsedContent = JSON.parse(content);
 
     // Log the response
     await aiLogging.logInteraction(process.cwd(), 'response', {
       message: description,
-      response: content
+      response: content,
     });
 
     return parsedContent.subtasks || [];
@@ -114,13 +114,13 @@ async function callOpenRouterAPI(kanbnInstance, description, task, includeRefere
  * @return {Array} Array of subtasks
  */
 function fallbackDecomposition(description) {
-  const lines = description.split(/\n+/).filter(line => line.trim().length > 0);
+  const lines = description.split(/\n+/).filter((line) => line.trim().length > 0);
   if (lines.length > 1) {
-    return lines.map(line => ({ text: line.trim(), completed: false }));
+    return lines.map((line) => ({ text: line.trim(), completed: false }));
   }
 
-  const sentences = description.split(/\.(?!\d)/).filter(s => s.trim().length > 0);
-  return sentences.map(s => ({ text: s.trim(), completed: false }));
+  const sentences = description.split(/\.(?!\d)/).filter((s) => s.trim().length > 0);
+  return sentences.map((s) => ({ text: s.trim(), completed: false }));
 }
 
 /**
@@ -139,24 +139,24 @@ async function interactiveDecompose(taskId, taskIds) {
       source: (answers, input) => {
         input = input || '';
         const result = fuzzy.filter(input, taskIds);
-        return new Promise(resolve => {
-          resolve(result.map(result => result.string));
+        return new Promise((resolve) => {
+          resolve(result.map((result) => result.string));
         });
       },
-      when: () => !taskId
+      when: () => !taskId,
     },
     {
       type: 'confirm',
       name: 'useAI',
       message: 'Use AI to decompose this task?',
-      default: true
+      default: true,
     },
     {
       type: 'input',
       name: 'customDescription',
       message: 'Enter a custom description for decomposition (leave empty to use task description):',
-      default: ''
-    }
+      default: '',
+    },
   ]);
 }
 
@@ -185,21 +185,21 @@ async function createChildTasks(kanbnInstance, parentTaskId, subtasks) {
         description: subtask.text || subtask,
         metadata: {
           tags: parentTask.metadata?.tags || [],
-          parent: parentTaskId
-        }
+          parent: parentTaskId,
+        },
       }, columnName);
-      
+
       childTasks.push(childTaskId);
-      
+
       // Add reference to child in parent task
       if (!parentTask.metadata) {
         parentTask.metadata = {};
       }
-      
+
       if (!parentTask.metadata.children) {
         parentTask.metadata.children = [];
       }
-      
+
       parentTask.metadata.children.push(childTaskId);
     } catch (error) {
       console.error(`Error creating child task: ${error.message}`);
@@ -211,20 +211,20 @@ async function createChildTasks(kanbnInstance, parentTaskId, subtasks) {
   return childTasks;
 }
 
-module.exports = async args => {
-    // Create a Kanbn instance
-    const kanbn = Kanbn();
+module.exports = async (args) => {
+  // Create a Kanbn instance
+  const kanbn = Kanbn();
 
-    // Make sure kanbn has been initialised
-    try {
-      if (!await kanbn.initialised()) {
-        utility.warning('Kanbn has not been initialised in this folder\nTry running: {b}kanbn init{b}');
-        return;
-      }
-    } catch (error) {
+  // Make sure kanbn has been initialised
+  try {
+    if (!await kanbn.initialised()) {
       utility.warning('Kanbn has not been initialised in this folder\nTry running: {b}kanbn init{b}');
       return;
     }
+  } catch (error) {
+    utility.warning('Kanbn has not been initialised in this folder\nTry running: {b}kanbn init{b}');
+    return;
+  }
 
   let taskId = args.task ? utility.strArg(args.task) : null;
 
@@ -261,22 +261,22 @@ module.exports = async args => {
 
     // Check if task exists
     const allTaskIds = await kanbn.findTrackedTasks();
-    
+
     // Handle both Set and Array return types for backward compatibility
     let taskExists = false;
     let matchingTaskId = null;
-    
+
     // Convert to array for consistent processing
-    const taskIdsArray = Array.isArray(allTaskIds) ? allTaskIds : 
-                        (allTaskIds instanceof Set) ? [...allTaskIds] : 
-                        (allTaskIds && typeof allTaskIds === 'object') ? Object.keys(allTaskIds) : [];
-    
+    const taskIdsArray = Array.isArray(allTaskIds) ? allTaskIds
+      : (allTaskIds instanceof Set) ? [...allTaskIds]
+        : (allTaskIds && typeof allTaskIds === 'object') ? Object.keys(allTaskIds) : [];
+
     // Check for exact match
     taskExists = taskIdsArray.includes(taskId);
-    
+
     if (!taskExists) {
       // Try to find a task that matches the given ID (case-insensitive)
-      matchingTaskId = taskIdsArray.find(id => id.toLowerCase() === taskId.toLowerCase());
+      matchingTaskId = taskIdsArray.find((id) => id.toLowerCase() === taskId.toLowerCase());
 
       if (matchingTaskId) {
         // Use the matching task ID with correct case
@@ -318,7 +318,7 @@ module.exports = async args => {
   const childTasks = await createChildTasks(kanbn, taskId, subtasks);
 
   console.log(`\nCreated ${childTasks.length} child tasks for "${task.name}"`);
-  childTasks.forEach(childTaskId => {
+  childTasks.forEach((childTaskId) => {
     console.log(`- ${childTaskId}`);
   });
 };

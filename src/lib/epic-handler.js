@@ -1,6 +1,6 @@
 /**
  * Epic Handler Module
- * 
+ *
  * Provides functionality for creating and managing epics
  * An epic is a high-level task that can be broken down into smaller tasks
  */
@@ -38,31 +38,31 @@ class EpicHandler {
     try {
       // Enhanced debugging for API access
       console.log(`[DEBUG] EpicHandler.decomposeEpic called with description: ${epicDescription.substring(0, 50)}...`);
-      
+
       // Initialize the AI service with better API key handling
       const apiKey = process.env.OPENROUTER_API_KEY;
       const useOllama = process.env.USE_OLLAMA === 'true';
       const model = process.env.OPENROUTER_MODEL || 'anthropic/claude-3-opus:beta';
-      
+
       console.log(`[DEBUG] API configuration: useOllama=${useOllama}, model=${model}, apiKeyPresent=${!!apiKey}`);
-      
+
       if (!apiKey && !useOllama) {
         console.log('[ERROR] No OpenRouter API key found and Ollama not enabled. Please set OPENROUTER_API_KEY or USE_OLLAMA=true');
         throw new Error('API key missing: Set OPENROUTER_API_KEY environment variable or enable Ollama with USE_OLLAMA=true');
       }
-      
+
       // Create AI service with proper configuration
       const aiService = new AIService({
         apiKey,
         model,
-        useOllama
+        useOllama,
       });
-      
+
       console.log('[DEBUG] AI service initialized successfully');
 
       // Load the epic prompt template
       let epicPrompt = await this.promptLoader.loadPrompt('epic-decomposition');
-      
+
       if (!epicPrompt) {
         // Fallback prompt if the file doesn't exist
         epicPrompt = this.getDefaultEpicPrompt();
@@ -71,26 +71,26 @@ class EpicHandler {
       // Create system message with project context
       const systemMessage = {
         role: 'system',
-        content: this.createSystemPrompt(epicPrompt, integrations)
+        content: this.createSystemPrompt(epicPrompt, integrations),
       };
 
       // Create user message with epic description
       const userMessage = {
         role: 'user',
-        content: `Please decompose the following epic into manageable tasks:\n\n${epicDescription}`
+        content: `Please decompose the following epic into manageable tasks:\n\n${epicDescription}`,
       };
 
       // Log the interaction
       await this.aiLogging.logInteraction(process.cwd(), 'request', {
         message: userMessage.content,
-        context: systemMessage.content
+        context: systemMessage.content,
       });
 
       // Call AI service with specialized epic prompt
       const response = await aiService.chatCompletion([systemMessage, userMessage], {
         logCallback: (type, data) => {
           utility.debugLog(`AI ${type}: ${JSON.stringify(data).substring(0, 200)}...`);
-        }
+        },
       });
 
       // Parse the response
@@ -107,7 +107,7 @@ class EpicHandler {
       // Log the AI response
       await this.aiLogging.logInteraction(process.cwd(), 'response', {
         message: userMessage.content,
-        response: response
+        response,
       });
 
       // Return the parsed epic data
@@ -125,64 +125,64 @@ class EpicHandler {
    * @param {string} columnName The column to add the epic to (default: "Backlog")
    * @return {Promise<Object>} Object containing epic and child task IDs
    */
-  async createEpicWithTasks(epicData, tasksData, columnName = "Backlog") {
+  async createEpicWithTasks(epicData, tasksData, columnName = 'Backlog') {
     try {
       // Create the parent epic task
       const epicTaskData = {
         name: epicData.name,
-        description: epicData.description || "",
+        description: epicData.description || '',
         metadata: {
           ...(epicData.metadata || {}),
-          type: "epic",
+          type: 'epic',
           created: new Date(),
-          tags: [...(epicData.metadata?.tags || []), "epic"]
-        }
+          tags: [...(epicData.metadata?.tags || []), 'epic'],
+        },
       };
 
       // Add acceptance criteria if provided
       if (epicData.acceptanceCriteria && epicData.acceptanceCriteria.length > 0) {
-        epicTaskData.description += "\n\n## Acceptance Criteria\n";
-        epicData.acceptanceCriteria.forEach(criterion => {
+        epicTaskData.description += '\n\n## Acceptance Criteria\n';
+        epicData.acceptanceCriteria.forEach((criterion) => {
           epicTaskData.description += `- ${criterion}\n`;
         });
       }
 
       // Create the epic task
       const epicId = await this.kanbn.createTask(epicTaskData, columnName);
-      
+
       // Create child tasks
       const childTaskIds = [];
-      
+
       for (const taskData of tasksData) {
         // Prepare child task data
         const childTaskData = {
           name: taskData.name,
-          description: taskData.description || "",
+          description: taskData.description || '',
           metadata: {
             ...(taskData.metadata || {}),
             parent: epicId,
             created: new Date(),
-            tags: [...(taskData.metadata?.tags || []), "story"]
-          }
+            tags: [...(taskData.metadata?.tags || []), 'story'],
+          },
         };
-        
+
         // Create the child task
         const childTaskId = await this.kanbn.createTask(childTaskData, columnName);
         childTaskIds.push(childTaskId);
-        
+
         // Update the epic with child reference
         const epicTask = await this.kanbn.getTask(epicId);
         if (!epicTask.metadata.children) {
           epicTask.metadata.children = [];
         }
         epicTask.metadata.children.push(childTaskId);
-        
+
         await this.kanbn.updateTask(epicId, epicTask);
       }
-      
+
       return {
         epicId,
-        childTaskIds
+        childTaskIds,
       };
     } catch (error) {
       console.error('Error creating epic with tasks:', error);
@@ -199,7 +199,7 @@ class EpicHandler {
     try {
       // Group tasks by sprint suggestion
       const tasksBySprintId = {};
-      
+
       for (const task of tasks) {
         if (task.sprintSuggestion) {
           if (!tasksBySprintId[task.sprintSuggestion]) {
@@ -208,28 +208,28 @@ class EpicHandler {
           tasksBySprintId[task.sprintSuggestion].push(task.id);
         }
       }
-      
+
       // Create or update sprints
       const sprintAssignments = {};
-      
+
       for (const [sprintNumber, taskIds] of Object.entries(tasksBySprintId)) {
         try {
           // Check if sprint exists
           const index = await this.kanbn.getIndex();
-          const sprint = index.sprints?.find(s => s.name === `Sprint ${sprintNumber}`);
-          
+          const sprint = index.sprints?.find((s) => s.name === `Sprint ${sprintNumber}`);
+
           if (!sprint) {
             // Create a new sprint if it doesn't exist
             const sprintName = `Sprint ${sprintNumber}`;
             const sprintDescription = `Sprint ${sprintNumber} tasks`;
             const startDate = new Date(); // Current date
-            
+
             // Add 2 weeks for each sprint number to stagger them
             startDate.setDate(startDate.getDate() + ((parseInt(sprintNumber) - 1) * 14));
-            
+
             await this.kanbn.sprint(sprintName, sprintDescription, startDate);
           }
-          
+
           // Assign tasks to the sprint
           // Note: This is a placeholder as the direct API for assigning tasks to sprints
           // would need to be implemented or extended in the Kanbn class
@@ -238,7 +238,7 @@ class EpicHandler {
           console.error(`Error handling sprint ${sprintNumber}:`, sprintError);
         }
       }
-      
+
       return sprintAssignments;
     } catch (error) {
       console.error('Error assigning tasks to sprints:', error);
@@ -258,27 +258,27 @@ class EpicHandler {
     // Add project context if available
     if (this.projectContext) {
       const contextInfo = [];
-      
+
       if (this.projectContext.name) {
         contextInfo.push(`Project Name: ${this.projectContext.name}`);
       }
-      
+
       if (this.projectContext.description) {
         contextInfo.push(`Project Description: ${this.projectContext.description}`);
       }
-      
+
       if (this.projectContext.columns) {
         contextInfo.push(`Columns: ${Object.keys(this.projectContext.columns).join(', ')}`);
       }
-      
+
       if (contextInfo.length > 0) {
-        prompt += "\n\n## Project Context\n" + contextInfo.join("\n");
+        prompt += `\n\n## Project Context\n${contextInfo.join('\n')}`;
       }
     }
 
     // Add integrations context if available
     if (integrations) {
-      prompt += "\n\n## Additional Context\n" + integrations;
+      prompt += `\n\n## Additional Context\n${integrations}`;
     }
 
     return prompt;
@@ -323,7 +323,7 @@ Use your knowledge of agile and development best practices to provide a comprehe
   extractJsonFromMarkdown(markdownText) {
     const jsonRegex = /```json\n([\s\S]*?)\n```|```([\s\S]*?)```/;
     const match = markdownText.match(jsonRegex);
-    
+
     if (match && (match[1] || match[2])) {
       try {
         const jsonStr = match[1] || match[2];
@@ -332,15 +332,15 @@ Use your knowledge of agile and development best practices to provide a comprehe
         console.error('Error parsing JSON from markdown:', error);
       }
     }
-    
+
     // If JSON parsing fails, create a simple structure from the text
     return {
       epic: {
-        name: "Extracted Epic",
-        description: markdownText.split('\n\n')[0] || "Epic created from text",
-        acceptanceCriteria: []
+        name: 'Extracted Epic',
+        description: markdownText.split('\n\n')[0] || 'Epic created from text',
+        acceptanceCriteria: [],
       },
-      tasks: []
+      tasks: [],
     };
   }
 }

@@ -1,9 +1,9 @@
-const Kanbn = require('../main');
-const utility = require('../utility');
 const chrono = require('chrono-node');
 const yaml = require('yamljs');
+const Kanbn = require('../main');
+const utility = require('../utility');
 
-module.exports = async args => {
+module.exports = async (args) => {
   // Create a Kanbn instance
   const kanbn = Kanbn();
 
@@ -46,25 +46,25 @@ module.exports = async args => {
 
   // Get status
   kanbn
-  .status(
-    args.quiet,
-    args.untracked,
-    args.due,
-    sprint,
-    dates
-  )
-  .then(output => {
-    if (args.quiet && args.untracked && !args.json) {
-      console.log(
-        output.length
-          ? output.join('\n')
-          : 'No untracked tasks found'
-      );
-    } else {
-      console.log(args.json ? JSON.stringify(output, null, 2) : yaml.stringify(output, 4, 2));
-    }
-  })
-  .catch(error => {
-    utility.error(error);
-  });
+    .status(
+      args.quiet,
+      args.untracked,
+      args.due,
+      sprint,
+      dates,
+    )
+    .then((output) => {
+      if (args.quiet && args.untracked && !args.json) {
+        console.log(
+          output.length
+            ? output.join('\n')
+            : 'No untracked tasks found',
+        );
+      } else {
+        console.log(args.json ? JSON.stringify(output, null, 2) : yaml.stringify(output, 4, 2));
+      }
+    })
+    .catch((error) => {
+      utility.error(error);
+    });
 };

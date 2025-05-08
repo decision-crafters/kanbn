@@ -1,10 +1,10 @@
-const Kanbn = require("../main");
-const utility = require("../utility");
-const parseTask = require("../parse-task");
-const markdown = require("../lib/markdown");
-const TerminalRenderer = require("markdown-it-terminal");
-const promptBuilder = require("../promptBuilder");
-const eventBus = require("../lib/event-bus");
+const TerminalRenderer = require('markdown-it-terminal');
+const Kanbn = require('../main');
+const utility = require('../utility');
+const parseTask = require('../parse-task');
+const markdown = require('../lib/markdown');
+const promptBuilder = require('../promptBuilder');
+const eventBus = require('../lib/event-bus');
 
 /**
  * Show task information
@@ -34,14 +34,14 @@ function showTask(taskId, json = false, prompt = false) {
           eventBus.emit('task:prompt:complete', {
             taskId,
             promptLength: taskPrompt.length,
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
           });
         } catch (error) {
           // Emit error event
           eventBus.emit('task:prompt:error', {
             taskId,
             error: error.message,
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
           });
 
           utility.error(`Error generating prompt: ${error.message}`);
@@ -57,7 +57,7 @@ function showTask(taskId, json = false, prompt = false) {
         eventBus.emit('task:prompt:error', {
           taskId,
           error: error.toString(),
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         });
       }
 
@@ -70,11 +70,11 @@ module.exports = async (args) => {
   const kanbn = Kanbn();
   try {
     if (!(await kanbn.initialised())) {
-      utility.warning("Kanbn has not been initialised in this folder\nTry running: {b}kanbn init{b}");
+      utility.warning('Kanbn has not been initialised in this folder\nTry running: {b}kanbn init{b}');
       return;
     }
   } catch (error) {
-    utility.warning("Kanbn has not been initialised in this folder\nTry running: {b}kanbn init{b}");
+    utility.warning('Kanbn has not been initialised in this folder\nTry running: {b}kanbn init{b}');
     return;
   }
 

@@ -1,6 +1,6 @@
 /**
  * Integration Manager
- * 
+ *
  * Manages integration markdown files for enhancing AI context
  */
 
@@ -65,7 +65,7 @@ class IntegrationManager {
           await writeFile(path.join(this.integrationDir, 'default.md'), defaultContent);
         }
       }
-      
+
       return true;
     } catch (error) {
       utility.debugLog(`Error initializing integrations directory: ${error.message}`);
@@ -82,11 +82,11 @@ class IntegrationManager {
       await this.initIntegrationsDirectory();
       const files = await readdir(this.integrationDir);
       return files
-        .filter(file => file.endsWith('.md'))
-        .map(file => ({
+        .filter((file) => file.endsWith('.md'))
+        .map((file) => ({
           id: path.basename(file, '.md'),
-          file: file,
-          path: path.join(this.integrationDir, file)
+          file,
+          path: path.join(this.integrationDir, file),
         }));
     } catch (error) {
       utility.debugLog(`Error listing integrations: ${error.message}`);
@@ -103,23 +103,23 @@ class IntegrationManager {
   async addIntegrationFromUrl(name, url) {
     try {
       await this.initIntegrationsDirectory();
-      
+
       // Validate URL
       if (!url.startsWith('http://') && !url.startsWith('https://')) {
         throw new Error('URL must start with http:// or https://');
       }
-      
+
       // Download content from URL
       const response = await axios.get(url);
-      
+
       // Create safe filename from name
       const safeFileName = this.createSafeFileName(name);
       const filePath = path.join(this.integrationDir, `${safeFileName}.md`);
-      
+
       // Write content to file
       await writeFile(filePath, response.data);
       utility.debugLog(`Added integration from URL: ${url} as ${safeFileName}.md`);
-      
+
       return true;
     } catch (error) {
       utility.debugLog(`Error adding integration from URL: ${error.message}`);
@@ -136,15 +136,15 @@ class IntegrationManager {
   async addIntegrationFromContent(name, content) {
     try {
       await this.initIntegrationsDirectory();
-      
+
       // Create safe filename from name
       const safeFileName = this.createSafeFileName(name);
       const filePath = path.join(this.integrationDir, `${safeFileName}.md`);
-      
+
       // Write content to file
       await writeFile(filePath, content);
       utility.debugLog(`Added integration with content as ${safeFileName}.md`);
-      
+
       return true;
     } catch (error) {
       utility.debugLog(`Error adding integration from content: ${error.message}`);
@@ -166,26 +166,26 @@ class IntegrationManager {
         utility.debugLog('Integrations directory does not exist');
         return false;
       }
-      
+
       // Get all integration files
       const integrations = await this.listIntegrations();
-      
+
       // Find matching integration(s) - case insensitive
       const matchingIntegrations = integrations.filter(
-        integration => integration.id.toLowerCase() === name.toLowerCase()
+        (integration) => integration.id.toLowerCase() === name.toLowerCase(),
       );
-      
+
       if (matchingIntegrations.length === 0) {
         utility.debugLog(`No integration found with name: ${name}`);
         return false;
       }
-      
+
       // Remove all matching integrations
       for (const integration of matchingIntegrations) {
         await unlink(integration.path);
         utility.debugLog(`Removed integration: ${integration.file}`);
       }
-      
+
       return true;
     } catch (error) {
       utility.debugLog(`Error removing integration: ${error.message}`);
@@ -202,13 +202,12 @@ class IntegrationManager {
     try {
       const integrations = await this.listIntegrations();
       const result = {};
-      
+
       // Filter integrations by name if specified
       const filteredIntegrations = names.length > 0
-        ? integrations.filter(integration => 
-            names.some(name => integration.id.toLowerCase() === name.toLowerCase()))
+        ? integrations.filter((integration) => names.some((name) => integration.id.toLowerCase() === name.toLowerCase()))
         : integrations;
-      
+
       // Read content of each integration
       for (const integration of filteredIntegrations) {
         try {
@@ -219,7 +218,7 @@ class IntegrationManager {
           result[integration.id] = `Error reading integration: ${readError.message}`;
         }
       }
-      
+
       return result;
     } catch (error) {
       utility.debugLog(`Error reading integrations: ${error.message}`);
@@ -234,19 +233,19 @@ class IntegrationManager {
    */
   createSafeFileName(name) {
     // Remove file extension if present
-    let safeName = name.replace(/\.[^/.]+$/, "");
-    
+    let safeName = name.replace(/\.[^/.]+$/, '');
+
     // Replace spaces and special characters with dashes
     safeName = safeName
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-+|-+$/g, '');
-    
+
     // Ensure filename is not empty
     if (!safeName) {
       safeName = 'integration';
     }
-    
+
     return safeName;
   }
 }

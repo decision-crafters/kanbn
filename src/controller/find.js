@@ -1,8 +1,8 @@
-const Kanbn = require('../main');
-const utility = require('../utility');
 const inquirer = require('inquirer');
 const chrono = require('chrono-node');
 const yaml = require('yamljs');
+const utility = require('../utility');
+const Kanbn = require('../main');
 
 inquirer.registerPrompt('recursive', require('inquirer-recursive'));
 
@@ -10,98 +10,98 @@ const searchFields = [
   {
     name: 'Id',
     field: 'id',
-    type: 'string'
+    type: 'string',
   },
   {
     name: 'Name',
     field: 'name',
-    type: 'string'
+    type: 'string',
   },
   {
     name: 'Description',
     field: 'description',
-    type: 'string'
+    type: 'string',
   },
   {
     name: 'Column',
     field: 'column',
-    type: 'string'
+    type: 'string',
   },
   {
     name: 'Created',
     field: 'created',
-    type: 'date'
+    type: 'date',
   },
   {
     name: 'Updated',
     field: 'updated',
-    type: 'date'
+    type: 'date',
   },
   {
     name: 'Started',
     field: 'started',
-    type: 'date'
+    type: 'date',
   },
   {
     name: 'Completed',
     field: 'completed',
-    type: 'date'
+    type: 'date',
   },
   {
     name: 'Due',
     field: 'due',
-    type: 'date'
+    type: 'date',
   },
   {
     name: 'Progress',
     field: 'progress',
-    type: 'number'
+    type: 'number',
   },
   {
     name: 'Sub-tasks',
     field: 'sub-task',
-    type: 'string'
+    type: 'string',
   },
   {
     name: 'Count sub-tasks',
     field: 'count-sub-tasks',
-    type: 'number'
+    type: 'number',
   },
   {
     name: 'Tags',
     field: 'tag',
-    type: 'string'
+    type: 'string',
   },
   {
     name: 'Count tags',
     field: 'count-tags',
-    type: 'number'
+    type: 'number',
   },
   {
     name: 'Relations',
     field: 'relation',
-    type: 'string'
+    type: 'string',
   },
   {
     name: 'Count relations',
     field: 'count-relations',
-    type: 'number'
+    type: 'number',
   },
   {
     name: 'Comments',
     field: 'comment',
-    type: 'string'
+    type: 'string',
   },
   {
     name: 'Count comments',
     field: 'count-comments',
-    type: 'number'
+    type: 'number',
   },
   {
     name: 'Assigned',
     field: 'assigned',
-    type: 'string'
-  }
+    type: 'string',
+  },
 ];
 
 /**
@@ -123,37 +123,37 @@ async function interactive() {
           message: 'Filter type:',
           default: searchFields[0].name,
           choices: [
-            ...searchFields.map(s => s.name),
+            ...searchFields.map((s) => s.name),
             new inquirer.Separator(),
-            'None'
-          ]
+            'None',
+          ],
         },
         {
           type: 'input',
           name: 'value',
           message: 'Filter value:',
           default: '',
-          when: answers => searchFields
-            .filter(s => s.type === 'string')
-            .map(s => s.name)
+          when: (answers) => searchFields
+            .filter((s) => s.type === 'string')
+            .map((s) => s.name)
             .indexOf(answers.type) !== -1,
-          validate: async value => {
+          validate: async (value) => {
             if (!value) {
               return 'Filter value cannot be empty';
             }
             return true;
-          }
+          },
         },
         {
           type: 'input',
           name: 'value',
           message: 'Filter value:',
           default: '',
-          when: answers => searchFields
-            .filter(s => s.type === 'date')
-            .map(s => s.name)
+          when: (answers) => searchFields
+            .filter((s) => s.type === 'date')
+            .map((s) => s.name)
             .indexOf(answers.type) !== -1,
-          validate: async value => {
+          validate: async (value) => {
             if (!value) {
               return 'Filter value cannot be empty';
             }
@@ -161,18 +161,18 @@ async function interactive() {
               return 'Unable to parse date';
             }
             return true;
-          }
+          },
         },
         {
           type: 'input',
           name: 'value',
           message: 'Filter value:',
           default: '',
-          when: answers => searchFields
-            .filter(s => s.type === 'number')
-            .map(s => s.name)
+          when: (answers) => searchFields
+            .filter((s) => s.type === 'number')
+            .map((s) => s.name)
             .indexOf(answers.type) !== -1,
-          validate: async value => {
+          validate: async (value) => {
             if (!value) {
               return 'Filter value cannot be empty';
             }
@@ -180,20 +180,20 @@ async function interactive() {
               return 'Filter value must be numeric';
             }
             return true;
-          }
+          },
         },
         {
           type: 'confirm',
           name: 'value',
           message: 'Filter value:',
           default: true,
-          when: answers => searchFields
-            .filter(s => s.type === 'boolean')
-            .map(s => s.name)
-            .indexOf(answers.type) !== -1
-        }
-      ]
-    }
+          when: (answers) => searchFields
+            .filter((s) => s.type === 'boolean')
+            .map((s) => s.name)
+            .indexOf(answers.type) !== -1,
+        },
+      ],
+    },
   ]);
 }
 
@@ -207,29 +207,27 @@ function findTasks(filters, quiet, json) {
   // Create a Kanbn instance
   const kanbn = Kanbn();
 
-  const removeEmptyProperties = o => Object.fromEntries(Object.entries(o).filter(
-    ([k, v]) => !(Array.isArray(v) && v.length == 0) && !!v
+  const removeEmptyProperties = (o) => Object.fromEntries(Object.entries(o).filter(
+    ([k, v]) => !(Array.isArray(v) && v.length == 0) && !!v,
   ));
   kanbn
-  .search(filters, quiet)
-  .then(results => {
-    if (quiet) {
-      console.log(json ? JSON.stringify(results, null, 2) : results.join('\n'));
-    } else {
-      if (json) {
+    .search(filters, quiet)
+    .then((results) => {
+      if (quiet) {
+        console.log(json ? JSON.stringify(results, null, 2) : results.join('\n'));
+      } else if (json) {
         console.log(JSON.stringify(results, null, 2));
       } else {
         console.log(`Found ${results.length} task${results.length === 1 ? '' : 's'}`);
         if (results.length > 0) {
           console.log('---');
         }
-        console.log(results.map(result => yaml.stringify(removeEmptyProperties(result), 4, 2).trim()).join('\n---\n'));
+        console.log(results.map((result) => yaml.stringify(removeEmptyProperties(result), 4, 2).trim()).join('\n---\n'));
       }
-    }
-  })
-  .catch(error => {
-    utility.error(error);
-  });
+    })
+    .catch((error) => {
+      utility.error(error);
+    });
 }
 
 /**
@@ -300,7 +298,7 @@ function convertDateFilters(filters, filterName) {
   return true;
 }
 
-module.exports = async args => {
+module.exports = async (args) => {
   // Create a Kanbn instance
   const kanbn = Kanbn();
 
@@ -331,18 +329,18 @@ module.exports = async args => {
 
   // Add custom fields to search fields
   if ('customFields' in index.options) {
-    for (let customField of index.options.customFields) {
+    for (const customField of index.options.customFields) {
       searchFields.push({
         name: customField.name,
         field: customField.name,
-        type: customField.type
+        type: customField.type,
       });
     }
   }
 
   // Get filters from args
   const filters = {};
-  for (let filterProperty of searchFields.map(s => s.field)) {
+  for (const filterProperty of searchFields.map((s) => s.field)) {
     if (args[filterProperty]) {
       filters[filterProperty] = args[filterProperty];
     }
@@ -373,13 +371,13 @@ module.exports = async args => {
       return;
     }
   }
-  if ('workload' in filters){
+  if ('workload' in filters) {
     if (!convertNumericFilters(filters, 'workoad')) {
       utility.error('Workload filter value must be numeric');
       return;
     }
   }
-  if ('progress' in filters){
+  if ('progress' in filters) {
     if (!convertNumericFilters(filters, 'progress')) {
       utility.error('Progress filter value must be numeric');
       return;
@@ -420,7 +418,7 @@ module.exports = async args => {
 
   // Check and add custom field filters
   if ('customFields' in index.options) {
-    for (let customField of index.options.customFields) {
+    for (const customField of index.options.customFields) {
       if (customField.name in args) {
         filters[customField.name] = args[customField.name];
         switch (customField.type) {
@@ -451,39 +449,39 @@ module.exports = async args => {
   // Build search filters interactively
   if (args.interactive) {
     interactive()
-    .then(answers => {
-      inquirer
-      .prompt([
-        {
-          type: 'confirm',
-          name: 'nonquiet',
-          message: 'Show full task details in results?',
-          default: !args.quiet
-        },
-        {
-          type: 'confirm',
-          name: 'json',
-          message: 'Show results in JSON format?',
-          default: !!args.json
-        }
-      ])
-      .then(otherAnswers => {
-        for (let filter of answers.filters) {
-          addFilterValue(
-            filters,
-            searchFields.find(s => s.name === filter.type).field,
-            filter.value
-          );
-        }
-        findTasks(filters, !otherAnswers.nonquiet, otherAnswers.json);
+      .then((answers) => {
+        inquirer
+          .prompt([
+            {
+              type: 'confirm',
+              name: 'nonquiet',
+              message: 'Show full task details in results?',
+              default: !args.quiet,
+            },
+            {
+              type: 'confirm',
+              name: 'json',
+              message: 'Show results in JSON format?',
+              default: !!args.json,
+            },
+          ])
+          .then((otherAnswers) => {
+            for (const filter of answers.filters) {
+              addFilterValue(
+                filters,
+                searchFields.find((s) => s.name === filter.type).field,
+                filter.value,
+              );
+            }
+            findTasks(filters, !otherAnswers.nonquiet, otherAnswers.json);
+          })
+          .catch((error) => {
+            utility.error(error);
+          });
       })
-      .catch(error => {
+      .catch((error) => {
         utility.error(error);
       });
-    })
-    .catch(error => {
-      utility.error(error);
-    });
 
   // Otherwise create task non-interactively
   } else {

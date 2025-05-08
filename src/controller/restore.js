@@ -9,19 +9,18 @@ const utility = require('../utility');
  */
 function restoreTask(taskId, columnName, kanbnInstance) {
   kanbnInstance
-  .restoreTask(taskId, columnName)
-  .then(taskId => {
-    console.log(`Restored task "${taskId}" from the archive`);
-  })
-  .catch(error => {
-    utility.error(error);
-  });
+    .restoreTask(taskId, columnName)
+    .then((taskId) => {
+      console.log(`Restored task "${taskId}" from the archive`);
+    })
+    .catch((error) => {
+      utility.error(error);
+    });
 }
 
-module.exports = async args => {
-
+module.exports = async (args) => {
   const kanbn = Kanbn();
-  
+
   // Make sure kanbn has been initialised
   if (!await kanbn.initialised()) {
     utility.error('Kanbn has not been initialised in this folder\nTry running: {b}kanbn init{b}');

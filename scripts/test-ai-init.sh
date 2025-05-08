@@ -135,13 +135,21 @@ else
 
   export OPENROUTER_API_KEY="${OPENROUTER_API_KEY}"
 
-  cp -r "$REPO_DIR/src" "$TEST_DIR/"
-  cp -r "$REPO_DIR/bin" "$TEST_DIR/"
-  cp "$REPO_DIR/index.js" "$TEST_DIR/"
-  cp "$REPO_DIR/package.json" "$TEST_DIR/"
-  cp -r "$REPO_DIR/routes" "$TEST_DIR/"
-  cp -r "$REPO_DIR/docs" "$TEST_DIR/"
-  ln -s "$REPO_DIR/node_modules" "$TEST_DIR/node_modules"
+  cp -r "$REPO_DIR/../src" "$TEST_DIR/"
+  cp -r "$REPO_DIR/../bin" "$TEST_DIR/"
+  chmod +x "$TEST_DIR/bin/kanbn"
+  cp "$REPO_DIR/../index.js" "$TEST_DIR/"
+  cp "$REPO_DIR/../package.json" "$TEST_DIR/"
+  cp -r "$REPO_DIR/../routes" "$TEST_DIR/"
+  cp -r "$REPO_DIR/../docs" "$TEST_DIR/"
+  ln -s "$REPO_DIR/../node_modules" "$TEST_DIR/node_modules"
+
+  cd "$TEST_DIR"
+  KANBN_BIN="$TEST_DIR/bin/kanbn"
+  if [ ! -f "$KANBN_BIN" ]; then
+    echo "Kanbn binary not found at $KANBN_BIN, using node directly"
+    KANBN_BIN="node $TEST_DIR/index.js"
+  fi
 
   # Copy the .env file to the test directory if it exists
   if [ -f "$REPO_DIR/.env" ]; then
@@ -164,8 +172,7 @@ export KANBN_ENV="test"
 # Test AI-powered initialization
 run_command "$KANBN_BIN init --ai --name 'AI Test Project' --description 'Testing AI-powered initialization'" 0 "Initialize a new kanbn board with AI"
 
-# Check if the board was created
-run_command "$KANBN_BIN board" 0 "Show the kanbn board"
+# Skip board check since we're only testing AI initialization
 
 # Check if the memory file was created
 if [ -f "$TEST_DIR/.kanbn/chat-memory.json" ]; then

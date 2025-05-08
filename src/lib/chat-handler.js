@@ -69,11 +69,10 @@ class ChatHandler {
       // Handle different epic command formats
       if (message.startsWith('createEpic:')) {
         return await this.handleCreateEpic([message.substring('createEpic:'.length).trim()]);
-      } else if (message.startsWith('epic ')) {
+      } if (message.startsWith('epic ')) {
         return await this.handleEpicCommand(message.substring(5).trim());
-      } else {
-        // Let the normal intent matching handle it
       }
+      // Let the normal intent matching handle it
     }
 
     // Different error handling strategy based on intent type
@@ -160,8 +159,8 @@ class ChatHandler {
       description: '',
       metadata: {
         created: new Date(),
-        tags: []
-      }
+        tags: [],
+      },
     };
 
     const taskId = await this.kanbn.createTask(taskData, 'Backlog');
@@ -170,7 +169,7 @@ class ChatHandler {
       taskId,
       column: 'Backlog',
       taskData,
-      source: 'chat'
+      source: 'chat',
     });
     return `Created task "${taskName}" in Backlog`;
   }
@@ -195,7 +194,7 @@ class ChatHandler {
 
     task.subTasks.push({
       text: subtaskText,
-      completed: false
+      completed: false,
     });
 
     await this.kanbn.updateTask(taskId, task);
@@ -251,7 +250,7 @@ class ChatHandler {
 
     task.comments.push({
       date: new Date(),
-      text: commentText
+      text: commentText,
     });
 
     await this.kanbn.updateTask(taskId, task);
@@ -331,7 +330,7 @@ class ChatHandler {
       // Search for tasks
       const searchResults = await this.kanbn.search({
         name: searchTerm,
-        description: searchTerm
+        description: searchTerm,
       });
 
       if (searchResults.length === 0) {
@@ -339,9 +338,7 @@ class ChatHandler {
       }
 
       // Format and return the tasks
-      const taskList = searchResults.map(task =>
-        `- ${task.name}${task.description ? ': ' + task.description.split('\n')[0] : ''} (in ${task.column})`
-      );
+      const taskList = searchResults.map((task) => `- ${task.name}${task.description ? `: ${task.description.split('\n')[0]}` : ''} (in ${task.column})`);
 
       eventBus.emit('tasksSearched', { searchTerm, resultCount: searchResults.length });
 
@@ -396,21 +393,21 @@ class ChatHandler {
 
       if (task.subtasks && task.subtasks.length > 0) {
         details += '\n**Subtasks**:\n';
-        task.subtasks.forEach(subtask => {
+        task.subtasks.forEach((subtask) => {
           details += `- [${subtask.completed ? 'x' : ' '}] ${subtask.text}\n`;
         });
       }
 
       if (task.relations && task.relations.length > 0) {
         details += '\n**Relations**:\n';
-        task.relations.forEach(relation => {
+        task.relations.forEach((relation) => {
           details += `- ${relation.type} ${relation.task}\n`;
         });
       }
 
       if (task.comments && task.comments.length > 0) {
         details += '\n**Comments**:\n';
-        task.comments.forEach(comment => {
+        task.comments.forEach((comment) => {
           details += `- **${comment.author}**: ${comment.text}\n`;
         });
       }
@@ -439,7 +436,7 @@ class ChatHandler {
 
       // Check if the column exists (case-insensitive check)
       const matchingColumn = Object.keys(index.columns).find(
-        col => col.toLowerCase() === columnName.toLowerCase()
+        (col) => col.toLowerCase() === columnName.toLowerCase(),
       );
 
       if (!matchingColumn) {
@@ -464,7 +461,7 @@ class ChatHandler {
           tasks.push({
             id: taskId,
             name: task.name,
-            description: task.description
+            description: task.description,
           });
         } catch (error) {
           console.error(`Error loading task ${taskId}:`, error);
@@ -483,11 +480,9 @@ class ChatHandler {
           const taskFolder = path.join(process.cwd(), '.kanbn', 'tasks');
 
           if (fs.existsSync(taskFolder)) {
-            const taskFiles = fs.readdirSync(taskFolder).filter(file =>
-              file.endsWith('.md') &&
-              !file.includes('ai-request') &&
-              !file.includes('ai-response')
-            );
+            const taskFiles = fs.readdirSync(taskFolder).filter((file) => file.endsWith('.md')
+              && !file.includes('ai-request')
+              && !file.includes('ai-response'));
 
             console.log(`Found ${taskFiles.length} non-system task files in filesystem`);
 
@@ -506,7 +501,7 @@ class ChatHandler {
                   tasks.push({
                     id: taskId,
                     name: nameMatch ? nameMatch[1] : taskId,
-                    description: descriptionMatch ? descriptionMatch[1].trim() : ''
+                    description: descriptionMatch ? descriptionMatch[1].trim() : '',
                   });
                 } catch (taskError) {
                   console.error(`Error loading task file ${taskFile}:`, taskError);
@@ -515,7 +510,7 @@ class ChatHandler {
             }
           }
         } catch (fsError) {
-          console.error(`Error reading task directory:`, fsError);
+          console.error('Error reading task directory:', fsError);
         }
       }
 
@@ -525,7 +520,7 @@ class ChatHandler {
       }
 
       // Format and return the tasks
-      const taskList = tasks.map(task => `- ${task.name}${task.description ? ': ' + task.description.split('\n')[0] : ''}`);
+      const taskList = tasks.map((task) => `- ${task.name}${task.description ? `: ${task.description.split('\n')[0]}` : ''}`);
 
       eventBus.emit('tasksListed', { column: matchingColumn, taskCount: tasks.length });
 
@@ -548,7 +543,7 @@ class ChatHandler {
 
       // Search for tasks with the tag
       const searchResults = await this.kanbn.search({
-        tags: tag
+        tags: tag,
       });
 
       if (searchResults.length === 0) {
@@ -556,9 +551,7 @@ class ChatHandler {
       }
 
       // Format and return the tasks
-      const taskList = searchResults.map(task =>
-        `- ${task.name}${task.description ? ': ' + task.description.split('\n')[0] : ''} (in ${task.column})`
-      );
+      const taskList = searchResults.map((task) => `- ${task.name}${task.description ? `: ${task.description.split('\n')[0]}` : ''} (in ${task.column})`);
 
       eventBus.emit('tasksListedByTag', { tag, resultCount: searchResults.length });
 
@@ -581,7 +574,7 @@ class ChatHandler {
 
       // Search for tasks with the assignee
       const searchResults = await this.kanbn.search({
-        assigned: assignee
+        assigned: assignee,
       });
 
       if (searchResults.length === 0) {
@@ -589,9 +582,7 @@ class ChatHandler {
       }
 
       // Format and return the tasks
-      const taskList = searchResults.map(task =>
-        `- ${task.name}${task.description ? ': ' + task.description.split('\n')[0] : ''} (in ${task.column})`
-      );
+      const taskList = searchResults.map((task) => `- ${task.name}${task.description ? `: ${task.description.split('\n')[0]}` : ''} (in ${task.column})`);
 
       eventBus.emit('tasksListedByAssignee', { assignee, resultCount: searchResults.length });
 
@@ -675,7 +666,7 @@ class ChatHandler {
       }
 
       // Remove the tag
-      task.metadata.tags = task.metadata.tags.filter(t => t !== tag);
+      task.metadata.tags = task.metadata.tags.filter((t) => t !== tag);
 
       // Update the task
       await this.kanbn.updateTask(taskId, task);
@@ -721,7 +712,7 @@ class ChatHandler {
       // Add column
       const index = await this.kanbn.getIndex();
       const column = Object.keys(index.columns).find(
-        col => index.columns[col] && index.columns[col].includes(taskId)
+        (col) => index.columns[col] && index.columns[col].includes(taskId),
       );
       if (column) {
         details += `\n**Column**: ${column}\n`;
@@ -760,7 +751,7 @@ class ChatHandler {
       // Add subtasks if they exist
       if (task.subtasks && task.subtasks.length > 0) {
         details += '\n**Subtasks**:\n';
-        task.subtasks.forEach(subtask => {
+        task.subtasks.forEach((subtask) => {
           details += `- [${subtask.completed ? 'x' : ' '}] ${subtask.text}\n`;
         });
       }
@@ -768,7 +759,7 @@ class ChatHandler {
       // Add relations if they exist
       if (task.relations && task.relations.length > 0) {
         details += '\n**Relations**:\n';
-        task.relations.forEach(relation => {
+        task.relations.forEach((relation) => {
           details += `- ${relation.type} ${relation.task}\n`;
         });
       }
@@ -776,7 +767,7 @@ class ChatHandler {
       // Add comments if they exist
       if (task.comments && task.comments.length > 0) {
         details += '\n**Comments**:\n';
-        task.comments.forEach(comment => {
+        task.comments.forEach((comment) => {
           details += `- **${comment.author}**: ${comment.text}\n`;
         });
       }
@@ -831,7 +822,7 @@ class ChatHandler {
       const searchResults = await this.kanbn.search({
         name: searchTerm,
         description: searchTerm,
-        operator: 'OR'
+        operator: 'OR',
       });
 
       if (searchResults.length === 0) {
@@ -839,9 +830,7 @@ class ChatHandler {
       }
 
       // Format and return the tasks
-      const taskList = searchResults.map(task =>
-        `- ${task.name}${task.description ? ': ' + task.description.split('\n')[0] : ''} (in ${task.column})`
-      );
+      const taskList = searchResults.map((task) => `- ${task.name}${task.description ? `: ${task.description.split('\n')[0]}` : ''} (in ${task.column})`);
 
       eventBus.emit('tasksSearched', { searchTerm, resultCount: searchResults.length });
 
@@ -867,7 +856,7 @@ class ChatHandler {
 
       // Check if the column exists (case-insensitive check)
       const matchingColumn = Object.keys(index.columns).find(
-        col => col.toLowerCase() === columnName.toLowerCase()
+        (col) => col.toLowerCase() === columnName.toLowerCase(),
       );
 
       if (!matchingColumn) {
@@ -918,14 +907,14 @@ class ChatHandler {
       // Create statistics report
       const stats = [
         `Total tasks: ${taskIds.length}`,
-        `Tasks with tags: ${tasksWithTags} (${Math.round(tasksWithTags/taskIds.length*100)}%)`,
-        `Tasks with assignees: ${tasksWithAssignees} (${Math.round(tasksWithAssignees/taskIds.length*100)}%)`,
-        `Tasks with comments: ${tasksWithComments} (${Math.round(tasksWithComments/taskIds.length*100)}%)`,
+        `Tasks with tags: ${tasksWithTags} (${Math.round(tasksWithTags / taskIds.length * 100)}%)`,
+        `Tasks with assignees: ${tasksWithAssignees} (${Math.round(tasksWithAssignees / taskIds.length * 100)}%)`,
+        `Tasks with comments: ${tasksWithComments} (${Math.round(tasksWithComments / taskIds.length * 100)}%)`,
         `Total comments: ${totalComments}`,
-        `Average comments per task: ${(totalComments/taskIds.length).toFixed(1)}`,
-        `Tasks with subtasks: ${tasksWithSubtasks} (${Math.round(tasksWithSubtasks/taskIds.length*100)}%)`,
+        `Average comments per task: ${(totalComments / taskIds.length).toFixed(1)}`,
+        `Tasks with subtasks: ${tasksWithSubtasks} (${Math.round(tasksWithSubtasks / taskIds.length * 100)}%)`,
         `Total subtasks: ${totalSubtasks}`,
-        `Average subtasks per task: ${(totalSubtasks/taskIds.length).toFixed(1)}`
+        `Average subtasks per task: ${(totalSubtasks / taskIds.length).toFixed(1)}`,
       ];
 
       eventBus.emit('taskStatsViewed', { column: matchingColumn, taskCount: taskIds.length });
@@ -1010,7 +999,7 @@ class ChatHandler {
       }
 
       // Remove assignee
-      task.metadata.assigned = task.metadata.assigned.filter(a => a !== assignee);
+      task.metadata.assigned = task.metadata.assigned.filter((a) => a !== assignee);
 
       // Update the task
       await this.kanbn.updateTask(taskId, task);
@@ -1090,9 +1079,8 @@ class ChatHandler {
 
     if (typeof this[handlerName] === 'function') {
       return await this[handlerName](args);
-    } else {
-      throw new Error(`Unknown command: ${command}`);
     }
+    throw new Error(`Unknown command: ${command}`);
   }
 
   /**
@@ -1185,7 +1173,7 @@ class ChatHandler {
       return {
         projectType: 'Software Development',
         recommendedColumns: ['Backlog', 'To Do', 'In Progress', 'Review', 'Done'],
-        explanation: 'This is a mock project context for testing.'
+        explanation: 'This is a mock project context for testing.',
       };
     }
 
@@ -1205,7 +1193,7 @@ class ChatHandler {
     if (process.env.KANBN_ENV === 'test') {
       return {
         value: 5,
-        explanation: 'This is a mock Cost of Delay calculation for testing.'
+        explanation: 'This is a mock Cost of Delay calculation for testing.',
       };
     }
 
@@ -1226,7 +1214,7 @@ class ChatHandler {
     if (process.env.KANBN_ENV === 'test') {
       return {
         value: costOfDelay / jobSize,
-        explanation: 'This is a mock WSJF calculation for testing.'
+        explanation: 'This is a mock WSJF calculation for testing.',
       };
     }
 
@@ -1249,21 +1237,21 @@ class ChatHandler {
           name: 'Set up project structure',
           description: 'Create initial project structure and documentation',
           column: columns[0] || 'Backlog',
-          tags: ['setup', 'documentation']
+          tags: ['setup', 'documentation'],
         },
         {
           name: 'Define project scope',
           description: 'Define the scope and boundaries of the project',
           column: columns[0] || 'Backlog',
-          tags: ['planning']
-        }
+          tags: ['planning'],
+        },
       ];
     }
 
     // In production, throw an error to trigger the fallback to OpenRouter API
     throw new Error('Suggesting initial tasks requires AI, falling back to OpenRouter API');
   }
-  
+
   /**
    * Handle the special 'epic' command which creates and decomposes an epic in one step
    * @param {string} epicDescription The epic description
@@ -1272,15 +1260,15 @@ class ChatHandler {
   async handleEpicCommand(epicDescription) {
     try {
       // Get project context and integrations
-      const integrations = this.projectContext && this.projectContext.integrationsContent 
-        ? this.projectContext.integrationsContent 
+      const integrations = this.projectContext && this.projectContext.integrationsContent
+        ? this.projectContext.integrationsContent
         : null;
 
       utility.debugLog(`Processing epic command with description: ${epicDescription.substring(0, 50)}...`);
 
       // Create an instance of EpicHandler
       const epicHandler = new EpicHandler(this.kanbn, this.projectContext, {
-        promptLoader: this.promptLoader
+        promptLoader: this.promptLoader,
       });
 
       // Log the start of epic decomposition
@@ -1303,7 +1291,7 @@ class ChatHandler {
       eventBus.emit('epicCreated', {
         epicId: result.epicId,
         childTaskIds: result.childTaskIds,
-        source: 'chat'
+        source: 'chat',
       });
 
       // Return success message
@@ -1322,13 +1310,13 @@ class ChatHandler {
   async handleCreateEpic(params) {
     try {
       console.log(`[DEBUG] handleCreateEpic called with params: ${JSON.stringify(params)}`);
-      
+
       // Handle different input formats more robustly
       let epicName;
       if (!params || params.length === 0) {
         console.log('[DEBUG] No parameters provided for epic creation');
         return 'Error: Epic name is required';
-      } else if (params.length === 1 && typeof params[0] === 'string') {
+      } if (params.length === 1 && typeof params[0] === 'string') {
         // If only one parameter, treat it as the epic name
         epicName = params[0].trim();
         console.log(`[DEBUG] Using single parameter as epic name: "${epicName}"`);
@@ -1337,15 +1325,15 @@ class ChatHandler {
         epicName = params[params.length - 1];
         console.log(`[DEBUG] Using last parameter as epic name: "${epicName}"`);
       }
-      
+
       // Validate the epic name
       if (!epicName || epicName.length < 2) {
         console.log(`[DEBUG] Invalid epic name: "${epicName}"`);
         return 'Error: Epic name must be at least 2 characters long';
       }
-      
+
       console.log(`[DEBUG] Creating epic with name: "${epicName}"`);
-      
+
       // Create the epic task
       const epicTaskData = {
         name: epicName,
@@ -1353,35 +1341,35 @@ class ChatHandler {
         metadata: {
           type: 'epic',
           created: new Date(),
-          tags: ['epic']
-        }
+          tags: ['epic'],
+        },
       };
-      
+
       console.log(`[DEBUG] Epic task data: ${JSON.stringify(epicTaskData)}`);
 
       // Get index to find the first column if Backlog doesn't exist
       const index = await this.kanbn.getIndex();
       const columnNames = Object.keys(index.columns);
       const targetColumn = columnNames.includes('Backlog') ? 'Backlog' : columnNames[0];
-      
+
       console.log(`[DEBUG] Creating epic in column: ${targetColumn}`);
 
       // Create the epic task in the appropriate column
       const epicId = await this.kanbn.createTask(epicTaskData, targetColumn);
       console.log(`[DEBUG] Created epic with ID: ${epicId}`);
-      
+
       // Update context
       this.context.setLastTask(epicId, epicName);
       console.log(`[DEBUG] Updated context with last task ID: ${epicId}`);
-      
+
       // Emit event
       eventBus.emit('epicCreated', {
         epicId,
         childTaskIds: [],
-        source: 'chat'
+        source: 'chat',
       });
       console.log(`[DEBUG] Emitted epicCreated event for ID: ${epicId}`);
-      
+
       return `Created epic with ID: ${epicId} named "${epicName}" in ${targetColumn}. You can now add child tasks to this epic.`;
     } catch (error) {
       console.error('[ERROR] Error creating epic:', error);
@@ -1397,16 +1385,16 @@ class ChatHandler {
   async handleDecomposeEpic(params) {
     try {
       const epicName = params[params.length - 1];
-      
+
       // Find the epic by name
       const epicId = await this.findTaskByName(epicName);
       if (!epicId) {
         return `Epic "${epicName}" not found.`;
       }
-      
+
       // Get the epic task
       const epicTask = await this.kanbn.getTask(epicId);
-      
+
       // Check if it's actually an epic
       if (!epicTask.metadata || epicTask.metadata.type !== 'epic') {
         // If not marked as epic, mark it now
@@ -1416,74 +1404,74 @@ class ChatHandler {
         if (!epicTask.metadata.tags.includes('epic')) {
           epicTask.metadata.tags.push('epic');
         }
-        
+
         await this.kanbn.updateTask(epicId, epicTask);
       }
-      
+
       // Get integrations context
-      const integrations = this.projectContext && this.projectContext.integrationsContent 
-        ? this.projectContext.integrationsContent 
+      const integrations = this.projectContext && this.projectContext.integrationsContent
+        ? this.projectContext.integrationsContent
         : null;
 
       // Create an instance of EpicHandler
       const epicHandler = new EpicHandler(this.kanbn, this.projectContext, {
-        promptLoader: this.promptLoader
+        promptLoader: this.promptLoader,
       });
-      
+
       // Decompose the epic with enhanced logging
       console.log(`[DEBUG] Calling epicHandler.decomposeEpic for epic: ${epicTask.name}`);
       const epicData = await epicHandler.decomposeEpic(
-        `${epicTask.name}\n\n${epicTask.description || ''}`, 
-        integrations
+        `${epicTask.name}\n\n${epicTask.description || ''}`,
+        integrations,
       );
       console.log(`[DEBUG] Decomposition result received: ${JSON.stringify(epicData).substring(0, 100)}...`);
-      
+
       if (!epicData || !epicData.tasks) {
         console.log('[ERROR] Failed to decompose epic: Invalid response format');
         throw new Error('Failed to decompose epic: Invalid response format');
       }
-      
+
       // Create child tasks
       const column = await this.kanbn.findTaskColumn(epicId);
-      let childTaskIds = [];
+      const childTaskIds = [];
       console.log(`[DEBUG] Creating ${epicData.tasks.length} child tasks in column: ${column}`);
-      
+
       for (const taskData of epicData.tasks) {
         // Prepare child task data
         const childTaskData = {
           name: taskData.name,
-          description: taskData.description || "",
+          description: taskData.description || '',
           metadata: {
             parent: epicId,
             created: new Date(),
-            tags: taskData.metadata?.tags || []
-          }
+            tags: taskData.metadata?.tags || [],
+          },
         };
-        
+
         console.log(`[DEBUG] Creating child task: ${taskData.name}`);
         // Create the child task
         const childTaskId = await this.kanbn.createTask(childTaskData, column);
         childTaskIds.push(childTaskId);
-        
+
         // Update the epic with child reference
         if (!epicTask.metadata.children) {
           epicTask.metadata.children = [];
         }
         epicTask.metadata.children.push(childTaskId);
       }
-      
+
       // Update the epic
       console.log(`[DEBUG] Updating epic with ${childTaskIds.length} child references`);
       await this.kanbn.updateTask(epicId, epicTask);
-      
+
       // Emit event
       eventBus.emit('epicDecomposed', {
         epicId,
         epicName: epicTask.name,
         childTaskIds,
-        source: 'chat'
+        source: 'chat',
       });
-      
+
       return `Decomposed epic "${epicTask.name}" into ${epicData.tasks.length} tasks:\n${epicData.tasks.map((task, index) => `${index + 1}. ${task.name}`).join('\n')}`;
     } catch (error) {
       console.error('[ERROR] Error decomposing epic:', error);
@@ -1499,38 +1487,36 @@ class ChatHandler {
     try {
       // Search for tasks with type=epic or epic tag
       const searchResults = await this.kanbn.search({
-        tags: ['epic']
+        tags: ['epic'],
       });
-      
+
       // If no results, try searching for tasks with 'epic' in the name
       if (searchResults.length === 0) {
         const nameResults = await this.kanbn.search({
-          name: 'epic'
+          name: 'epic',
         });
-        
+
         if (nameResults.length === 0) {
           return 'No epics found in the project.';
         }
-        
-        const epicList = nameResults.map(task =>
-          `- ${task.name} (in ${task.column})`
-        );
-        
+
+        const epicList = nameResults.map((task) => `- ${task.name} (in ${task.column})`);
+
         return `Found ${nameResults.length} epics:\n${epicList.join('\n')}`;
       }
-      
+
       // Format and return the epics
-      const epicList = searchResults.map(task => {
+      const epicList = searchResults.map((task) => {
         // Count child tasks if any
         const childCount = task.metadata && task.metadata.children ? task.metadata.children.length : 0;
         return `- ${task.name} (in ${task.column}) - ${childCount} child tasks`;
       });
-      
+
       // Emit event
       eventBus.emit('epicsListed', {
-        count: searchResults.length
+        count: searchResults.length,
       });
-      
+
       return `Found ${searchResults.length} epics:\n${epicList.join('\n')}`;
     } catch (error) {
       console.error('Error listing epics:', error);
@@ -1546,39 +1532,39 @@ class ChatHandler {
   async handleShowEpicDetails(params) {
     try {
       const epicName = params[params.length - 1];
-      
+
       // Find the epic by name
       const epicId = await this.findTaskByName(epicName);
       if (!epicId) {
         return `Epic "${epicName}" not found.`;
       }
-      
+
       // Get the epic task and its column
       const epicTask = await this.kanbn.getTask(epicId);
       const column = await this.kanbn.findTaskColumn(epicId);
-      
+
       // Count child tasks
       const childCount = epicTask.metadata && epicTask.metadata.children ? epicTask.metadata.children.length : 0;
-      
+
       // Format epic details
       let details = `# ${epicTask.name} (Epic)\n`;
       details += `**Status**: ${column}\n`;
       details += `**Child Tasks**: ${childCount}\n`;
-      
+
       if (epicTask.description) {
         details += `\n**Description**:\n${epicTask.description}\n`;
       }
-      
+
       if (epicTask.metadata) {
         if (epicTask.metadata.created) {
           details += `\n**Created**: ${new Date(epicTask.metadata.created).toLocaleString()}\n`;
         }
-        
+
         if (epicTask.metadata.tags && epicTask.metadata.tags.length > 0) {
           details += `**Tags**: ${epicTask.metadata.tags.join(', ')}\n`;
         }
       }
-      
+
       // Display acceptance criteria if available
       if (epicTask.description && epicTask.description.includes('Acceptance Criteria')) {
         const acMatch = epicTask.description.match(/## Acceptance Criteria\n([\s\S]*?)(?:\n##|$)/);
@@ -1586,11 +1572,11 @@ class ChatHandler {
           details += `\n**Acceptance Criteria**:\n${acMatch[1].trim()}\n`;
         }
       }
-      
+
       // List child tasks if any
       if (childCount > 0) {
         details += '\n**Child Tasks**:\n';
-        
+
         for (const childId of epicTask.metadata.children) {
           try {
             const childTask = await this.kanbn.getTask(childId);
@@ -1601,13 +1587,13 @@ class ChatHandler {
           }
         }
       }
-      
+
       // Emit event
       eventBus.emit('epicDetailViewed', {
         epicId,
-        epicName: epicTask.name
+        epicName: epicTask.name,
       });
-      
+
       return details;
     } catch (error) {
       console.error('Error showing epic details:', error);
@@ -1623,53 +1609,51 @@ class ChatHandler {
   async handleListEpicTasks(params) {
     try {
       const epicName = params[params.length - 1];
-      
+
       // Find the epic by name
       const epicId = await this.findTaskByName(epicName);
       if (!epicId) {
         return `Epic "${epicName}" not found.`;
       }
-      
+
       // Get the epic task
       const epicTask = await this.kanbn.getTask(epicId);
-      
+
       // Check if it has child tasks
       if (!epicTask.metadata || !epicTask.metadata.children || epicTask.metadata.children.length === 0) {
         return `Epic "${epicName}" does not have any child tasks.`;
       }
-      
+
       // List the child tasks
       const childTasks = [];
       for (const childId of epicTask.metadata.children) {
         try {
           const childTask = await this.kanbn.getTask(childId);
           const childColumn = await this.kanbn.findTaskColumn(childId);
-          
+
           // Note completed status
           const completed = childTask.metadata && childTask.metadata.completed;
           childTasks.push({
             id: childId,
             name: childTask.name,
             column: childColumn,
-            completed
+            completed,
           });
         } catch (childError) {
           console.error(`Error loading child task ${childId}:`, childError);
         }
       }
-      
+
       // Format the child tasks
-      const taskList = childTasks.map(task => 
-        `- ${task.name} (in ${task.column})${task.completed ? ' ✓' : ''}`
-      );
-      
+      const taskList = childTasks.map((task) => `- ${task.name} (in ${task.column})${task.completed ? ' ✓' : ''}`);
+
       // Emit event
       eventBus.emit('epicTasksListed', {
         epicId,
         epicName: epicTask.name,
-        taskCount: childTasks.length
+        taskCount: childTasks.length,
       });
-      
+
       return `Tasks for epic "${epicTask.name}" (${childTasks.length}):\n${taskList.join('\n')}`;
     } catch (error) {
       console.error('Error listing epic tasks:', error);
@@ -1677,7 +1661,5 @@ class ChatHandler {
     }
   }
 }
-
-
 
 module.exports = ChatHandler;

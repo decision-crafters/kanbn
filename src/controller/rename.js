@@ -1,6 +1,6 @@
+const inquirer = require('inquirer');
 const kanbnModule = require('../main');
 const utility = require('../utility');
-const inquirer = require('inquirer');
 
 /**
  * Rename a task interactively
@@ -14,13 +14,13 @@ async function interactive(taskData) {
       name: 'name',
       message: 'Task name:',
       default: taskData.name || '',
-      validate: async value => {
+      validate: async (value) => {
         if (!value) {
           return 'Task name cannot be empty';
         }
         return true;
-      }
-    }
+      },
+    },
   ]);
 }
 
@@ -32,7 +32,6 @@ async function interactive(taskData) {
  * @param {object} kanbn The kanbn instance
  */
 function renameTask(taskId, newTaskName, currentTaskName, kanbn) {
-
   // Check if the new name is the same as the current name
   if (newTaskName === currentTaskName) {
     utility.error(`Task "${taskId}" already has the name "${newTaskName}"`);
@@ -41,16 +40,16 @@ function renameTask(taskId, newTaskName, currentTaskName, kanbn) {
 
   // New name is different to current name, so rename the task
   kanbn
-  .renameTask(taskId, newTaskName)
-  .then(newTaskId => {
-    console.log(`Renamed task "${taskId}" to "${newTaskId}"`);
-  })
-  .catch(error => {
-    utility.error(error);
-  });
+    .renameTask(taskId, newTaskName)
+    .then((newTaskId) => {
+      console.log(`Renamed task "${taskId}" to "${newTaskId}"`);
+    })
+    .catch((error) => {
+      utility.error(error);
+    });
 }
 
-module.exports = async args => {
+module.exports = async (args) => {
   const kanbn = kanbnModule();
 
   // Make sure kanbn has been initialised
@@ -92,12 +91,12 @@ module.exports = async args => {
   // Rename task interactively
   if (args.interactive) {
     interactive(taskData)
-    .then(answers => {
-      renameTask(taskId, answers.name, currentTaskName, kanbn);
-    })
-    .catch(error => {
-      utility.error(error);
-    });
+      .then((answers) => {
+        renameTask(taskId, answers.name, currentTaskName, kanbn);
+      })
+      .catch((error) => {
+        utility.error(error);
+      });
 
   // Otherwise rename task non-interactively
   } else {

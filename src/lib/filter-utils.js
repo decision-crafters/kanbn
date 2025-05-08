@@ -8,7 +8,7 @@ const utility = require('../utility');
  */
 function stringFilter(filter, input) {
   if (Array.isArray(filter)) {
-    return filter.some(f => input.indexOf(f) !== -1);
+    return filter.some((f) => input.indexOf(f) !== -1);
   }
   return input.indexOf(filter) !== -1;
 }
@@ -45,5 +45,5 @@ function numberFilter(filter, input) {
 module.exports = {
   stringFilter,
   dateFilter,
-  numberFilter
+  numberFilter,
 };

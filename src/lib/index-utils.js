@@ -20,8 +20,8 @@ function getTrackedTaskIds(index, columnName = null) {
     columnName
       ? (index.columns[columnName] || [])
       : Object.keys(index.columns)
-          .map((columnName) => index.columns[columnName])
-          .flat()
+        .map((columnName) => index.columns[columnName])
+        .flat(),
   );
 }
 
@@ -37,20 +37,20 @@ function sortColumnInIndex(index, tasks, columnName, sorters) {
   tasks = tasks.map((task) => ({
     ...task,
     ...task.metadata,
-    created: "created" in task.metadata ? task.metadata.created : "",
-    updated: "updated" in task.metadata ? task.metadata.updated : "",
-    started: "started" in task.metadata ? task.metadata.started : "",
-    completed: "completed" in task.metadata ? task.metadata.completed : "",
-    due: "due" in task.metadata ? task.metadata.due : "",
-    assigned: "assigned" in task.metadata ? task.metadata.assigned : "",
+    created: 'created' in task.metadata ? task.metadata.created : '',
+    updated: 'updated' in task.metadata ? task.metadata.updated : '',
+    started: 'started' in task.metadata ? task.metadata.started : '',
+    completed: 'completed' in task.metadata ? task.metadata.completed : '',
+    due: 'due' in task.metadata ? task.metadata.due : '',
+    assigned: 'assigned' in task.metadata ? task.metadata.assigned : '',
     countSubTasks: task.subTasks.length,
-    subTasks: task.subTasks.map((subTask) => `[${subTask.completed ? "x" : ""}] ${subTask.text}`).join("\n"),
-    countTags: "tags" in task.metadata ? task.metadata.tags.length : 0,
-    tags: "tags" in task.metadata ? task.metadata.tags.join("\n") : "",
+    subTasks: task.subTasks.map((subTask) => `[${subTask.completed ? 'x' : ''}] ${subTask.text}`).join('\n'),
+    countTags: 'tags' in task.metadata ? task.metadata.tags.length : 0,
+    tags: 'tags' in task.metadata ? task.metadata.tags.join('\n') : '',
     countRelations: task.relations.length,
-    relations: task.relations.map((relation) => `${relation.type} ${relation.task}`).join("\n"),
+    relations: task.relations.map((relation) => `${relation.type} ${relation.task}`).join('\n'),
     countComments: task.comments.length,
-    comments: task.comments.map((comment) => `${comment.author} ${comment.text}`).join("\n"),
+    comments: task.comments.map((comment) => `${comment.author} ${comment.text}`).join('\n'),
     workload: taskWorkload(index, task),
     progress: taskProgress(index, task),
   }));
@@ -69,8 +69,9 @@ function sortColumnInIndex(index, tasks, columnName, sorters) {
  */
 function sortTasks(tasks, sorters) {
   tasks.sort((a, b) => {
-    let compareA, compareB;
-    for (let sorter of sorters) {
+    let compareA; let
+      compareB;
+    for (const sorter of sorters) {
       compareA = a[sorter.field];
       compareB = b[sorter.field];
       if (sorter.filter) {
@@ -80,7 +81,7 @@ function sortTasks(tasks, sorters) {
       if (compareA === compareB) {
         continue;
       }
-      return sorter.order === "descending" ? compareValues(compareB, compareA) : compareValues(compareA, compareB);
+      return sorter.order === 'descending' ? compareValues(compareB, compareA) : compareValues(compareA, compareB);
     }
     return 0;
   });
@@ -94,10 +95,10 @@ function sortTasks(tasks, sorters) {
  * @return {string} The transformed value
  */
 function sortFilter(value, filter) {
-  const matches = [...value.matchAll(new RegExp(filter, "gi"))];
+  const matches = [...value.matchAll(new RegExp(filter, 'gi'))];
   const result = matches.map((match) => {
     if (match.groups) {
-      return Object.values(match.groups).join("");
+      return Object.values(match.groups).join('');
     }
 
     if (match[1]) {
@@ -106,7 +107,7 @@ function sortFilter(value, filter) {
 
     return match[0];
   });
-  return result.join("");
+  return result.join('');
 }
 
 /**
@@ -121,8 +122,8 @@ function compareValues(a, b) {
   }
   a = utility.coerceUndefined(a, typeof b);
   b = utility.coerceUndefined(b, typeof a);
-  if (typeof a === "string" && typeof b === "string") {
-    return a.localeCompare(b, undefined, { sensitivity: "accent" });
+  if (typeof a === 'string' && typeof b === 'string') {
+    return a.localeCompare(b, undefined, { sensitivity: 'accent' });
   }
   return a - b;
 }
@@ -136,11 +137,10 @@ function compareValues(a, b) {
  */
 function filterTasks(index, tasks, filters) {
   // Convert tasks to array if it's an object
-  const taskArray = Array.isArray(tasks) ? tasks : Object.entries(tasks).map(([id, task]) => {
+  const taskArray = Array.isArray(tasks) ? tasks : Object.entries(tasks).map(([id, task]) =>
     // Ensure task has its ID property set
-    return { ...task, id: task.id || id };
-  });
-  
+    ({ ...task, id: task.id || id }));
+
   return taskArray.filter((task) => {
     // Get task ID, either from task.id or from task.name
     const taskId = task.id || utility.getTaskId(task.name);
@@ -152,145 +152,145 @@ function filterTasks(index, tasks, filters) {
 
     let result = true;
 
-    if ("id" in filters && !filterUtils.stringFilter(filters.id, taskId)) {
+    if ('id' in filters && !filterUtils.stringFilter(filters.id, taskId)) {
       result = false;
     }
 
-    if ("name" in filters && !filterUtils.stringFilter(filters.name, task.name)) {
+    if ('name' in filters && !filterUtils.stringFilter(filters.name, task.name)) {
       result = false;
     }
 
-    if ("description" in filters && !filterUtils.stringFilter(filters.description, task.description)) {
+    if ('description' in filters && !filterUtils.stringFilter(filters.description, task.description)) {
       result = false;
     }
 
-    if ("column" in filters && !filterUtils.stringFilter(filters.column, column)) {
+    if ('column' in filters && !filterUtils.stringFilter(filters.column, column)) {
       result = false;
     }
 
     if (
-      "created" in filters &&
-      (!("created" in task.metadata) || !filterUtils.dateFilter(filters.created, task.metadata.created))
+      'created' in filters
+      && (!('created' in task.metadata) || !filterUtils.dateFilter(filters.created, task.metadata.created))
     ) {
       result = false;
     }
 
     if (
-      "updated" in filters &&
-      (!("updated" in task.metadata) || !filterUtils.dateFilter(filters.updated, task.metadata.updated))
+      'updated' in filters
+      && (!('updated' in task.metadata) || !filterUtils.dateFilter(filters.updated, task.metadata.updated))
     ) {
       result = false;
     }
 
     if (
-      "started" in filters &&
-      (!("started" in task.metadata) || !filterUtils.dateFilter(filters.started, task.metadata.started))
+      'started' in filters
+      && (!('started' in task.metadata) || !filterUtils.dateFilter(filters.started, task.metadata.started))
     ) {
       result = false;
     }
 
     if (
-      "completed" in filters &&
-      (!("completed" in task.metadata) || !filterUtils.dateFilter(filters.completed, task.metadata.completed))
+      'completed' in filters
+      && (!('completed' in task.metadata) || !filterUtils.dateFilter(filters.completed, task.metadata.completed))
     ) {
       result = false;
     }
 
-    if ("due" in filters && (!("due" in task.metadata) || !filterUtils.dateFilter(filters.due, task.metadata.due))) {
+    if ('due' in filters && (!('due' in task.metadata) || !filterUtils.dateFilter(filters.due, task.metadata.due))) {
       result = false;
     }
 
-    if ("workload" in filters && !filterUtils.numberFilter(filters.workload, taskWorkload(index, task))) {
+    if ('workload' in filters && !filterUtils.numberFilter(filters.workload, taskWorkload(index, task))) {
       result = false;
     }
 
-    if ("progress" in filters && !filterUtils.numberFilter(filters.progress, taskProgress(index, task))) {
+    if ('progress' in filters && !filterUtils.numberFilter(filters.progress, taskProgress(index, task))) {
       result = false;
     }
 
     if (
-      "assigned" in filters &&
-      !filterUtils.stringFilter(filters.assigned, "assigned" in task.metadata ? task.metadata.assigned : "")
+      'assigned' in filters
+      && !filterUtils.stringFilter(filters.assigned, 'assigned' in task.metadata ? task.metadata.assigned : '')
     ) {
       result = false;
     }
 
     if (
-      "sub-task" in filters &&
-      !filterUtils.stringFilter(
-        filters["sub-task"],
-        task.subTasks.map((subTask) => `[${subTask.completed ? "x" : " "}] ${subTask.text}`).join("\n")
+      'sub-task' in filters
+      && !filterUtils.stringFilter(
+        filters['sub-task'],
+        task.subTasks.map((subTask) => `[${subTask.completed ? 'x' : ' '}] ${subTask.text}`).join('\n'),
       )
     ) {
       result = false;
     }
 
-    if ("count-sub-tasks" in filters && !filterUtils.numberFilter(filters["count-sub-tasks"], task.subTasks.length)) {
+    if ('count-sub-tasks' in filters && !filterUtils.numberFilter(filters['count-sub-tasks'], task.subTasks.length)) {
       result = false;
     }
 
-    if ("tag" in filters) {
-      const tags = task.metadata && task.metadata.tags ? task.metadata.tags.join("\n") : "";
+    if ('tag' in filters) {
+      const tags = task.metadata && task.metadata.tags ? task.metadata.tags.join('\n') : '';
       if (!filterUtils.stringFilter(filters.tag, tags)) {
         result = false;
       }
     }
 
-    if ("count-tags" in filters) {
+    if ('count-tags' in filters) {
       const tagsLength = task.metadata && task.metadata.tags ? task.metadata.tags.length : 0;
-      if (!filterUtils.numberFilter(filters["count-tags"], tagsLength)) {
+      if (!filterUtils.numberFilter(filters['count-tags'], tagsLength)) {
         result = false;
       }
     }
 
     if (
-      "relation" in filters &&
-      !filterUtils.stringFilter(
+      'relation' in filters
+      && !filterUtils.stringFilter(
         filters.relation,
-        task.relations.map((relation) => `${relation.type} ${relation.task}`).join("\n")
+        task.relations.map((relation) => `${relation.type} ${relation.task}`).join('\n'),
       )
     ) {
       result = false;
     }
 
-    if ("count-relations" in filters && !filterUtils.numberFilter(filters["count-relations"], task.relations.length)) {
+    if ('count-relations' in filters && !filterUtils.numberFilter(filters['count-relations'], task.relations.length)) {
       result = false;
     }
 
     if (
-      "comment" in filters &&
-      !filterUtils.stringFilter(filters.comment, task.comments.map((comment) => `${comment.author} ${comment.text}`).join("\n"))
+      'comment' in filters
+      && !filterUtils.stringFilter(filters.comment, task.comments.map((comment) => `${comment.author} ${comment.text}`).join('\n'))
     ) {
       result = false;
     }
 
-    if ("count-comments" in filters && !filterUtils.numberFilter(filters["count-comments"], task.comments.length)) {
+    if ('count-comments' in filters && !filterUtils.numberFilter(filters['count-comments'], task.comments.length)) {
       result = false;
     }
 
-    if ("customFields" in index.options) {
-      for (let customField of index.options.customFields) {
+    if ('customFields' in index.options) {
+      for (const customField of index.options.customFields) {
         if (customField.name in filters) {
           if (!(customField.name in task.metadata)) {
             result = false;
           } else {
             switch (customField.type) {
-              case "boolean":
+              case 'boolean':
                 if (task.metadata[customField.name] !== filters[customField.name]) {
                   result = false;
                 }
                 break;
-              case "number":
+              case 'number':
                 if (!filterUtils.numberFilter(filters[customField.name], task.metadata[customField.name])) {
                   result = false;
                 }
                 break;
-              case "string":
+              case 'string':
                 if (!filterUtils.stringFilter(filters[customField.name], task.metadata[customField.name])) {
                   result = false;
                 }
                 break;
-              case "date":
+              case 'date':
                 if (!filterUtils.dateFilter(filters[customField.name], task.metadata[customField.name])) {
                   result = false;
                 }
@@ -323,14 +323,12 @@ function taskWorkload(index, task) {
     Huge: 8,
   };
 
-  const defaultTaskWorkload =
-    "defaultTaskWorkload" in index.options ? index.options.defaultTaskWorkload : DEFAULT_TASK_WORKLOAD;
-  const taskWorkloadTags =
-    "taskWorkloadTags" in index.options ? index.options.taskWorkloadTags : DEFAULT_TASK_WORKLOAD_TAGS;
+  const defaultTaskWorkload = 'defaultTaskWorkload' in index.options ? index.options.defaultTaskWorkload : DEFAULT_TASK_WORKLOAD;
+  const taskWorkloadTags = 'taskWorkloadTags' in index.options ? index.options.taskWorkloadTags : DEFAULT_TASK_WORKLOAD_TAGS;
   let workload = 0;
   let hasWorkloadTags = false;
-  if ("tags" in task.metadata) {
-    for (let workloadTag of Object.keys(taskWorkloadTags)) {
+  if ('tags' in task.metadata) {
+    for (const workloadTag of Object.keys(taskWorkloadTags)) {
       if (task.metadata.tags.indexOf(workloadTag) !== -1) {
         workload += taskWorkloadTags[workloadTag];
         hasWorkloadTags = true;
@@ -353,7 +351,7 @@ function taskProgress(index, task) {
   if (taskUtils.taskCompleted(index, task)) {
     return 1;
   }
-  return "progress" in task.metadata ? task.metadata.progress : 0;
+  return 'progress' in task.metadata ? task.metadata.progress : 0;
 }
 
 /**
@@ -366,10 +364,9 @@ function taskProgress(index, task) {
  */
 function taskWorkloadInPeriod(tasks, metadataProperty, start, end) {
   const filteredTasks = tasks.filter(
-    (task) =>
-      metadataProperty in task.metadata &&
-      task.metadata[metadataProperty] >= start &&
-      task.metadata[metadataProperty] <= end
+    (task) => metadataProperty in task.metadata
+      && task.metadata[metadataProperty] >= start
+      && task.metadata[metadataProperty] <= end,
   );
   return {
     tasks: filteredTasks.map((task) => ({
@@ -389,8 +386,8 @@ function taskWorkloadInPeriod(tasks, metadataProperty, start, end) {
  */
 function getActiveTasksAtDate(tasks, date) {
   return tasks.filter((task) => (
-    (task.started !== false && task.started <= date) &&
-    (task.completed === false || task.completed > date)
+    (task.started !== false && task.started <= date)
+    && (task.completed === false || task.completed > date)
   ));
 }
 
@@ -425,20 +422,20 @@ function getTaskEventsAtDate(tasks, date) {
     ...tasks
       .filter((task) => (task.created ? task.created.getTime() : 0) === date.getTime())
       .map((task) => ({
-        eventType: "created",
-        task
+        eventType: 'created',
+        task,
       })),
     ...tasks
       .filter((task) => (task.started ? task.started.getTime() : 0) === date.getTime())
       .map((task) => ({
-        eventType: "started",
-        task
+        eventType: 'started',
+        task,
       })),
     ...tasks
       .filter((task) => (task.completed ? task.completed.getTime() : 0) === date.getTime())
       .map((task) => ({
-        eventType: "completed",
-        task
+        eventType: 'completed',
+        task,
       })),
   ];
 }
@@ -475,18 +472,18 @@ function normaliseDate(date, resolution = 'minutes') {
  * @return {object} The updated task data
  */
 function updateColumnLinkedCustomFields(index, taskData, columnName) {
-  taskData = updateColumnLinkedCustomField(index, taskData, columnName, "completed", "once");
-  taskData = updateColumnLinkedCustomField(index, taskData, columnName, "started", "once");
+  taskData = updateColumnLinkedCustomField(index, taskData, columnName, 'completed', 'once');
+  taskData = updateColumnLinkedCustomField(index, taskData, columnName, 'started', 'once');
 
-  if ("customFields" in index.options) {
-    for (let customField of index.options.customFields) {
-      if (customField.type === "date") {
+  if ('customFields' in index.options) {
+    for (const customField of index.options.customFields) {
+      if (customField.type === 'date') {
         taskData = updateColumnLinkedCustomField(
           index,
           taskData,
           columnName,
           customField.name,
-          customField.updateDate || "none"
+          customField.updateDate || 'none',
         );
       }
     }
@@ -506,14 +503,14 @@ function updateColumnLinkedCustomFields(index, taskData, columnName) {
  * @param {string} fieldName
  * @param {string} [updateCriteria='none']
  */
-function updateColumnLinkedCustomField(index, taskData, columnName, fieldName, updateCriteria = "none") {
+function updateColumnLinkedCustomField(index, taskData, columnName, fieldName, updateCriteria = 'none') {
   const columnList = `${fieldName}Columns`;
   if (columnList in index.options && index.options[columnList].indexOf(columnName) !== -1) {
     switch (updateCriteria) {
-      case "always":
+      case 'always':
         taskData = taskUtils.setTaskMetadata(taskData, fieldName, new Date());
         break;
-      case "once":
+      case 'once':
         if (!(fieldName in taskData.metadata && taskData.metadata[fieldName])) {
           taskData = taskUtils.setTaskMetadata(taskData, fieldName, new Date());
         }
@@ -539,13 +536,13 @@ async function saveIndex(indexData, loadAllTrackedTasks, configExists, saveConfi
   const parseIndex = require('../parse-index');
   const fs = require('fs');
 
-  if ("columnSorting" in indexData.options && Object.keys(indexData.options.columnSorting).length) {
-    for (let columnName in indexData.options.columnSorting) {
+  if ('columnSorting' in indexData.options && Object.keys(indexData.options.columnSorting).length) {
+    for (const columnName in indexData.options.columnSorting) {
       indexData = sortColumnInIndex(
         indexData,
         await loadAllTrackedTasks(indexData, columnName),
         columnName,
-        indexData.options.columnSorting[columnName]
+        indexData.options.columnSorting[columnName],
       );
     }
   }
@@ -568,9 +565,9 @@ async function loadIndex(getIndexPath, getConfig) {
   const parseIndex = require('../parse-index');
   const fs = require('fs');
 
-  let indexData = "";
+  let indexData = '';
   try {
-    indexData = await fs.promises.readFile(await getIndexPath(), { encoding: "utf-8" });
+    indexData = await fs.promises.readFile(await getIndexPath(), { encoding: 'utf-8' });
   } catch (error) {
     throw new Error(`Couldn't access index file: ${error.message}`);
   }
@@ -608,12 +605,12 @@ async function addUntrackedTaskToIndex(
   getTaskFolderPath,
   loadTask,
   saveTask,
-  saveIndex
+  saveIndex,
 ) {
   const fs = require('fs');
 
   if (!(await initialised())) {
-    throw new Error("Not initialised in this folder");
+    throw new Error('Not initialised in this folder');
   }
   taskId = fileUtils.removeFileExtension(taskId);
 
@@ -652,7 +649,7 @@ async function addUntrackedTaskToIndex(
 async function findTrackedTasks(index, initialised, columnName = null) {
   // Check if this folder has been initialised
   if (!(await initialised())) {
-    throw new Error("Not initialised in this folder");
+    throw new Error('Not initialised in this folder');
   }
 
   return getTrackedTaskIds(index, columnName);
@@ -671,7 +668,7 @@ async function findUntrackedTasks(index, initialised, getTaskFolderPath) {
 
   // Check if this folder has been initialised
   if (!(await initialised())) {
-    throw new Error("Not initialised in this folder");
+    throw new Error('Not initialised in this folder');
   }
 
   const trackedTasks = getTrackedTaskIds(index);
@@ -683,8 +680,8 @@ async function findUntrackedTasks(index, initialised, getTaskFolderPath) {
 
     // Filter for markdown files only
     const mdFiles = files
-      .filter(file => file.isFile() && file.name.endsWith('.md'))
-      .map(file => path.join(taskFolderPath, file.name));
+      .filter((file) => file.isFile() && file.name.endsWith('.md'))
+      .map((file) => path.join(taskFolderPath, file.name));
 
     const untrackedTasks = new Set(mdFiles.map((task) => path.parse(task).name));
     return new Set([...untrackedTasks].filter((x) => !trackedTasks.has(x)));
@@ -720,14 +717,14 @@ async function updateTask(
   saveTask,
   renameTask,
   moveTask,
-  saveIndex
+  saveIndex,
 ) {
   const fileUtils = require('./file-utils');
   const taskUtils = require('./task-utils');
 
   // Check if this folder has been initialised
   if (!(await initialised())) {
-    throw new Error("Not initialised in this folder");
+    throw new Error('Not initialised in this folder');
   }
   taskId = fileUtils.removeFileExtension(taskId);
 
@@ -740,7 +737,7 @@ async function updateTask(
   }
 
   if (!taskData.name) {
-    throw new Error("Task name cannot be blank");
+    throw new Error('Task name cannot be blank');
   }
 
   const originalTaskData = await loadTask(taskId);
@@ -754,7 +751,7 @@ async function updateTask(
     throw new Error(`Column "${columnName}" doesn't exist`);
   }
 
-  taskData = taskUtils.setTaskMetadata(taskData, "updated", new Date());
+  taskData = taskUtils.setTaskMetadata(taskData, 'updated', new Date());
 
   await saveTask(fileUtils.getTaskPath(await getTaskFolderPath(), taskId), taskData);
 
@@ -788,7 +785,7 @@ async function renameTask(
   getTaskFolderPath,
   loadTask,
   saveTask,
-  saveIndex
+  saveIndex,
 ) {
   const fs = require('fs');
   const utility = require('../utility');
@@ -797,7 +794,7 @@ async function renameTask(
 
   // Check if this folder has been initialised
   if (!(await initialised())) {
-    throw new Error("Not initialised in this folder");
+    throw new Error('Not initialised in this folder');
   }
   taskId = fileUtils.removeFileExtension(taskId);
 
@@ -821,12 +818,12 @@ async function renameTask(
 
   let taskData = await loadTask(taskId);
   taskData.name = newTaskName;
-  taskData = taskUtils.setTaskMetadata(taskData, "updated", new Date());
+  taskData = taskUtils.setTaskMetadata(taskData, 'updated', new Date());
   await saveTask(fileUtils.getTaskPath(await getTaskFolderPath(), taskId), taskData);
 
   await fs.promises.rename(
     fileUtils.getTaskPath(await getTaskFolderPath(), taskId),
-    newTaskPath
+    newTaskPath,
   );
 
   // Update the task id in the index
@@ -859,14 +856,14 @@ async function moveTask(
   getTaskFolderPath,
   loadTask,
   saveTask,
-  saveIndex
+  saveIndex,
 ) {
   const fileUtils = require('./file-utils');
   const taskUtils = require('./task-utils');
 
   // Check if this folder has been initialised
   if (!(await initialised())) {
-    throw new Error("Not initialised in this folder");
+    throw new Error('Not initialised in this folder');
   }
   taskId = fileUtils.removeFileExtension(taskId);
 
@@ -884,7 +881,7 @@ async function moveTask(
 
   // Update the task's updated date
   let taskData = await loadTask(taskId);
-  taskData = taskUtils.setTaskMetadata(taskData, "updated", new Date());
+  taskData = taskUtils.setTaskMetadata(taskData, 'updated', new Date());
 
   // Update task metadata dates
   taskData = updateColumnLinkedCustomFields(index, taskData, columnName);
@@ -923,7 +920,7 @@ async function deleteTask(
   removeFile = false,
   initialised,
   getTaskFolderPath,
-  saveIndex
+  saveIndex,
 ) {
   const fs = require('fs');
   const fileUtils = require('./file-utils');
@@ -931,7 +928,7 @@ async function deleteTask(
 
   // Check if this folder has been initialised
   if (!(await initialised())) {
-    throw new Error("Not initialised in this folder");
+    throw new Error('Not initialised in this folder');
   }
   taskId = fileUtils.removeFileExtension(taskId);
 
@@ -965,20 +962,18 @@ async function search(
   quiet = false,
   initialised,
   loadAllTrackedTasks,
-  hydrateTask
+  hydrateTask,
 ) {
   const utility = require('../utility');
 
   // Check if this folder has been initialised
   if (!(await initialised())) {
-    throw new Error("Not initialised in this folder");
+    throw new Error('Not initialised in this folder');
   }
 
-  let tasks = filterTasks(index, await loadAllTrackedTasks(index), filters);
+  const tasks = filterTasks(index, await loadAllTrackedTasks(index), filters);
 
-  return tasks.map((task) => {
-    return quiet ? utility.getTaskId(task.name) : hydrateTask(index, task);
-  });
+  return tasks.map((task) => (quiet ? utility.getTaskId(task.name) : hydrateTask(index, task)));
 }
 
 module.exports = {
@@ -1007,5 +1002,5 @@ module.exports = {
   renameTask,
   moveTask,
   deleteTask,
-  search
+  search,
 };

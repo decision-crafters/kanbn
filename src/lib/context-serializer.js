@@ -3,8 +3,6 @@
  * This ensures consistent context handling and improves error reporting
  */
 
-'use strict';
-
 const utility = require('../utility');
 
 /**
@@ -25,7 +23,7 @@ class ContextSerializer {
       timestamp: Date.now(),
       project: null,
       memory: null,
-      options
+      options,
     };
 
     // Add project context if available
@@ -33,24 +31,24 @@ class ContextSerializer {
       try {
         // Handle tasks which can be either an object (from ProjectContext) or an array
         let tasks = projectContext.tasks || {};
-        
+
         // If tasks is already an object, keep it as is
         // If it's an array, convert to an object format for consistency
         if (Array.isArray(tasks)) {
           const tasksObj = {};
-          tasks.forEach(task => {
+          tasks.forEach((task) => {
             if (task && task.id) {
               tasksObj[task.id] = task;
             }
           });
           tasks = tasksObj;
         }
-        
+
         context.project = {
           name: projectContext.name || projectContext.projectName || 'Unknown',
           description: projectContext.description || projectContext.projectDescription || '',
           columns: projectContext.columns || [],
-          tasks: tasks
+          tasks,
         };
       } catch (error) {
         utility.debugLog(`Error processing project context: ${error.message}`);
@@ -62,10 +60,10 @@ class ContextSerializer {
     if (chatMemory) {
       try {
         context.memory = {
-          conversations: Array.isArray(chatMemory.conversations) 
+          conversations: Array.isArray(chatMemory.conversations)
             ? chatMemory.conversations.slice(-10) // Only include recent conversations
             : [],
-          metadata: chatMemory.metadata || {}
+          metadata: chatMemory.metadata || {},
         };
       } catch (error) {
         utility.debugLog(`Error processing chat memory: ${error.message}`);
@@ -88,10 +86,10 @@ class ContextSerializer {
         ...context,
         _meta: {
           serializedAt: Date.now(),
-          source: process.pid
-        }
+          source: process.pid,
+        },
       };
-      
+
       return JSON.stringify(contextWithMeta);
     } catch (error) {
       utility.debugLog(`Error serializing context: ${error.message}`);
@@ -99,7 +97,7 @@ class ContextSerializer {
       return JSON.stringify({
         version: '1.0',
         error: error.message,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
     }
   }
@@ -113,19 +111,19 @@ class ContextSerializer {
     try {
       // Parse the serialized context
       const context = JSON.parse(serializedContext);
-      
+
       // Validate the context structure
       if (!context.version) {
         throw new Error('Invalid context format: missing version');
       }
-      
+
       // Add deserialization metadata
       context._meta = {
         ...(context._meta || {}),
         deserializedAt: Date.now(),
-        target: process.pid
+        target: process.pid,
       };
-      
+
       return context;
     } catch (error) {
       utility.debugLog(`Error deserializing context: ${error.message}`);
@@ -133,7 +131,7 @@ class ContextSerializer {
       return {
         version: '1.0',
         error: error.message,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       };
     }
   }
@@ -145,19 +143,19 @@ class ContextSerializer {
    */
   static validate(context) {
     const errors = [];
-    
+
     // Check basic structure
     if (!context) errors.push('Context must not be null');
     if (typeof context !== 'object') errors.push('Context must be an object');
     if (!context.version) errors.push('Context must have a version');
     if (!context.timestamp) errors.push('Context must have a timestamp');
-    
+
     // Validate project context if present
     if (context.project) {
       if (!Array.isArray(context.project.columns)) {
         errors.push('Project columns must be an array');
       }
-      
+
       // Tasks can be either an object (preferred) or array (legacy)
       if (context.project.tasks) {
         const tasksType = typeof context.project.tasks;
@@ -166,17 +164,17 @@ class ContextSerializer {
         }
       }
     }
-    
+
     // Validate memory context if present
     if (context.memory) {
       if (!Array.isArray(context.memory.conversations)) {
         errors.push('Memory conversations must be an array');
       }
     }
-    
+
     return {
       valid: errors.length === 0,
-      errors
+      errors,
     };
   }
 }

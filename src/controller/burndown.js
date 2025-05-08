@@ -5,9 +5,23 @@ const term = require('terminal-kit').terminal;
 const chrono = require('chrono-node');
 const formatDate = require('dateformat');
 
-module.exports = async args => {
+module.exports = async (args) => {
   try {
     const kanbn = kanbnModule();
+    /* ---- Temporary Debugging ----
+    try {
+      console.error(
+        '[DEBUG BURNDOWN] kanbn instance in burndown.js (keys):',
+        kanbn ? Object.keys(kanbn).join(', ') : 'null'
+      );
+      if (kanbn) {
+        console.error('[DEBUG BURNDOWN] kanbn.loadIndex type:', typeof kanbn.loadIndex);
+        console.error('[DEBUG BURNDOWN] kanbn.getIndex type:', typeof kanbn.getIndex);
+      }
+    } catch (e) {
+      console.error('[DEBUG BURNDOWN] Error inspecting kanbn instance:', e);
+    }
+    ---- End Temporary Debugging ---- */
 
     // Make sure kanbn has been initialised
     if (!await kanbn.initialised()) {
@@ -20,10 +34,10 @@ module.exports = async args => {
     let sprints = null;
     if (args.sprint) {
       sprints = utility.arrayArg(args.sprint)
-        .flatMap(s => s.split(','))
-        .map(s => s.trim())
-        .filter(s => s.length > 0)
-        .map(s => {
+        .flatMap((s) => s.split(','))
+        .map((s) => s.trim())
+        .filter((s) => s.length > 0)
+        .map((s) => {
           const sprintNumber = parseInt(s);
           return isNaN(sprintNumber) ? s : sprintNumber;
         });
@@ -92,17 +106,17 @@ module.exports = async args => {
         return {
           total: 0,
           completed: 0,
-          data: []
+          data: [],
         };
       }
 
       const result = {
         total: data.series[0].total || 0,
         completed: (data.series[0].total || 0) - (data.series[0].dataPoints[0]?.y || 0),
-        data: data.series[0].dataPoints.map(point => ({
+        data: data.series[0].dataPoints.map((point) => ({
           date: point.x,
-          remaining: point.y
-        }))
+          remaining: point.y,
+        })),
       };
       return result;
     }
@@ -138,7 +152,7 @@ module.exports = async args => {
         const safeWidth = Math.min(width, 1000); // Cap at 1000 points to prevent memory issues
         for (let i = 0; i < safeWidth; i++) {
           const targetTime = s.from.getTime() + i * delta;
-          const dataPoint = s.dataPoints.find(d => d.x.getTime() >= targetTime) || s.dataPoints[s.dataPoints.length - 1];
+          const dataPoint = s.dataPoints.find((d) => d.x.getTime() >= targetTime) || s.dataPoints[s.dataPoints.length - 1];
           plot.push(dataPoint.y);
         }
       }
@@ -159,14 +173,14 @@ module.exports = async args => {
             offset: 2,
             height: 10,
             padding: PADDING,
-            format: x => (PADDING + x.toFixed(0)).slice(-PADDING.length),
+            format: (x) => (PADDING + x.toFixed(0)).slice(-PADDING.length),
             colors: [
               asciichart.default,
               asciichart.green,
               asciichart.blue,
-              asciichart.red
-            ]
-          }
+              asciichart.red,
+            ],
+          },
         ));
       } catch (chartError) {
         // Fallback to a simple line if chart generation fails

@@ -29,10 +29,10 @@ module.exports = (() => {
     // Get an object containing custom fields from the task
     let customFields = {};
     if ('customFields' in index.options) {
-      const customFieldNames = index.options.customFields.map(customField => customField.name);
+      const customFieldNames = index.options.customFields.map((customField) => customField.name);
       customFields = Object.fromEntries(utility.zip(
         customFieldNames,
-        customFieldNames.map(customFieldName => task.metadata[customFieldName] || '')
+        customFieldNames.map((customFieldName) => task.metadata[customFieldName] || ''),
       ));
     }
 
@@ -54,13 +54,12 @@ module.exports = (() => {
       column: task.column,
       workload: task.workload,
       progress: task.progress,
-      ...customFields
+      ...customFields,
     };
     try {
-      return new Function(...Object.keys(taskData), 'return `^:' + taskTemplate + '`;')(...Object.values(taskData));
+      return new Function(...Object.keys(taskData), `return \`^:${taskTemplate}\`;`)(...Object.values(taskData));
     } catch (e) {
       utility.error(`Unable to build task template: ${e.message}`);
-      return;
     }
   }
 
@@ -73,18 +72,18 @@ module.exports = (() => {
   function getColumnHeading(index, columnName) {
     let heading = '^:';
     if (
-      'completedColumns' in index.options &&
-      index.options.completedColumns.indexOf(columnName) !== -1
+      'completedColumns' in index.options
+      && index.options.completedColumns.indexOf(columnName) !== -1
     ) {
       heading += '^g\u2713^: ';
     }
     if (
-      'startedColumns' in index.options &&
-      index.options.startedColumns.indexOf(columnName) !== -1
+      'startedColumns' in index.options
+      && index.options.startedColumns.indexOf(columnName) !== -1
     ) {
       heading += '^c\u00bb^: ';
     }
-    return heading + `^+${columnName}^:`;
+    return `${heading}^+${columnName}^:`;
   }
 
   return {
@@ -100,11 +99,10 @@ module.exports = (() => {
       const board = {};
       let viewSettings = {};
       if (view !== null) {
-
         // Make sure the view exists
         if (
-          !('views' in index.options) ||
-          (viewSettings = index.options.views.find(v => v.name === view)) === undefined
+          !('views' in index.options)
+          || (viewSettings = index.options.views.find((v) => v.name === view)) === undefined
         ) {
           throw new Error(`No view found with name "${view}"`);
         }
@@ -113,22 +111,22 @@ module.exports = (() => {
       // Check if there is a list of columns in the view settings
       if (!('columns' in viewSettings)) {
         viewSettings.columns = Object.keys(index.columns)
-          .filter(columnName => (
-            !('hiddenColumns' in index.options) ||
-            index.options.hiddenColumns.indexOf(columnName) === -1
+          .filter((columnName) => (
+            !('hiddenColumns' in index.options)
+            || index.options.hiddenColumns.indexOf(columnName) === -1
           ))
-          .map(columnName => ({
+          .map((columnName) => ({
             name: columnName,
             filters: {
-              column: columnName
-            }
+              column: columnName,
+            },
           }));
       }
 
       // Check if there is a list of lanes in the view settings
       if (!('lanes' in viewSettings) || viewSettings.lanes.length === 0) {
         viewSettings.lanes = [{
-          name: 'All tasks'
+          name: 'All tasks',
         }];
       }
 
@@ -139,31 +137,31 @@ module.exports = (() => {
       }
 
       // Add columns
-      board.headings = viewSettings.columns.map(column => ({
+      board.headings = viewSettings.columns.map((column) => ({
         name: column.name,
-        heading: getColumnHeading(index, column.name)
+        heading: getColumnHeading(index, column.name),
       }));
 
       // Add lanes and column contents
       board.lanes = [];
-      for (let lane of viewSettings.lanes) {
+      for (const lane of viewSettings.lanes) {
         const columns = [];
-        for (let column of viewSettings.columns) {
+        for (const column of viewSettings.columns) {
           const kanbn = Kanbn();
           const cellTasks = kanbn.filterAndSortTasks(
             index,
             tasks,
             {
               ...('filters' in column ? column.filters : {}),
-              ...('filters' in lane ? lane.filters : {})
+              ...('filters' in lane ? lane.filters : {}),
             },
-            'sorters' in column ? column.sorters : []
+            'sorters' in column ? column.sorters : [],
           );
           columns.push(cellTasks);
         }
         board.lanes.push({
           name: lane.name,
-          columns
+          columns,
         });
       }
 
@@ -174,10 +172,10 @@ module.exports = (() => {
 
       // Prepare table
       const table = [];
-      table.push(board.headings.map(heading => heading.heading));
-      board.lanes.forEach(lane => table.push(
+      table.push(board.headings.map((heading) => heading.heading));
+      board.lanes.forEach((lane) => table.push(
         [lane.name],
-        lane.columns.map(column => column.map(task => getTaskString(index, task)).join(TASK_SEPARATOR))
+        lane.columns.map((column) => column.map((task) => getTaskString(index, task)).join(TASK_SEPARATOR)),
       ));
 
       // Display as a table
@@ -190,9 +188,9 @@ module.exports = (() => {
           borderAttr: { color: 'grey' },
           textAttr: { color: 'white', bgColor: 'default' },
           width: term.width,
-          fit: true
-        }
+          fit: true,
+        },
       );
-    }
-  }
+    },
+  };
 })();

@@ -1,9 +1,10 @@
 const kanbn_module = require('../main');
+
 const kanbn = kanbn_module();
-const utility = require('../utility');
 const inquirer = require('inquirer');
 const path = require('path');
 const fs = require('fs');
+const utility = require('../utility');
 const ChatHandler = require('../lib/chat-handler');
 const MemoryManager = require('../lib/memory-manager');
 const PromptLoader = require('../lib/prompt-loader');
@@ -17,7 +18,7 @@ const chalk = {
   blue: (text) => `\u001b[34m${text}\u001b[0m`,
   green: (text) => `\u001b[32m${text}\u001b[0m`,
   gray: (text) => `\u001b[90m${text}\u001b[0m`,
-  red: (text) => `\u001b[31m${text}\u001b[0m`
+  red: (text) => `\u001b[31m${text}\u001b[0m`,
 };
 chalk.blue.bold = (text) => `\u001b[1;34m${text}\u001b[0m`;
 
@@ -32,59 +33,59 @@ inquirer.registerPrompt('recursive', require('inquirer-recursive'));
 async function interactive(options, initialised) {
   const columnNames = [];
   return await inquirer
-  .prompt([
-    {
-      type: 'input',
-      name: 'name',
-      message: 'Project name:',
-      default: options.name || '',
-      validate: value => {
-        if (!value) {
-          return 'Project name cannot be empty';
-        }
-        return true;
-      }
-    },
-    {
-      type: 'confirm',
-      name: 'setDescription',
-      message: initialised ? 'Edit the project description?' : 'Add a project description?'
-    },
-    {
-      type: 'editor',
-      name: 'description',
-      message: 'Project description:',
-      default: options.description || '',
-      when: answers => answers.setDescription
-    },
-    {
-      type: 'recursive',
-      initialMessage: 'Add a column?',
-      message: 'Add another column?',
-      name: 'columns',
-      when: () => !initialised,
-      prompts: [
-        {
-          type: 'input',
-          name: 'columnName',
-          message: 'Column name:',
-          validate: value => {
-            if (value.length === 0) {
-              return 'Column name cannot be empty';
-            }
-            if (
-              (options.columns || []).indexOf(value) !== -1 ||
-              columnNames.indexOf(value) !== -1
-            ) {
-              return 'Column name already exists';
-            }
-            columnNames.push(value);
-            return true;
+    .prompt([
+      {
+        type: 'input',
+        name: 'name',
+        message: 'Project name:',
+        default: options.name || '',
+        validate: (value) => {
+          if (!value) {
+            return 'Project name cannot be empty';
           }
-        }
-      ]
-    }
-  ]);
+          return true;
+        },
+      },
+      {
+        type: 'confirm',
+        name: 'setDescription',
+        message: initialised ? 'Edit the project description?' : 'Add a project description?',
+      },
+      {
+        type: 'editor',
+        name: 'description',
+        message: 'Project description:',
+        default: options.description || '',
+        when: (answers) => answers.setDescription,
+      },
+      {
+        type: 'recursive',
+        initialMessage: 'Add a column?',
+        message: 'Add another column?',
+        name: 'columns',
+        when: () => !initialised,
+        prompts: [
+          {
+            type: 'input',
+            name: 'columnName',
+            message: 'Column name:',
+            validate: (value) => {
+              if (value.length === 0) {
+                return 'Column name cannot be empty';
+              }
+              if (
+                (options.columns || []).indexOf(value) !== -1
+              || columnNames.indexOf(value) !== -1
+              ) {
+                return 'Column name already exists';
+              }
+              columnNames.push(value);
+              return true;
+            },
+          },
+        ],
+      },
+    ]);
 }
 
 /**
@@ -95,16 +96,16 @@ async function interactive(options, initialised) {
 async function initialise(options, initialised) {
   const mainFolder = await kanbn.getMainFolder();
   kanbn.initialise(options)
-  .then(() => {
-    if (initialised) {
-      console.log(`Reinitialised existing kanbn board in ${mainFolder}`);
-    } else {
-      console.log(`Initialised empty kanbn board in ${mainFolder}`);
-    }
-  })
-  .catch(error => {
-    utility.error(error);
-  });
+    .then(() => {
+      if (initialised) {
+        console.log(`Reinitialised existing kanbn board in ${mainFolder}`);
+      } else {
+        console.log(`Initialised empty kanbn board in ${mainFolder}`);
+      }
+    })
+    .catch((error) => {
+      utility.error(error);
+    });
 }
 
 /**
@@ -141,15 +142,15 @@ async function callOpenRouterAPI(message, context, apiKey, model, promptName, pr
       console.log('Skipping actual API call for testing or CI environment...');
 
       // Create mock response based on the prompt name
-      let mockResponse = {
+      const mockResponse = {
         role: 'assistant',
-        content: ''
+        content: '',
       };
 
       // First, check if we already have a board structure to work with
       let existingColumns = [];
       let hasBoardStructure = false;
-      
+
       // Try to get existing board structure from the message or context
       try {
         if (context && context.columns && context.columns.length > 0) {
@@ -159,7 +160,7 @@ async function callOpenRouterAPI(message, context, apiKey, model, promptName, pr
       } catch (err) {
         console.log('Error getting existing board structure:', err);
       }
-      
+
       switch (promptName) {
         case 'project-type':
           if (hasBoardStructure) {
@@ -193,7 +194,7 @@ This structure follows a standard software development workflow and will help yo
 You can implement these using tags in your tasks.`;
           break;
         case 'timebox-strategy':
-          mockResponse.content = `I recommend using 2-week sprints for your project. This provides a good balance between having enough time to complete meaningful work while still maintaining regular feedback cycles.`;
+          mockResponse.content = 'I recommend using 2-week sprints for your project. This provides a good balance between having enough time to complete meaningful work while still maintaining regular feedback cycles.';
           break;
         case 'initial-tasks':
           mockResponse.content = `Here are some initial tasks to get you started:
@@ -220,7 +221,7 @@ You can implement these using tags in your tasks.`;
     // Prepare system message with the prompt content
     const systemMessage = {
       role: 'system',
-      content: promptContent || 'You are a project management assistant helping to initialize a new Kanbn board.'
+      content: promptContent || 'You are a project management assistant helping to initialize a new Kanbn board.',
     };
 
     // Log the system prompt being used
@@ -233,8 +234,8 @@ You can implement these using tags in your tasks.`;
       ...history,
       {
         role: 'user',
-        content: message
-      }
+        content: message,
+      },
     ];
 
     // Use the client to make the API call
@@ -296,7 +297,7 @@ async function aiInit(options, initialised, args) {
 
     // Get API key and model from args
     const apiKey = openRouterConfig.getApiKey(args['api-key']);
-    const model = openRouterConfig.getModel(args['model']);
+    const model = openRouterConfig.getModel(args.model);
 
     // Show model information if available
     console.log(`${chalk.gray('Using model:')} ${model}\n`);
@@ -305,7 +306,7 @@ async function aiInit(options, initialised, args) {
     const prompts = await promptLoader.listPrompts();
     if (prompts.length > 0) {
       console.log(chalk.gray('Available prompts:'));
-      prompts.forEach(prompt => {
+      prompts.forEach((prompt) => {
         console.log(chalk.gray(`- ${prompt}`));
       });
       console.log('');
@@ -321,13 +322,13 @@ async function aiInit(options, initialised, args) {
           type: 'input',
           name: 'name',
           message: 'Project name:',
-          validate: value => {
+          validate: (value) => {
             if (!value) {
               return 'Project name cannot be empty';
             }
             return true;
-          }
-        }
+          },
+        },
       ]);
       projectName = nameAnswer.name;
     }
@@ -345,14 +346,14 @@ async function aiInit(options, initialised, args) {
             type: 'confirm',
             name: 'setDescription',
             message: 'Add a project description?',
-            default: true
+            default: true,
           },
           {
             type: 'editor',
             name: 'description',
             message: 'Project description:',
-            when: answers => answers.setDescription
-          }
+            when: (answers) => answers.setDescription,
+          },
         ]);
 
         if (descAnswer.setDescription) {
@@ -395,8 +396,8 @@ async function aiInit(options, initialised, args) {
 
           // Get list of top-level directories
           const dirs = fs.readdirSync(mainFolder, { withFileTypes: true })
-            .filter(dirent => dirent.isDirectory() && !dirent.name.startsWith('.'))
-            .map(dirent => dirent.name);
+            .filter((dirent) => dirent.isDirectory() && !dirent.name.startsWith('.'))
+            .map((dirent) => dirent.name);
 
           if (dirs.length > 0) {
             repoInfo += `Top-level directories: ${dirs.join(', ')}\n`;
@@ -404,8 +405,8 @@ async function aiInit(options, initialised, args) {
 
           // Get list of top-level files with extensions
           const files = fs.readdirSync(mainFolder, { withFileTypes: true })
-            .filter(dirent => dirent.isFile() && !dirent.name.startsWith('.'))
-            .map(dirent => dirent.name);
+            .filter((dirent) => dirent.isFile() && !dirent.name.startsWith('.'))
+            .map((dirent) => dirent.name);
 
           if (files.length > 0) {
             repoInfo += `Top-level files: ${files.join(', ')}\n`;
@@ -440,7 +441,7 @@ async function aiInit(options, initialised, args) {
         userPrompt += `\n\nThis is an existing repository with the following information:\n${repoInfo}`;
       }
 
-      userPrompt += `\n\nBased on this information, what type of project is this and what columns would you recommend for the Kanbn board?`;
+      userPrompt += '\n\nBased on this information, what type of project is this and what columns would you recommend for the Kanbn board?';
       console.log(chalk.green('Analyzing project information...'));
     }
 
@@ -459,23 +460,23 @@ async function aiInit(options, initialised, args) {
       model,
       promptName,
       promptLoader,
-      memoryManager
+      memoryManager,
     );
 
     console.log(chalk.yellow('\nProject Assistant: ') + projectTypeResponse);
 
     // Extract recommended columns from the response
     let recommendedColumns = [];
-    const columnMatch = projectTypeResponse.match(/columns?:([^\n]+)/i) ||
-                       projectTypeResponse.match(/recommend(?:ed)? columns?:([^\n]+)/i) ||
-                       projectTypeResponse.match(/- ([^\n-]+)\n- ([^\n-]+)\n- ([^\n-]+)/i);
+    const columnMatch = projectTypeResponse.match(/columns?:([^\n]+)/i)
+                       || projectTypeResponse.match(/recommend(?:ed)? columns?:([^\n]+)/i)
+                       || projectTypeResponse.match(/- ([^\n-]+)\n- ([^\n-]+)\n- ([^\n-]+)/i);
 
     if (columnMatch) {
       const columnsText = columnMatch[1] || projectTypeResponse;
       recommendedColumns = columnsText
         .split(/[,\n-]/) // Split by commas, newlines, or hyphens
-        .map(col => col.trim())
-        .filter(col => col.length > 0 && !col.match(/^(columns?|recommend)/i));
+        .map((col) => col.trim())
+        .filter((col) => col.length > 0 && !col.match(/^(columns?|recommend)/i));
     }
 
     // If no columns were extracted, use default columns
@@ -498,15 +499,15 @@ async function aiInit(options, initialised, args) {
           type: 'confirm',
           name: 'useRecommended',
           message: `Use recommended columns: ${recommendedColumns.join(', ')}?`,
-          default: true
+          default: true,
         },
         {
           type: 'editor',
           name: 'customColumns',
           message: 'Enter custom columns (one per line):',
           default: recommendedColumns.join('\n'),
-          when: answers => !answers.useRecommended
-        }
+          when: (answers) => !answers.useRecommended,
+        },
       ]);
 
       if (columnConfirm.useRecommended) {
@@ -514,8 +515,8 @@ async function aiInit(options, initialised, args) {
       } else {
         options.columns = columnConfirm.customColumns
           .split('\n')
-          .map(col => col.trim())
-          .filter(col => col.length > 0);
+          .map((col) => col.trim())
+          .filter((col) => col.length > 0);
       }
     }
 
@@ -540,8 +541,8 @@ async function aiInit(options, initialised, args) {
           type: 'confirm',
           name: 'createTasks',
           message: 'Would you like to create some initial tasks?',
-          default: true
-        }
+          default: true,
+        },
       ]);
       createTasks = createTasksConfirm.createTasks;
     } else {
@@ -565,7 +566,7 @@ async function aiInit(options, initialised, args) {
           userTasksPrompt += `\n\nThis is an existing repository with the following information:\n${repoInfo}`;
         }
 
-        userTasksPrompt += `\n\nPlease suggest 5-7 initial tasks for this project.`;
+        userTasksPrompt += '\n\nPlease suggest 5-7 initial tasks for this project.';
       } else {
         // Create a default user prompt for task suggestions
         userTasksPrompt = `Project Name: ${projectName}\nProject Description: ${projectDescription || 'No description provided'}\nColumns: ${options.columns.join(', ')}`;
@@ -575,7 +576,7 @@ async function aiInit(options, initialised, args) {
           userTasksPrompt += `\n\nThis is an existing repository with the following information:\n${repoInfo}`;
         }
 
-        userTasksPrompt += `\n\nPlease suggest 5-7 initial tasks for this project.`;
+        userTasksPrompt += '\n\nPlease suggest 5-7 initial tasks for this project.';
         console.log(chalk.green('Generating task suggestions...'));
       }
 
@@ -594,15 +595,15 @@ async function aiInit(options, initialised, args) {
         model,
         tasksPromptName,
         promptLoader,
-        memoryManager
+        memoryManager,
       );
 
       console.log(chalk.yellow('\nProject Assistant: ') + tasksResponse);
 
       // Extract tasks from the response
       const taskLines = tasksResponse.split('\n')
-        .filter(line => line.match(/^\d+\.\s+|^-\s+|^•\s+/)) // Lines starting with numbers, hyphens, or bullets
-        .map(line => line.replace(/^\d+\.\s+|^-\s+|^•\s+/, '').trim()); // Remove the prefix
+        .filter((line) => line.match(/^\d+\.\s+|^-\s+|^•\s+/)) // Lines starting with numbers, hyphens, or bullets
+        .map((line) => line.replace(/^\d+\.\s+|^-\s+|^•\s+/, '').trim()); // Remove the prefix
 
       if (taskLines.length > 0) {
         for (const taskLine of taskLines) {
@@ -620,8 +621,8 @@ async function aiInit(options, initialised, args) {
             description: taskDescription,
             metadata: {
               created: new Date(),
-              tags: ['ai-generated']
-            }
+              tags: ['ai-generated'],
+            },
           };
 
           try {
@@ -635,7 +636,7 @@ async function aiInit(options, initialised, args) {
               taskId,
               column,
               taskData,
-              source: 'init'
+              source: 'init',
             });
           } catch (error) {
             console.error(chalk.red(`Error creating task ${taskName}:`), error);
@@ -649,14 +650,13 @@ async function aiInit(options, initialised, args) {
     console.log(chalk.blue.bold('\n✅ Initialization Complete!\n'));
     console.log(`Run ${chalk.green('kanbn board')} to see your new board.`);
     console.log(`Run ${chalk.green('kanbn chat')} to chat with your project assistant.\n`);
-
   } catch (error) {
     console.error(chalk.red('Error in AI initialization:'), error);
   }
 }
 
-module.exports = async args => {
-  let options = {};
+module.exports = async (args) => {
+  const options = {};
 
   // If --help or -h is provided, show detailed help
   if (args.help || args.h) {
@@ -681,7 +681,7 @@ module.exports = async args => {
       const prompts = await promptLoader.listPrompts();
 
       if (prompts.length > 0) {
-        prompts.forEach(prompt => {
+        prompts.forEach((prompt) => {
           console.log(`  - ${chalk.yellow(prompt)}`);
         });
       } else {
@@ -736,15 +736,15 @@ module.exports = async args => {
   // Interactive initialization
   else if (args.interactive) {
     interactive(options, initialised)
-    .then(async (answers) => {
-      if ('columns' in answers) {
-        answers.columns = answers.columns.map(column => column.columnName);
-      }
-      await initialise(answers, initialised);
-    })
-    .catch(error => {
-      utility.error(error);
-    });
+      .then(async (answers) => {
+        if ('columns' in answers) {
+          answers.columns = answers.columns.map((column) => column.columnName);
+        }
+        await initialise(answers, initialised);
+      })
+      .catch((error) => {
+        utility.error(error);
+      });
   // Non-interactive initialization
   } else {
     await initialise(options, initialised);

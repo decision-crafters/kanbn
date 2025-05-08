@@ -67,8 +67,8 @@ class PromptLoader {
       if (fs.existsSync(this.defaultPromptsFolder)) {
         const defaultPrompts = await readdir(this.defaultPromptsFolder);
         defaultPrompts
-          .filter(file => file.endsWith('.md'))
-          .forEach(file => prompts.add(file.replace('.md', '')));
+          .filter((file) => file.endsWith('.md'))
+          .forEach((file) => prompts.add(file.replace('.md', '')));
       }
     } catch (error) {
       console.error('Error listing default prompts:', error);
@@ -79,8 +79,8 @@ class PromptLoader {
       if (fs.existsSync(this.customPromptsFolder)) {
         const customPrompts = await readdir(this.customPromptsFolder);
         customPrompts
-          .filter(file => file.endsWith('.md'))
-          .forEach(file => prompts.add(file.replace('.md', '')));
+          .filter((file) => file.endsWith('.md'))
+          .forEach((file) => prompts.add(file.replace('.md', '')));
       }
     } catch (error) {
       console.error('Error listing custom prompts:', error);

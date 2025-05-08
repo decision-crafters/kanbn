@@ -1,8 +1,8 @@
+const inquirer = require('inquirer');
 const kanbnModule = require('../main');
 const utility = require('../utility');
-const inquirer = require('inquirer');
 
-module.exports = async args => {
+module.exports = async (args) => {
   const kanbn = typeof kanbnModule === 'function' ? kanbnModule() : kanbnModule;
 
   try {
@@ -13,20 +13,21 @@ module.exports = async args => {
     }
 
     // Get name, description and optionally select tasks via interactive mode
-    let name, description;
+    let name; let
+      description;
     if (args.interactive) {
       const answers = await inquirer.prompt([
         {
           type: 'input',
           name: 'name',
           message: 'Sprint name:',
-          validate: input => input.length > 0 || 'Sprint name cannot be empty'
+          validate: (input) => input.length > 0 || 'Sprint name cannot be empty',
         },
         {
           type: 'input',
           name: 'description',
-          message: 'Sprint description:'
-        }
+          message: 'Sprint description:',
+        },
       ]);
       name = answers.name;
       description = answers.description;

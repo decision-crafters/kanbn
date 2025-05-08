@@ -29,7 +29,7 @@ class AIService {
       apiKey: options.apiKey || process.env.OPENROUTER_API_KEY || null,
       model: options.model || process.env.OPENROUTER_MODEL || 'openai/gpt-3.5-turbo',
       ollamaModel: options.ollamaModel || process.env.OLLAMA_MODEL || '',
-      ollamaUrl: ollamaUrl
+      ollamaUrl,
     };
 
     // Debug mode flag
@@ -101,10 +101,10 @@ class AIService {
 
       // If both OpenRouter and Ollama fail, provide a clear error message
       throw new Error(
-        'AI services are not available. Please ensure either:\n' +
-        '1. Set OPENROUTER_API_KEY environment variable, or\n' +
-        '2. Install and run Ollama (https://ollama.com)\n' +
-        '\nError details: ' + error.message
+        'AI services are not available. Please ensure either:\n'
+        + '1. Set OPENROUTER_API_KEY environment variable, or\n'
+        + '2. Install and run Ollama (https://ollama.com)\n'
+        + `\nError details: ${error.message}`,
       );
     }
   }
@@ -123,7 +123,7 @@ class AIService {
       history.push(userMessage);
       history.push({
         role: 'assistant',
-        content: response
+        content: response,
       });
 
       // Keep only the last 20 messages
@@ -139,7 +139,7 @@ class AIService {
 
       fs.writeFileSync(
         path.join(conversationDir, `${conversationId}.json`),
-        JSON.stringify(history, null, 2)
+        JSON.stringify(history, null, 2),
       );
 
       return history;

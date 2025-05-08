@@ -80,9 +80,8 @@ class OpenRouterClient {
 
     if (this.useStreaming && onChunk) {
       return this.streamingChatCompletion(messages, onChunk);
-    } else {
-      return this.standardChatCompletion(messages);
     }
+    return this.standardChatCompletion(messages);
   }
 
   /**
@@ -102,7 +101,7 @@ class OpenRouterClient {
       console.log('DEBUG: Request body:', JSON.stringify({
         model: this.model,
         messages: messages.slice(0, 1),
-        stream: true
+        stream: true,
       }));
     }
 
@@ -115,9 +114,9 @@ class OpenRouterClient {
         headers: this.getHeaders(),
         body: JSON.stringify({
           model: this.model,
-          messages: messages,
-          stream: true
-        })
+          messages,
+          stream: true,
+        }),
       });
       utility.debugLog(`Fetch request completed with status: ${response.status}`);
     } catch (error) {
@@ -143,7 +142,7 @@ class OpenRouterClient {
         console.log('Falling back to test mode response...');
 
         // Generate a simple response based on the system message
-        const systemMessage = messages.find(m => m.role === 'system');
+        const systemMessage = messages.find((m) => m.role === 'system');
 
         let fallbackContent = '';
 
@@ -165,7 +164,7 @@ class OpenRouterClient {
       try {
         // Try to parse the response as JSON
         const responseJson = JSON.parse(responseText);
-        const content = responseJson.choices[0].message.content;
+        const { content } = responseJson.choices[0].message;
 
         if (content && onChunk) {
           onChunk(content);
@@ -180,7 +179,7 @@ class OpenRouterClient {
         console.log('Falling back to test mode response...');
 
         // Generate a simple response based on the system message
-        const systemMessage = messages.find(m => m.role === 'system');
+        const systemMessage = messages.find((m) => m.role === 'system');
 
         let fallbackContent = '';
 
@@ -228,7 +227,7 @@ class OpenRouterClient {
 
             try {
               const parsed = JSON.parse(data);
-              const content = parsed.choices[0].delta.content;
+              const { content } = parsed.choices[0].delta;
               if (content) {
                 onChunk(content);
                 fullContent += content;
@@ -261,7 +260,7 @@ class OpenRouterClient {
       console.log('DEBUG: Headers:', JSON.stringify(this.getHeaders()));
       console.log('DEBUG: Request body:', JSON.stringify({
         model: this.model,
-        messages: messages.slice(0, 1)
+        messages: messages.slice(0, 1),
       }));
     }
 
@@ -270,11 +269,11 @@ class OpenRouterClient {
       `${this.baseUrl}/chat/completions`,
       {
         model: this.model,
-        messages: messages
+        messages,
       },
       {
-        headers: this.getHeaders()
-      }
+        headers: this.getHeaders(),
+      },
     );
 
     return response.data.choices[0].message.content;
@@ -292,11 +291,11 @@ class OpenRouterClient {
         `${this.baseUrl}/chat/completions`,
         {
           model: this.model,
-          messages: [{ role: 'user', content: 'Hello' }]
+          messages: [{ role: 'user', content: 'Hello' }],
         },
         {
-          headers: this.getHeaders()
-        }
+          headers: this.getHeaders(),
+        },
       );
 
       return response.data && response.data.choices && response.data.choices.length > 0;

@@ -50,7 +50,7 @@ function addTaskToIndex(index, taskId, columnName, position = null) {
  * @return {object} The updated index
  */
 function removeTaskFromIndex(index, taskId) {
-  Object.values(index.columns).forEach(tasks => {
+  Object.values(index.columns).forEach((tasks) => {
     const taskIndex = tasks.indexOf(taskId);
     if (taskIndex !== -1) {
       tasks.splice(taskIndex, 1);
@@ -67,7 +67,7 @@ function removeTaskFromIndex(index, taskId) {
  * @return {object} The updated index
  */
 function renameTaskInIndex(index, oldTaskId, newTaskId) {
-  Object.values(index.columns).forEach(tasks => {
+  Object.values(index.columns).forEach((tasks) => {
     const taskIndex = tasks.indexOf(oldTaskId);
     if (taskIndex !== -1) {
       tasks[taskIndex] = newTaskId;
@@ -110,9 +110,9 @@ function setTaskMetadata(task, property, value) {
 function taskCompleted(index, task) {
   const columnName = findTaskColumn(index, task.id);
   return (
-    ('completedColumns' in index.options && 
-     index.options.completedColumns.includes(columnName)) ||
-    ('completed' in task.metadata && task.metadata.completed)
+    ('completedColumns' in index.options
+     && index.options.completedColumns.includes(columnName))
+    || ('completed' in task.metadata && task.metadata.completed)
   );
 }
 
@@ -123,15 +123,15 @@ function taskCompleted(index, task) {
  * @return {boolean} True if this is a system task
  */
 function isSystemTask(taskId, task) {
-  return taskId.includes('ai-request') || 
-         taskId.includes('ai-response') || 
-         (task.name && (
-           task.name.toLowerCase().includes('ai request') || 
-           task.name.toLowerCase().includes('ai response') || 
-           task.name.toLowerCase().includes('ai interaction')
-         )) || 
-         (task.description && 
-          task.description.includes('automatically generated record of an AI interaction'));
+  return taskId.includes('ai-request')
+         || taskId.includes('ai-response')
+         || (task.name && (
+           task.name.toLowerCase().includes('ai request')
+           || task.name.toLowerCase().includes('ai response')
+           || task.name.toLowerCase().includes('ai interaction')
+         ))
+         || (task.description
+          && task.description.includes('automatically generated record of an AI interaction'));
 }
 
 module.exports = {
@@ -143,5 +143,5 @@ module.exports = {
   getTaskMetadata,
   setTaskMetadata,
   taskCompleted,
-  isSystemTask
+  isSystemTask,
 };

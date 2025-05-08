@@ -1,9 +1,9 @@
 /**
  * Kanbn Chat Module
- * 
+ *
  * This module serves as a clean entry point to the chat functionality,
  * delegating to the modular chat-controller.
- * 
+ *
  * The chat system is composed of several modules:
  * - chat-controller.js - Main entry point with command handling
  * - ai-service.js - AI service abstraction that handles different providers

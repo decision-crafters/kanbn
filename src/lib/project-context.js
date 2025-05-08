@@ -4,11 +4,11 @@
  * Gathers and formats project information for AI assistance
  */
 
-const eventBus = require('./event-bus');
 const Handlebars = require('handlebars');
+const path = require('path');
+const eventBus = require('./event-bus');
 const RAGManager = require('./rag-manager');
 const main = require('../main');
-const path = require('path');
 const utility = require('../utility');
 
 class ProjectContext {
@@ -51,15 +51,15 @@ class ProjectContext {
         tasksByColumn: {},
         tasks: {},
         tags: [],
-        statistics: {}
+        statistics: {},
       };
 
       // Initialize the RAG manager and load integrations if specified
       // Check if we should load all integrations (empty array with useIntegrations=true)
       // or specific integrations (non-empty array)
       const useIntegrations = integrationNames !== null && (
-        Array.isArray(integrationNames) &&
-        (integrationNames.length > 0 || integrationNames._useAllIntegrations === true)
+        Array.isArray(integrationNames)
+        && (integrationNames.length > 0 || integrationNames._useAllIntegrations === true)
       );
 
       if (useIntegrations) {
@@ -80,9 +80,7 @@ class ProjectContext {
           if (context.tasks && Object.keys(context.tasks).length > 0) {
             // Get up to 10 representative tasks to include in the query (increased from 5)
             const taskEntries = Object.entries(context.tasks).slice(0, 10);
-            taskSummary = taskEntries.map(([id, task]) => {
-              return `Task: ${task.name || id}\nDescription: ${task.description || 'No description'}\nTags: ${(task.tags || []).join(', ')}\n`;
-            }).join('\n');
+            taskSummary = taskEntries.map(([id, task]) => `Task: ${task.name || id}\nDescription: ${task.description || 'No description'}\nTags: ${(task.tags || []).join(', ')}\n`).join('\n');
           }
 
           // Add column information to the query
@@ -104,7 +102,7 @@ class ProjectContext {
               const gitFiles = execSync('git ls-files', { cwd }).toString().trim().split('\n');
               // Filter out .kanbn files and limit to 50 files
               const filteredFiles = gitFiles
-                .filter(file => !file.startsWith('.kanbn/'))
+                .filter((file) => !file.startsWith('.kanbn/'))
                 .slice(0, 50);
 
               if (filteredFiles.length > 0) {
@@ -117,14 +115,14 @@ class ProjectContext {
               // Simple function to get files recursively
               const getFilesRecursively = (dir, fileList = []) => {
                 const files = fs.readdirSync(dir);
-                files.forEach(file => {
+                files.forEach((file) => {
                   const filePath = path.join(dir, file);
                   if (fs.statSync(filePath).isDirectory()) {
                     if (file !== '.kanbn' && file !== 'node_modules' && file !== '.git') {
                       getFilesRecursively(filePath, fileList);
                     }
                   } else {
-                    fileList.push(filePath.replace(cwd + '/', ''));
+                    fileList.push(filePath.replace(`${cwd}/`, ''));
                   }
                 });
                 return fileList;
@@ -195,8 +193,8 @@ ${taskSummary}`;
         projectDescription: index.description || 'No description available',
         columns: Object.keys(index.columns),
         taskCount: Object.keys(tasks).length,
-        tasks: tasks,
-        tags: []  // We'll populate this if needed
+        tasks,
+        tags: [], // We'll populate this if needed
       };
 
       // Include references if requested
@@ -206,7 +204,6 @@ ${taskSummary}`;
 
       eventBus.emit('contextQueried', { context: projectContext });
       return projectContext;
-
     } catch (error) {
       console.error('Error getting project context:', error.message);
       return {
@@ -214,7 +211,7 @@ ${taskSummary}`;
         projectDescription: 'A kanban board project',
         tasks: {},
         columns: ['Backlog', 'In Progress', 'Done'],
-        taskCount: 0
+        taskCount: 0,
       };
     }
   }
@@ -230,9 +227,9 @@ ${taskSummary}`;
     utility.debugLog('Retrieved repository context for system message');
 
     // Format the integrations section if present
-    const integrationsSection = context.integrationsContent ?
-        this.formatIntegrationSection(context.integrationsContent) :
-        '';
+    const integrationsSection = context.integrationsContent
+      ? this.formatIntegrationSection(context.integrationsContent)
+      : '';
 
     // Get board data to include in system message
     let boardData;
@@ -252,11 +249,9 @@ ${taskSummary}`;
 
         if (fs.existsSync(tasksDirPath)) {
           // Filter out system tasks (AI interactions)
-          const taskFiles = fs.readdirSync(tasksDirPath).filter(file =>
-            file.endsWith('.md') &&
-            !file.includes('ai-request') &&
-            !file.includes('ai-response')
-          );
+          const taskFiles = fs.readdirSync(tasksDirPath).filter((file) => file.endsWith('.md')
+            && !file.includes('ai-request')
+            && !file.includes('ai-response'));
 
           utility.debugLog(`Found ${taskFiles.length} non-system task files in filesystem`);
 
@@ -352,7 +347,7 @@ ${taskSummary}`;
     3. If asked about functionality or features, reference the actual implementation details from the repository context.\n
     4. Connect task information with repository context to provide comprehensive responses.\n
     5. If the repository context doesn't contain information needed to answer a question, clearly state that limitation.\n
-    ${integrationsSection}`
+    ${integrationsSection}`,
     };
   }
 
@@ -388,7 +383,7 @@ ${taskSummary}`;
           const readmeContent = fs.readFileSync(readmePath, 'utf8');
           // Limit README content to 2000 characters to avoid token limits
           const truncatedContent = readmeContent.length > 2000
-            ? readmeContent.substring(0, 2000) + '...(truncated)'
+            ? `${readmeContent.substring(0, 2000)}...(truncated)`
             : readmeContent;
           context += `## README.md\n\`\`\`markdown\n${truncatedContent}\n\`\`\`\n\n`;
           utility.debugLog('Added README.md content to repository context');
@@ -401,7 +396,7 @@ ${taskSummary}`;
       try {
         // Use simple fs.readdirSync to get top-level files and directories
         const topLevelItems = fs.readdirSync(process.cwd())
-          .filter(item => !item.startsWith('.') && item !== 'node_modules');
+          .filter((item) => !item.startsWith('.') && item !== 'node_modules');
 
         context += `## Repository Structure\n\`\`\`\n${topLevelItems.join('\n')}\n\`\`\`\n\n`;
         utility.debugLog(`Added top-level repository structure with ${topLevelItems.length} items`);
@@ -413,7 +408,7 @@ ${taskSummary}`;
           if (fs.existsSync(dirPath) && fs.statSync(dirPath).isDirectory()) {
             try {
               const dirContents = fs.readdirSync(dirPath)
-                .filter(item => !item.startsWith('.'))
+                .filter((item) => !item.startsWith('.'))
                 .slice(0, 10); // Limit to 10 items
 
               if (dirContents.length > 0) {
@@ -483,7 +478,7 @@ ${taskSummary}`;
 
       // Get all task files
       const taskFiles = fs.readdirSync(tasksDir)
-        .filter(file => file.endsWith('.md'));
+        .filter((file) => file.endsWith('.md'));
 
       // Load each task
       const tasks = {};
@@ -499,7 +494,7 @@ ${taskSummary}`;
         tasks[taskId] = {
           name: nameMatch ? nameMatch[1] : taskId,
           description: descriptionMatch ? descriptionMatch[1].trim() : '',
-          metadata: {}
+          metadata: {},
         };
       }
 

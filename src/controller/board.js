@@ -2,7 +2,7 @@ const Kanbn = require('../main');
 const utility = require('../utility');
 const board = require('../board');
 
-module.exports = async args => {
+module.exports = async (args) => {
   // Create a Kanbn instance
   const kanbn = Kanbn();
 
@@ -35,7 +35,7 @@ module.exports = async args => {
   const taskUtils = require('../lib/task-utils');
 
   // Get all tasks from the index - returns an object with task IDs as keys
-  let allTasks = await kanbn.loadAllTrackedTasks(index);
+  const allTasks = await kanbn.loadAllTrackedTasks(index);
 
   // Convert tasks object to array for filtering and hydration
   const tasksArray = Object.entries(allTasks).map(([id, task]) => {
@@ -45,17 +45,17 @@ module.exports = async args => {
   });
 
   // Filter out system tasks (AI interaction records)
-  const projectTasks = tasksArray.filter(task => !taskUtils.isSystemTask(task.id, task));
+  const projectTasks = tasksArray.filter((task) => !taskUtils.isSystemTask(task.id, task));
 
   utility.debugLog(`Loaded ${tasksArray.length} total tasks, displaying ${projectTasks.length} project tasks`);
 
   // Hydrate only the project tasks for display
-  const tasks = projectTasks.map(task => kanbn.hydrateTask(index, task));
+  const tasks = projectTasks.map((task) => kanbn.hydrateTask(index, task));
 
   // Show the board
   board
-  .show(index, tasks, args.view, args.json)
-  .catch(error => {
-    utility.error(error);
-  });
+    .show(index, tasks, args.view, args.json)
+    .catch((error) => {
+      utility.error(error);
+    });
 };

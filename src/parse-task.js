@@ -1,9 +1,9 @@
 const yaml = require('yamljs');
 const fm = require('front-matter');
+const chrono = require('chrono-node');
+const { validate } = require('jsonschema');
 const markdown = require('./lib/markdown');
 const utility = require('./utility');
-const chrono = require('chrono-node');
-const validate = require('jsonschema').validate;
 const parseMarkdown = require('./parse-markdown');
 
 /**
@@ -15,13 +15,13 @@ function compileDescription(data) {
   if ('raw' in data) {
     description.push(data.raw.content.replace(/[\r\n]{3}/g, '\n\n').trim());
   }
-  for (let heading in data) {
+  for (const heading in data) {
     if (['raw', 'Metadata', 'Sub-tasks', 'Relations', 'Comments'].indexOf(heading) !== -1) {
       continue;
     }
     description.push(
       /^# (.*)/.test(data[heading].heading) ? '' : data[heading].heading,
-      data[heading].content
+      data[heading].content,
     );
   }
   return description.join('\n\n').trim();
@@ -35,51 +35,51 @@ function validateMetadataFromMarkdown(metadata) {
   const result = validate(metadata, {
     type: 'object',
     properties: {
-      'created': {
+      created: {
         oneOf: [
           { type: 'string' },
-          { type: 'date'}
-        ]
+          { type: 'date' },
+        ],
       },
-      'updated': {
+      updated: {
         oneOf: [
           { type: 'string' },
-          { type: 'date'}
-        ]
+          { type: 'date' },
+        ],
       },
-      'started': {
+      started: {
         oneOf: [
           { type: 'string' },
-          { type: 'date'}
-        ]
+          { type: 'date' },
+        ],
       },
-      'completed': {
+      completed: {
         oneOf: [
           { type: 'string' },
-          { type: 'date'}
-        ]
+          { type: 'date' },
+        ],
       },
-      'due': {
+      due: {
         oneOf: [
           { type: 'string' },
-          { type: 'date'}
-        ]
+          { type: 'date' },
+        ],
       },
-      'progress': {
-        type: 'number'
+      progress: {
+        type: 'number',
       },
-      'tags': {
+      tags: {
         type: 'array',
-        items: { type: 'string' }
+        items: { type: 'string' },
       },
-      'references': {
+      references: {
         type: 'array',
-        items: { type: 'string' }
-      }
-    }
+        items: { type: 'string' },
+      },
+    },
   });
   if (result.errors.length) {
-    throw new Error(result.errors.map(error => `\n${error.property} ${error.message}`).join(''));
+    throw new Error(result.errors.map((error) => `\n${error.property} ${error.message}`).join(''));
   }
 }
 
@@ -91,25 +91,25 @@ function validateMetadataFromJSON(metadata) {
   const result = validate(metadata, {
     type: 'object',
     properties: {
-      'created': { type: 'date'},
-      'updated': { type: 'date'},
-      'started': { type: 'date'},
-      'completed': { type: 'date'},
-      'due': { type: 'date'},
-      'progress': { type: 'number' },
-      'tags': {
+      created: { type: 'date' },
+      updated: { type: 'date' },
+      started: { type: 'date' },
+      completed: { type: 'date' },
+      due: { type: 'date' },
+      progress: { type: 'number' },
+      tags: {
         type: 'array',
-        items: { type: 'string' }
+        items: { type: 'string' },
       },
-      'assigned': { type: 'string' },
-      'references': {
+      assigned: { type: 'string' },
+      references: {
         type: 'array',
-        items: { type: 'string' }
-      }
-    }
+        items: { type: 'string' },
+      },
+    },
   });
   if (result.errors.length) {
-    throw new Error(result.errors.map(error => `\n${error.property} ${error.message}`).join(''));
+    throw new Error(result.errors.map((error) => `\n${error.property} ${error.message}`).join(''));
   }
 }
 
@@ -123,13 +123,13 @@ function validateSubTasks(subTasks) {
     items: {
       type: 'object',
       properties: {
-        'text': { type: 'string' },
-        'completed': { type: 'boolean' }
-      }
-    }
+        text: { type: 'string' },
+        completed: { type: 'boolean' },
+      },
+    },
   });
   if (result.errors.length) {
-    throw new Error(result.errors.map(error => `\n${error.property} ${error.message}`).join(''));
+    throw new Error(result.errors.map((error) => `\n${error.property} ${error.message}`).join(''));
   }
 }
 
@@ -143,13 +143,13 @@ function validateRelations(relations) {
     items: {
       type: 'object',
       properties: {
-        'type': { type: 'string' },
-        'task': { type: 'string' }
-      }
-    }
+        type: { type: 'string' },
+        task: { type: 'string' },
+      },
+    },
   });
   if (result.errors.length) {
-    throw new Error(result.errors.map(error => `\n${error.property} ${error.message}`).join(''));
+    throw new Error(result.errors.map((error) => `\n${error.property} ${error.message}`).join(''));
   }
 }
 
@@ -163,14 +163,14 @@ function validateComments(comments) {
     items: {
       type: 'object',
       properties: {
-        'author': { type: 'string' },
-        'date': { type: 'date' },
-        'text': { type: 'string' }
-      }
-    }
+        author: { type: 'string' },
+        date: { type: 'date' },
+        text: { type: 'string' },
+      },
+    },
   });
   if (result.errors.length) {
-    throw new Error(result.errors.map(error => `\n${error.property} ${error.message}`).join(''));
+    throw new Error(result.errors.map((error) => `\n${error.property} ${error.message}`).join(''));
   }
 }
 
@@ -182,9 +182,9 @@ module.exports = {
    * @return {object}
    */
   md2json(data) {
-    let id = '', name = '', description = '', metadata = {}, subTasks = [], relations = [], comments = [];
+    let id = ''; let name = ''; let description = ''; let metadata = {}; let subTasks = []; let relations = []; const
+      comments = [];
     try {
-
       // Check data type
       if (!data) {
         throw new Error('data is null or empty');
@@ -226,16 +226,15 @@ module.exports = {
       // Parse metadata
       // Metadata will be serialized back to front-matter, this check remains here for backwards compatibility
       if ('Metadata' in task) {
-
         // Get embedded metadata and make sure it's an object
-        const embeddedMetadata = yaml.parse(task['Metadata'].content.trim().replace(/```(yaml|yml)?/g, ''));
+        const embeddedMetadata = yaml.parse(task.Metadata.content.trim().replace(/```(yaml|yml)?/g, ''));
         if (typeof embeddedMetadata !== 'object') {
           throw new Error('invalid metadata content');
         }
 
         // Merge with front matter metadata
         metadata = Object.assign(metadata, embeddedMetadata);
-        delete task['Metadata'];
+        delete task.Metadata;
       }
       validateMetadataFromMarkdown(metadata);
 
@@ -288,9 +287,9 @@ module.exports = {
       // Parse sub-tasks
       if ('Sub-tasks' in task) {
         try {
-          subTasks = markdown.lexer(task['Sub-tasks'].content)[0].items.map(item => ({
+          subTasks = markdown.lexer(task['Sub-tasks'].content)[0].items.map((item) => ({
             text: item.text.trim(),
-            completed: item.checked || false
+            completed: item.checked || false,
           }));
         } catch (error) {
           throw new Error('sub-tasks must contain a list');
@@ -301,38 +300,38 @@ module.exports = {
       // Parse relations
       if ('Relations' in task) {
         try {
-          relations = markdown.lexer(task['Relations'].content)[0].items.map(item => {
+          relations = markdown.lexer(task.Relations.content)[0].items.map((item) => {
             const parts = item.tokens[0].tokens[0].text.split(' ');
             return parts.length === 1
               ? {
                 task: parts[0].trim(),
-                type: ''
+                type: '',
               }
               : {
                 task: parts.pop().trim(),
-                type: parts.join(' ').trim()
+                type: parts.join(' ').trim(),
               };
           });
         } catch (error) {
           throw new Error('relations must contain a list');
         }
-        delete task['Relations'];
+        delete task.Relations;
       }
 
       // Parse references
       if ('References' in task) {
         try {
-          const referenceItems = markdown.lexer(task['References'].content)[0].items;
+          const referenceItems = markdown.lexer(task.References.content)[0].items;
           if (!('references' in metadata)) {
             metadata.references = [];
           }
-          for (let referenceItem of referenceItems) {
+          for (const referenceItem of referenceItems) {
             metadata.references.push(referenceItem.text.trim());
           }
         } catch (error) {
           throw new Error('references must contain a list');
         }
-        delete task['References'];
+        delete task.References;
       }
 
       // Parse comments
@@ -347,11 +346,11 @@ module.exports = {
           //   end = data.length;
           // }
           // const parsedComments = markdown.lexer(data.slice(start, end).trim())[0].items;
-          const parsedComments = markdown.lexer(task['Comments'].content)[0].items;
-          for (let parsedComment of parsedComments) {
+          const parsedComments = markdown.lexer(task.Comments.content)[0].items;
+          for (const parsedComment of parsedComments) {
             const comment = { text: [] };
             const parts = parsedComment.text.split('\n');
-            for (let part of parts) {
+            for (const part of parts) {
               if (part.startsWith('date: ')) {
                 const dateValue = chrono.parseDate(part.substring('date: '.length));
                 if (dateValue === null) {
@@ -370,7 +369,7 @@ module.exports = {
         } catch (error) {
           throw new Error('comments must contain a list');
         }
-        delete task['Comments'];
+        delete task.Comments;
       }
 
       // Assemble description
@@ -382,7 +381,9 @@ module.exports = {
     }
 
     // Assemble task object
-    return { id, name, description, metadata, subTasks, relations, comments };
+    return {
+      id, name, description, metadata, subTasks, relations, comments,
+    };
   },
 
   /**
@@ -393,7 +394,6 @@ module.exports = {
   json2md(data) {
     const result = [];
     try {
-
       // Check data type
       if (!data) {
         throw new Error('data is null or empty');
@@ -412,7 +412,7 @@ module.exports = {
         validateMetadataFromJSON(data.metadata);
         if (Object.keys(data.metadata).length > 0) {
           result.push(
-            `---\n${yaml.stringify(data.metadata, 4, 2).trim()}\n---`
+            `---\n${yaml.stringify(data.metadata, 4, 2).trim()}\n---`,
           );
         }
       }
@@ -429,7 +429,7 @@ module.exports = {
         if (data.subTasks.length > 0) {
           result.push(
             '## Sub-tasks',
-            data.subTasks.map(subTask => `- [${subTask.completed ? 'x' : ' '}] ${subTask.text}`).join('\n')
+            data.subTasks.map((subTask) => `- [${subTask.completed ? 'x' : ' '}] ${subTask.text}`).join('\n'),
           );
         }
       }
@@ -441,8 +441,8 @@ module.exports = {
           result.push(
             '## Relations',
             data.relations.map(
-              relation => `- [${relation.type ? `${relation.type} ` : ''}${relation.task}](${relation.task}.md)`
-            ).join('\n')
+              (relation) => `- [${relation.type ? `${relation.type} ` : ''}${relation.task}](${relation.task}.md)`,
+            ).join('\n'),
           );
         }
       }
@@ -452,7 +452,7 @@ module.exports = {
         if (data.metadata.references.length > 0) {
           result.push(
             '## References',
-            data.metadata.references.map(reference => `- ${reference}`).join('\n')
+            data.metadata.references.map((reference) => `- ${reference}`).join('\n'),
           );
         }
       }
@@ -463,7 +463,7 @@ module.exports = {
         if (data.comments.length > 0) {
           result.push(
             '## Comments',
-            data.comments.map(comment => {
+            data.comments.map((comment) => {
               const commentOutput = [];
               if ('author' in comment && comment.author) {
                 commentOutput.push(`author: ${comment.author}`);
@@ -472,8 +472,8 @@ module.exports = {
                 commentOutput.push(`date: ${comment.date.toISOString()}`);
               }
               commentOutput.push(...comment.text.split('\n'));
-              return `- ${commentOutput.map((v, i) => i > 0 ? `  ${v}` : v).join('\n')}`;
-            }).join('\n')
+              return `- ${commentOutput.map((v, i) => (i > 0 ? `  ${v}` : v)).join('\n')}`;
+            }).join('\n'),
           );
         }
       }
@@ -482,6 +482,6 @@ module.exports = {
     }
 
     // Filter empty lines and join into a string
-    return `${result.filter(l => !!l).join('\n\n')}\n`;
-  }
+    return `${result.filter((l) => !!l).join('\n\n')}\n`;
+  },
 };

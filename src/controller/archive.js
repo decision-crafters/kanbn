@@ -8,13 +8,13 @@ const utility = require('../utility');
 function archiveTask(taskId) {
   const kanbn = Kanbn();
   kanbn
-  .archiveTask(taskId)
-  .then(taskId => {
-    console.log(`Archived task "${taskId}"`);
-  })
-  .catch(error => {
-    utility.error(error);
-  });
+    .archiveTask(taskId)
+    .then((taskId) => {
+      console.log(`Archived task "${taskId}"`);
+    })
+    .catch((error) => {
+      utility.error(error);
+    });
 }
 
 /**
@@ -23,16 +23,16 @@ function archiveTask(taskId) {
 function listArchivedTasks() {
   const kanbn = Kanbn();
   kanbn
-  .listArchivedTasks()
-  .then(archivedTasks => {
-    console.log(archivedTasks.join('\n'));
-  })
-  .catch(error => {
-    utility.error(error);
-  });
+    .listArchivedTasks()
+    .then((archivedTasks) => {
+      console.log(archivedTasks.join('\n'));
+    })
+    .catch((error) => {
+      utility.error(error);
+    });
 }
 
-module.exports = async args => {
+module.exports = async (args) => {
   // Create a Kanbn instance
   const kanbn = Kanbn();
 

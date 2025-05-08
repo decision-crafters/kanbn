@@ -15,7 +15,7 @@ function buildPromptForTask(task) {
   const parts = [];
 
   // Add a separator at the top
-  parts.push('=' .repeat(80));
+  parts.push('='.repeat(80));
 
   // Add task name and ID
   parts.push(`# Task: ${task.name}`);
@@ -70,7 +70,7 @@ function buildPromptForTask(task) {
     // Add references if available
     if (task.metadata.references && task.metadata.references.length > 0) {
       parts.push('\n### References');
-      task.metadata.references.forEach(ref => {
+      task.metadata.references.forEach((ref) => {
         parts.push(`- ${ref}`);
       });
     }
@@ -79,7 +79,7 @@ function buildPromptForTask(task) {
   // Add sub-tasks if available
   if (task.subTasks && task.subTasks.length > 0) {
     parts.push('\n## Sub-tasks');
-    task.subTasks.forEach(subTask => {
+    task.subTasks.forEach((subTask) => {
       parts.push(`- [${subTask.completed ? 'x' : ' '}] ${subTask.text}`);
     });
   }
@@ -87,7 +87,7 @@ function buildPromptForTask(task) {
   // Add relations if available
   if (task.relations && task.relations.length > 0) {
     parts.push('\n## Relations');
-    task.relations.forEach(relation => {
+    task.relations.forEach((relation) => {
       parts.push(`- ${relation.type ? `${relation.type} ` : ''}${relation.task}`);
     });
   }
@@ -95,7 +95,7 @@ function buildPromptForTask(task) {
   // Add comments if available
   if (task.comments && task.comments.length > 0) {
     parts.push('\n## Comments');
-    task.comments.forEach(comment => {
+    task.comments.forEach((comment) => {
       const commentParts = [];
 
       if (comment.author) {
@@ -119,11 +119,11 @@ function buildPromptForTask(task) {
   parts.push('Please analyze this task and provide insights, suggestions, or next steps based on the information above.');
 
   // Add a separator at the bottom
-  parts.push('\n' + '=' .repeat(80));
+  parts.push(`\n${'='.repeat(80)}`);
 
   return parts.join('\n');
 }
 
 module.exports = {
-  buildPromptForTask
+  buildPromptForTask,
 };

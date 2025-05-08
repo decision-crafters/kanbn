@@ -12,12 +12,12 @@ const eventBus = new EventEmitter();
 
 // Add debug logging for events
 const originalEmit = eventBus.emit;
-eventBus.emit = function(event, ...args) {
+eventBus.emit = function (event, ...args) {
   // Log the event if DEBUG environment variable is set
   if (process.env.DEBUG && (
-    process.env.DEBUG.includes('kanbn:events') ||
-    process.env.DEBUG.includes('kanbn:*') ||
-    process.env.DEBUG === 'true'
+    process.env.DEBUG.includes('kanbn:events')
+    || process.env.DEBUG.includes('kanbn:*')
+    || process.env.DEBUG === 'true'
   )) {
     console.log(`[EVENT] ${event}:`, util.inspect(args, { depth: 3, colors: true }));
   }

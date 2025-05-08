@@ -18,20 +18,20 @@ class MemoryManager {
    */
   constructor(kanbnFolder) {
     this.kanbnFolder = kanbnFolder;
-    
+
     // Ensure memory file is stored in the .kanbn directory
     // Check if the path already contains .kanbn, otherwise append it
-    const kanbnDir = kanbnFolder.endsWith('.kanbn') ? 
-      kanbnFolder : 
-      path.join(kanbnFolder, '.kanbn');
-    
+    const kanbnDir = kanbnFolder.endsWith('.kanbn')
+      ? kanbnFolder
+      : path.join(kanbnFolder, '.kanbn');
+
     this.memoryFile = path.join(kanbnDir, 'chat-memory.json');
-    
+
     this.memory = {
       conversations: [],
       context: {},
       taskReferences: {}, // Track task reference history
-      lastUpdated: null
+      lastUpdated: null,
     };
   }
 
@@ -49,8 +49,8 @@ class MemoryManager {
         this.memory = {
           conversations: [],
           context: {},
-          taskReferences: {},  // Add empty task references structure
-          lastUpdated: new Date().toISOString()
+          taskReferences: {}, // Add empty task references structure
+          lastUpdated: new Date().toISOString(),
         };
         await this.saveMemory();
       }
@@ -62,7 +62,7 @@ class MemoryManager {
         conversations: [],
         context: {},
         taskReferences: {}, // Include task references in default return value
-        lastUpdated: new Date().toISOString()
+        lastUpdated: new Date().toISOString(),
       };
     }
   }
@@ -77,7 +77,7 @@ class MemoryManager {
       const dirPath = path.dirname(this.memoryFile);
       console.log(`Saving memory to file: ${this.memoryFile}`);
       console.log(`Directory path: ${dirPath}`);
-      
+
       // Ensure the directory exists
       try {
         console.log(`Creating directory: ${dirPath}`);
@@ -94,7 +94,7 @@ class MemoryManager {
 
       // Update the lastUpdated timestamp
       this.memory.lastUpdated = new Date().toISOString();
-      
+
       // Debug memory contents
       console.log(`Memory contents: Task references: ${Object.keys(this.memory.taskReferences).length}, Conversations: ${this.memory.conversations.length}`);
 
@@ -102,7 +102,7 @@ class MemoryManager {
       await writeFile(
         this.memoryFile,
         JSON.stringify(this.memory, null, 2),
-        'utf8'
+        'utf8',
       );
       console.log(`Memory successfully saved to ${this.memoryFile}`);
     } catch (error) {
@@ -119,7 +119,7 @@ class MemoryManager {
    */
   async addMessage(role, content, type = 'chat') {
     // Find the most recent conversation of the specified type
-    let conversation = this.memory.conversations.find(c => c.type === type && c.active);
+    let conversation = this.memory.conversations.find((c) => c.type === type && c.active);
 
     // If no active conversation of this type exists, create one
     if (!conversation) {
@@ -129,7 +129,7 @@ class MemoryManager {
         active: true,
         messages: [],
         created: new Date().toISOString(),
-        updated: new Date().toISOString()
+        updated: new Date().toISOString(),
       };
       this.memory.conversations.push(conversation);
     }
@@ -138,7 +138,7 @@ class MemoryManager {
     conversation.messages.push({
       role,
       content,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
 
     // Update the conversation's updated timestamp
@@ -155,7 +155,7 @@ class MemoryManager {
    */
   getConversationHistory(type = 'chat') {
     // Find the most recent conversation of the specified type
-    const conversation = this.memory.conversations.find(c => c.type === type && c.active);
+    const conversation = this.memory.conversations.find((c) => c.type === type && c.active);
 
     // If no conversation exists, return an empty array
     if (!conversation) {
@@ -163,9 +163,9 @@ class MemoryManager {
     }
 
     // Return the messages in the format expected by OpenRouter
-    return conversation.messages.map(message => ({
+    return conversation.messages.map((message) => ({
       role: message.role,
-      content: message.content
+      content: message.content,
     }));
   }
 
@@ -178,7 +178,7 @@ class MemoryManager {
     // Merge the new context with the existing context
     this.memory.context = {
       ...this.memory.context,
-      ...newContext
+      ...newContext,
     };
 
     // Save the updated memory
@@ -200,7 +200,7 @@ class MemoryManager {
    */
   async startNewConversation(type = 'chat') {
     // Mark all existing conversations of this type as inactive
-    this.memory.conversations.forEach(conversation => {
+    this.memory.conversations.forEach((conversation) => {
       if (conversation.type === type) {
         conversation.active = false;
       }
@@ -213,7 +213,7 @@ class MemoryManager {
       active: true,
       messages: [],
       created: new Date().toISOString(),
-      updated: new Date().toISOString()
+      updated: new Date().toISOString(),
     };
 
     // Add the new conversation to the memory
@@ -232,7 +232,7 @@ class MemoryManager {
       conversations: [],
       context: {},
       taskReferences: {}, // Include task references when clearing memory
-      lastUpdated: new Date().toISOString()
+      lastUpdated: new Date().toISOString(),
     };
 
     await this.saveMemory();
@@ -247,43 +247,43 @@ class MemoryManager {
    */
   async addTaskReference(taskId, taskData = {}, referenceType = 'view') {
     if (!taskId) return;
-    
+
     // Initialize task reference if it doesn't exist
     if (!this.memory.taskReferences[taskId]) {
       this.memory.taskReferences[taskId] = {
         references: [],
         firstReferenced: new Date().toISOString(),
         lastReferenced: new Date().toISOString(),
-        data: {}
+        data: {},
       };
     }
-    
+
     // Update the task reference
     const taskRef = this.memory.taskReferences[taskId];
-    
+
     // Add the new reference
     taskRef.references.push({
       type: referenceType,
       timestamp: new Date().toISOString(),
-      conversationId: this.getActiveConversationId()
+      conversationId: this.getActiveConversationId(),
     });
-    
+
     // Keep only the last 10 references to prevent unlimited growth
     if (taskRef.references.length > 10) {
       taskRef.references = taskRef.references.slice(-10);
     }
-    
+
     // Update the last referenced timestamp
     taskRef.lastReferenced = new Date().toISOString();
-    
+
     // Merge any new task data
     if (taskData && typeof taskData === 'object') {
       taskRef.data = {
         ...taskRef.data,
-        ...taskData
+        ...taskData,
       };
     }
-    
+
     // Save the updated memory
     await this.saveMemory();
   }
@@ -297,7 +297,7 @@ class MemoryManager {
     if (taskId) {
       return this.memory.taskReferences[taskId] || null;
     }
-    
+
     return this.memory.taskReferences;
   }
 
@@ -316,7 +316,7 @@ class MemoryManager {
    * @returns {string|null} The conversation ID or null if no active conversation
    */
   getActiveConversationId(type = 'chat') {
-    const conversation = this.memory.conversations.find(c => c.type === type && c.active);
+    const conversation = this.memory.conversations.find((c) => c.type === type && c.active);
     return conversation ? conversation.id : null;
   }
 }

@@ -1,6 +1,6 @@
+const inquirer = require('inquirer');
 const kanbnModule = require('../main');
 const utility = require('../utility');
-const inquirer = require('inquirer');
 
 /**
  * Remove a task
@@ -20,7 +20,7 @@ async function removeTask(taskId, removeFile, kanbnInstance) {
   }
 }
 
-module.exports = async args => {
+module.exports = async (args) => {
   const kanbn = kanbnModule();
 
   // Make sure kanbn has been initialised
@@ -70,8 +70,8 @@ module.exports = async args => {
           type: 'confirm',
           message: 'Are you sure you want to remove this task?',
           name: 'sure',
-          default: false
-        }
+          default: false,
+        },
       ]);
 
       if (answers.sure) {
