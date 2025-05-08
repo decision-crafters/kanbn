@@ -2,41 +2,35 @@ const mockFileSystem = require('mock-fs');
 const kanbn = require('../../src/main');
 const context = require('../context');
 
-QUnit.module('comment tests', {
-  before() {
+describe('comment tests', () => {
+  beforeAll(() => {
     require('../qunit-throws-async');
-  },
-  beforeEach() {
-    require('../fixtures')({
-      countColumns: 1,
-      countTasks: 1
-    });
+  
+  });
   },
   afterEach() {
     mockFileSystem.restore();
   }
 });
 
-QUnit.test('Add comment to task in uninitialised folder should throw "not initialised" error', async assert => {
+  test('Add comment to task in uninitialised folder should throw ', not initialised" error', async assert => {
   mockFileSystem();
-  assert.throwsAsync(
-    async () => {
-      await kanbn.comment('task-1', '', '');
+  await expect(async () => {
+      await kanbn.comment('task-1').toThrowAsync('', '');
     },
     /Not initialised in this folder/
   );
 });
 
-QUnit.test('Add comment to non-existent task should throw "task file not found" error', async assert => {
-  assert.throwsAsync(
-    async () => {
-      await kanbn.comment('task-2', '', '');
+  test('Add comment to non-existent task should throw ', task file not found" error', async assert => {
+  await expect(async () => {
+      await kanbn.comment('task-2').toThrowAsync('', '');
     },
     /No task file found with id "task-2"/
   );
 });
 
-QUnit.test('Add comment to an untracked task should throw "task not indexed" error', async assert => {
+  test('Add comment to an untracked task should throw ', task not indexed" error', async assert => {
 
   // Create a mock index and untracked task
   mockFileSystem({
@@ -49,24 +43,22 @@ QUnit.test('Add comment to an untracked task should throw "task not indexed" err
   });
 
   // Try to add a comment to an untracked task
-  assert.throwsAsync(
-    async () => {
-      await kanbn.comment('test-task', '', '');
+  await expect(async () => {
+      await kanbn.comment('test-task').toThrowAsync('', '');
     },
     /Task "test-task" is not in the index/
   );
 });
 
-QUnit.test('Add a comment with blank text throw "blank text" error', async assert => {
-  assert.throwsAsync(
-    async () => {
-      await kanbn.comment('task-1', '', '');
+  test('Add a comment with blank text throw ', blank text" error', async assert => {
+  await expect(async () => {
+      await kanbn.comment('task-1').toThrowAsync('', '');
     },
     /Comment text cannot be empty/
   );
 });
 
-QUnit.test('Add a comment to a task', async assert => {
+  test('Add a comment to a task', async () => {
   const BASE_PATH = await kanbn.getMainFolder();
   const TEST_TEXT = 'Test comment...';
   const TEST_AUTHOR = 'Test Author';
@@ -85,3 +77,5 @@ QUnit.test('Add a comment to a task', async assert => {
     date: currentDate
   }]);
 });
+
+});\

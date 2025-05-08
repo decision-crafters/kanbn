@@ -1,6 +1,6 @@
 const parseTask = require('../../src/parse-task');
 
-QUnit.module('Task markdown to JSON conversion tests');
+describe('Task markdown to JSON conversion tests', () => {
 
 const TEST_ID = 'test-name';
 const TEST_NAME = 'Test Name';
@@ -498,14 +498,16 @@ moreValidMetadata: test3
   }
 ];
 
-QUnit.test('Test task to json conversion with valid markdown', assert => {
+  test('Test task to json conversion with valid markdown', () => {
   validCases.forEach((validCase, i) => {
     assert.deepEqual(parseTask.md2json(validCase.md), validCase.json, `Failed on valid case ${i + 1}`);
   });
 });
 
-QUnit.test('Test task to json conversion with invalid markdown', assert => {
+  test('Test task to json conversion with invalid markdown', () => {
   invalidCases.forEach((invalidCase, i) => {
     assert.throws(() => { parseTask.md2json(invalidCase.md); }, invalidCase.error, `Failed on invalid case ${i + 1}`);
   });
 });
+
+});\

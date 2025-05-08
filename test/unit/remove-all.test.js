@@ -1,32 +1,39 @@
 const mockFileSystem = require('mock-fs');
-const kanbn = require('../../src/main');
+const Kanbn = require('../../src/main');
 const context = require('../context');
 
-QUnit.module('removeAll tests', {
-  beforeEach() {
-    require('../fixtures')({
-      countTasks: 1
-    });
-  },
-  afterEach() {
+describe('removeAll tests', () => {
+  let kanbn;
+  
+  beforeEach(() => {
+    mockFileSystem();
+    kanbn = Kanbn();
+  });
+  
+  afterEach(() => {
     mockFileSystem.restore();
-  }
-});
+  });
 
-QUnit.test('Remove all should remove all kanbn files and folders', async assert => {
-  const BASE_PATH = await kanbn.getMainFolder();
+  test('Remove all should remove all kanbn files and folders', async () => {
+    await kanbn.initialise();
+    const BASE_PATH = await kanbn.getMainFolder();
 
-  // Kanbn should be initialised
-  assert.equal(await kanbn.initialised(), true);
+    // Kanbn should be initialised
+    expect(await kanbn.initialised()).toBe(true);
 
-  // Remove everything
-  await kanbn.removeAll();
+    // Remove everything
+    await kanbn.removeAll();
 
-  // Kanbn should not be initialised
-  assert.equal(await kanbn.initialised(), false);
+    // Kanbn should not be initialised
+    expect(await kanbn.initialised()).toBe(false);
 
-  // Verify that the index and folders have been removed
-  context.indexExists(assert, BASE_PATH, false);
-  context.kanbnFolderExists(assert, BASE_PATH, false);
-  context.tasksFolderExists(assert, BASE_PATH, false);
+    // Verify that the index and folders have been removed
+    const indexExists = context.indexExists({ ok: expect }, BASE_PATH, false);
+    const kanbnFolderExists = context.kanbnFolderExists({ ok: expect }, BASE_PATH, false);
+    const tasksFolderExists = context.tasksFolderExists({ ok: expect }, BASE_PATH, false);
+    
+    expect(indexExists).toBeTruthy();
+    expect(kanbnFolderExists).toBeTruthy();
+    expect(tasksFolderExists).toBeTruthy();
+  });
 });

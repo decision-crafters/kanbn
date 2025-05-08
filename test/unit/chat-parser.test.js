@@ -1,9 +1,9 @@
 const QUnit = require('qunit');
 const chatParser = require('../../src/lib/chat-parser');
 
-QUnit.module('Chat Parser tests');
+describe('Chat Parser tests', () => {
 
-QUnit.test('should parse create task commands', function(assert) {
+  test('should parse create task commands', function(assert) {
   const tests = [
     {
       input: 'create task "Test Task"',
@@ -26,7 +26,7 @@ QUnit.test('should parse create task commands', function(assert) {
   });
 });
 
-QUnit.test('should parse add subtask commands', function(assert) {
+  test('should parse add subtask commands', function(assert) {
   const tests = [
     {
       input: 'add subtask "Write tests" to "Main Task"',
@@ -45,7 +45,7 @@ QUnit.test('should parse add subtask commands', function(assert) {
   });
 });
 
-QUnit.test('should parse move task commands', function(assert) {
+  test('should parse move task commands', function(assert) {
   const tests = [
     {
       input: 'move "Test Task" to In Progress',
@@ -64,7 +64,7 @@ QUnit.test('should parse move task commands', function(assert) {
   });
 });
 
-QUnit.test('should parse comment commands', function(assert) {
+  test('should parse comment commands', function(assert) {
   const tests = [
     {
       input: 'comment "Looking good" on "Test Task"',
@@ -83,7 +83,7 @@ QUnit.test('should parse comment commands', function(assert) {
   });
 });
 
-QUnit.test('should parse complete task commands', function(assert) {
+  test('should parse complete task commands', function(assert) {
   const tests = [
     {
       input: 'complete "Test Task"',
@@ -106,7 +106,7 @@ QUnit.test('should parse complete task commands', function(assert) {
   });
 });
 
-QUnit.test('should parse status commands', function(assert) {
+  test('should parse status commands', function(assert) {
   const tests = [
     {
       input: 'status',
@@ -129,7 +129,7 @@ QUnit.test('should parse status commands', function(assert) {
   });
 });
 
-QUnit.test('should parse list tasks in column commands', function(assert) {
+  test('should parse list tasks in column commands', function(assert) {
   const tests = [
     {
       input: 'what tasks are in Backlog',
@@ -156,7 +156,7 @@ QUnit.test('should parse list tasks in column commands', function(assert) {
   });
 });
 
-QUnit.test('should parse delete task commands', function(assert) {
+  test('should parse delete task commands', function(assert) {
   const tests = [
     {
       input: 'delete task "Test Task"',
@@ -175,7 +175,7 @@ QUnit.test('should parse delete task commands', function(assert) {
   });
 });
 
-QUnit.test('should parse search tasks commands', function(assert) {
+  test('should parse search tasks commands', function(assert) {
   const tests = [
     {
       input: 'search for tasks with "bug"',
@@ -198,7 +198,7 @@ QUnit.test('should parse search tasks commands', function(assert) {
   });
 });
 
-QUnit.test('should parse list tasks by tag commands', function(assert) {
+  test('should parse list tasks by tag commands', function(assert) {
   const tests = [
     {
       input: 'list tasks with tag "bug"',
@@ -221,7 +221,7 @@ QUnit.test('should parse list tasks by tag commands', function(assert) {
   });
 });
 
-QUnit.test('should parse list tasks by assignee commands', function(assert) {
+  test('should parse list tasks by assignee commands', function(assert) {
   const tests = [
     {
       input: 'list tasks assigned to "John"',
@@ -244,7 +244,7 @@ QUnit.test('should parse list tasks by assignee commands', function(assert) {
   });
 });
 
-QUnit.test('should parse show task details commands', function(assert) {
+  test('should parse show task details commands', function(assert) {
   const tests = [
     {
       input: 'show details for "Test Task"',
@@ -267,7 +267,7 @@ QUnit.test('should parse show task details commands', function(assert) {
   });
 });
 
-QUnit.test('should parse show task stats commands', function(assert) {
+  test('should parse show task stats commands', function(assert) {
   const tests = [
     {
       input: 'show statistics for Backlog',
@@ -290,7 +290,7 @@ QUnit.test('should parse show task stats commands', function(assert) {
   });
 });
 
-QUnit.test('should parse add tag commands', function(assert) {
+  test('should parse add tag commands', function(assert) {
   const tests = [
     {
       input: 'add tag "bug" to task "Login Fix"',
@@ -309,7 +309,7 @@ QUnit.test('should parse add tag commands', function(assert) {
   });
 });
 
-QUnit.test('should parse remove tag commands', function(assert) {
+  test('should parse remove tag commands', function(assert) {
   const tests = [
     {
       input: 'remove tag bug from task "Login Fix"',
@@ -328,7 +328,7 @@ QUnit.test('should parse remove tag commands', function(assert) {
   });
 });
 
-QUnit.test('should parse assign task commands', function(assert) {
+  test('should parse assign task commands', function(assert) {
   const tests = [
     {
       input: 'assign task "Login Fix" to John',
@@ -347,7 +347,7 @@ QUnit.test('should parse assign task commands', function(assert) {
   });
 });
 
-QUnit.test('should parse unassign task commands', function(assert) {
+  test('should parse unassign task commands', function(assert) {
   const tests = [
     {
       input: 'unassign task "Login Fix" from John',
@@ -366,7 +366,7 @@ QUnit.test('should parse unassign task commands', function(assert) {
   });
 });
 
-QUnit.test('should parse update task description commands', function(assert) {
+  test('should parse update task description commands', function(assert) {
   const tests = [
     {
       input: 'update description of "Login Fix" to "Fix login form validation"',
@@ -385,7 +385,7 @@ QUnit.test('should parse update task description commands', function(assert) {
   });
 });
 
-QUnit.test('should fallback to chat intent for unrecognized commands', function(assert) {
+  test('should fallback to chat intent for unrecognized commands', function(assert) {
   const tests = [
     {
       input: 'hello there',
@@ -403,3 +403,5 @@ QUnit.test('should fallback to chat intent for unrecognized commands', function(
     assert.deepEqual(result.params, test.expect.params, `Params should match for "${test.input}"`);
   });
 });
+
+});\

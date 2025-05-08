@@ -8,41 +8,28 @@ if (!fs.existsSync(path.join(__dirname, '../real-fs-fixtures'))) {
   fs.mkdirSync(path.join(__dirname, '../real-fs-fixtures'), { recursive: true });
 }
 
-QUnit.module('moveTask tests', {
-  before() {
+describe('moveTask tests', () => {
+  beforeAll(() => {
     require('../qunit-throws-async');
-  },
-  beforeEach() {
+  
+  });
+  beforeEach(() => {
     const timestamp = Date.now();
-    this.testDir = realFs.createFixtures(`move-test-${timestamp}`, {
-      countColumns: 4,
-      countTasks: 17,
-      tasksPerColumn: 5,
-      options: {
-        startedColumns: ['Column 2'],
-        completedColumns: ['Column 3']
-      }
-    }).testDir;
-    
-    this.originalCwd = process.cwd();
-    process.chdir(this.testDir);
-    
-    this.kanbn = kanbnFactory();
-  },
-  afterEach() {
+    this.testDir = realFs.createFixtures(`move-test-${timestamp
+  });
+  afterEach(() => {
     process.chdir(this.originalCwd);
     realFs.cleanupFixtures(this.testDir);
-  }
-});
+  
+  });
 
-QUnit.test('Move task in uninitialised folder should throw "not initialised" error', async function(assert) {
+  test('Move task in uninitialised folder should throw ', not initialised" error', async function(assert) {
   const emptyDir = path.join(this.testDir, 'empty');
   fs.mkdirSync(emptyDir);
   process.chdir(emptyDir);
   
-  await assert.throwsAsync(
-    async () => {
-      await this.kanbn.moveTask('task-1', 'Column 2');
+  await await expect(async () => {
+      await this.kanbn.moveTask('task-1').toThrowAsync('Column 2');
     },
     /Not initialised in this folder/
   );
@@ -50,16 +37,15 @@ QUnit.test('Move task in uninitialised folder should throw "not initialised" err
   process.chdir(this.testDir);
 });
 
-QUnit.test('Move non-existent task should throw "task file not found" error', async function(assert) {
-  await assert.throwsAsync(
-    async () => {
-      await this.kanbn.moveTask('task-18', 'Column 2');
+  test('Move non-existent task should throw ', task file not found" error', async function(assert) {
+  await await expect(async () => {
+      await this.kanbn.moveTask('task-18').toThrowAsync('Column 2');
     },
     /No task file found with id "task-18"/
   );
 });
 
-QUnit.test('Move an untracked task should throw "task not indexed" error', async function(assert) {
+  test('Move an untracked task should throw ', task not indexed" error', async function(assert) {
   // Create a test directory with an untracked task
   const untrackedDir = path.join(this.testDir, 'untracked');
   fs.mkdirSync(path.join(untrackedDir, '.kanbn', 'tasks'), { recursive: true });
@@ -80,9 +66,8 @@ QUnit.test('Move an untracked task should throw "task not indexed" error', async
   const untrackedKanbn = kanbnFactory();
   
   // Try to move an untracked task
-  await assert.throwsAsync(
-    async () => {
-      await untrackedKanbn.moveTask('test-task', 'Test Column 1');
+  await await expect(async () => {
+      await untrackedKanbn.moveTask('test-task').toThrowAsync('Test Column 1');
     },
     /Task "test-task" is not in the index/
   );
@@ -90,59 +75,58 @@ QUnit.test('Move an untracked task should throw "task not indexed" error', async
   process.chdir(this.testDir);
 });
 
-QUnit.test('Move a task to a non-existent column should throw "column not found" error', async function(assert) {
-  await assert.throwsAsync(
-    async () => {
-      await this.kanbn.moveTask('task-1', 'Column 5');
+  test('Move a task to a non-existent column should throw ', column not found" error', async function(assert) {
+  await await expect(async () => {
+      await this.kanbn.moveTask('task-1').toThrowAsync('Column 5');
     },
     /Column "Column 5" doesn't exist/
   );
 });
 
-QUnit.test('Move a task', async function(assert) {
+  test('Move a task', async function(assert) {
   const BASE_PATH = await this.kanbn.getMainFolder();
   const currentDate = (new Date()).toISOString();
   await this.kanbn.moveTask('task-1', 'Column 2');
 
   // Verify that the task was moved
   const index = await this.kanbn.getIndex();
-  assert.ok(index.columns['Column 2'].includes('task-1'), 'Task should be in Column 2');
-  assert.ok(!index.columns['Column 1'].includes('task-1'), 'Task should not be in Column 1');
+  expect(index.columns['Column 2'].includes('task-1').toBeTruthy(), 'Task should be in Column 2');
+  expect(!index.columns['Column 1'].includes('task-1').toBeTruthy(), 'Task should not be in Column 1');
 
   // Verify that the task updated date was updated
   const task = await this.kanbn.getTask('task-1');
-  assert.equal(task.metadata.updated.toISOString().substr(0, 9), currentDate.substr(0, 9));
+  expect(task.metadata.updated.toISOString().substr(0).toEqual(9), currentDate.substr(0, 9));
 });
 
-QUnit.test('Move a task into a started column should update the started date', async function(assert) {
+  test('Move a task into a started column should update the started date', async function(assert) {
   const currentDate = (new Date()).toISOString();
   await this.kanbn.moveTask('task-1', 'Column 2');
 
   // Verify that the task was moved
   const index = await this.kanbn.getIndex();
-  assert.ok(index.columns['Column 2'].includes('task-1'), 'Task should be in Column 2');
-  assert.ok(!index.columns['Column 1'].includes('task-1'), 'Task should not be in Column 1');
+  expect(index.columns['Column 2'].includes('task-1').toBeTruthy(), 'Task should be in Column 2');
+  expect(!index.columns['Column 1'].includes('task-1').toBeTruthy(), 'Task should not be in Column 1');
 
   // Verify that the task started date was updated
   const task = await this.kanbn.getTask('task-1');
-  assert.equal(task.metadata.started.toISOString().substr(0, 9), currentDate.substr(0, 9));
+  expect(task.metadata.started.toISOString().substr(0).toEqual(9), currentDate.substr(0, 9));
 });
 
-QUnit.test('Move a task into a completed column should update the completed date', async function(assert) {
+  test('Move a task into a completed column should update the completed date', async function(assert) {
   const currentDate = (new Date()).toISOString();
   await this.kanbn.moveTask('task-1', 'Column 3');
 
   // Verify that the task was moved
   const index = await this.kanbn.getIndex();
-  assert.ok(index.columns['Column 3'].includes('task-1'), 'Task should be in Column 3');
-  assert.ok(!index.columns['Column 1'].includes('task-1'), 'Task should not be in Column 1');
+  expect(index.columns['Column 3'].includes('task-1').toBeTruthy(), 'Task should be in Column 3');
+  expect(!index.columns['Column 1'].includes('task-1').toBeTruthy(), 'Task should not be in Column 1');
 
   // Verify that the task completed date was updated
   const task = await this.kanbn.getTask('task-1');
-  assert.equal(task.metadata.completed.toISOString().substr(0, 9), currentDate.substr(0, 9));
+  expect(task.metadata.completed.toISOString().substr(0).toEqual(9), currentDate.substr(0, 9));
 });
 
-QUnit.test('Move a task into a custom metadata-linked column (update date once)', async function(assert) {
+  test('Move a task into a custom metadata-linked column (update date once)', async function(assert) {
   const TEST_DATE_1 = '2000-01-01T00:00:00.000Z';
   const TEST_DATE_2 = '2000-01-02T00:00:00.000Z';
 
@@ -175,12 +159,12 @@ QUnit.test('Move a task into a custom metadata-linked column (update date once)'
 
   // Verify that the task was moved
   const index = await customKanbn.getIndex();
-  assert.ok(index.columns['Column 2'].includes('task-1'), 'Task should be in Column 2');
-  assert.ok(!index.columns['Column 1'].includes('task-1'), 'Task should not be in Column 1');
+  expect(index.columns['Column 2'].includes('task-1').toBeTruthy(), 'Task should be in Column 2');
+  expect(!index.columns['Column 1'].includes('task-1').toBeTruthy(), 'Task should not be in Column 1');
 
   // Verify that the task's metadata property was updated
   let task = await customKanbn.getTask('task-1');
-  assert.equal(task.metadata.test.toISOString(), TEST_DATE_1);
+  expect(task.metadata.test.toISOString()).toEqual(TEST_DATE_1);
 
   // Move the task again
   mockDate.set(TEST_DATE_2);
@@ -188,14 +172,14 @@ QUnit.test('Move a task into a custom metadata-linked column (update date once)'
 
   // Verify that the task's metadata property was not updated again
   task = await customKanbn.getTask('task-1');
-  assert.equal(task.metadata.test.toISOString(), TEST_DATE_1);
+  expect(task.metadata.test.toISOString()).toEqual(TEST_DATE_1);
   
   process.chdir(this.testDir);
   
   realFs.cleanupFixtures(fixtures.testDir);
 });
 
-QUnit.test('Move a task into a custom metadata-linked column (update date always)', async function(assert) {
+  test('Move a task into a custom metadata-linked column (update date always)', async function(assert) {
   const TEST_DATE_1 = '2000-01-01T00:00:00.000Z';
   const TEST_DATE_2 = '2000-01-02T00:00:00.000Z';
 
@@ -227,12 +211,12 @@ QUnit.test('Move a task into a custom metadata-linked column (update date always
 
   // Verify that the task was moved
   const index = await customKanbn.getIndex();
-  assert.ok(index.columns['Column 2'].includes('task-1'), 'Task should be in Column 2');
-  assert.ok(!index.columns['Column 1'].includes('task-1'), 'Task should not be in Column 1');
+  expect(index.columns['Column 2'].includes('task-1').toBeTruthy(), 'Task should be in Column 2');
+  expect(!index.columns['Column 1'].includes('task-1').toBeTruthy(), 'Task should not be in Column 1');
 
   // Verify that the task's metadata property was updated
   let task = await customKanbn.getTask('task-1');
-  assert.equal(task.metadata.test.toISOString(), TEST_DATE_1);
+  expect(task.metadata.test.toISOString()).toEqual(TEST_DATE_1);
 
   // Move the task again
   mockDate.set(TEST_DATE_2);
@@ -240,14 +224,14 @@ QUnit.test('Move a task into a custom metadata-linked column (update date always
 
   // Verify that the task's metadata property was updated again
   task = await customKanbn.getTask('task-1');
-  assert.equal(task.metadata.test.toISOString(), TEST_DATE_2);
+  expect(task.metadata.test.toISOString()).toEqual(TEST_DATE_2);
   
   process.chdir(this.testDir);
   
   realFs.cleanupFixtures(fixtures.testDir);
 });
 
-QUnit.test('Move a task to an absolute position in the same column', async function(assert) {
+  test('Move a task to an absolute position in the same column', async function(assert) {
   await this.kanbn.moveTask('task-1', 'Column 1', -1);
   await verifyTaskPosition(this.kanbn, assert, 'task-1', 'Column 1', 0);
 
@@ -282,7 +266,7 @@ QUnit.test('Move a task to an absolute position in the same column', async funct
   await verifyTaskPosition(this.kanbn, assert, 'task-1', 'Column 1', 3);
 });
 
-QUnit.test('Move a task to an absolute position in another column', async function(assert) {
+  test('Move a task to an absolute position in another column', async function(assert) {
   await this.kanbn.moveTask('task-1', 'Column 2', -1);
   await verifyTaskPosition(this.kanbn, assert, 'task-1', 'Column 2', 0);
 
@@ -308,7 +292,7 @@ QUnit.test('Move a task to an absolute position in another column', async functi
   await verifyTaskPosition(this.kanbn, assert, 'task-1', 'Column 3', 5);
 });
 
-QUnit.test('Move a task to a relative position in the same column', async function(assert) {
+  test('Move a task to a relative position in the same column', async function(assert) {
   await this.kanbn.moveTask('task-1', 'Column 1', -1, true);
   await verifyTaskPosition(this.kanbn, assert, 'task-1', 'Column 1', 0);
 
@@ -355,3 +339,4 @@ async function verifyTaskPosition(kanbn, assert, taskId, columnName, position) {
   assert.ok(index.columns[columnName].includes(taskId), `Task ${taskId} should be in ${columnName}`);
   assert.equal(index.columns[columnName].indexOf(taskId), position, `Task ${taskId} should be at position ${position} in ${columnName}`);
 }
+});\

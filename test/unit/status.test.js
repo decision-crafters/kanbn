@@ -3,37 +3,37 @@ const kanbn = require('../../src/main');
 const fixtures = require('../fixtures');
 const mockDate = require('mockdate');
 
-QUnit.module('status tests', {
-  before() {
+describe('status tests', () => {
+  beforeAll(() => {
     require('../qunit-throws-async');
-  },
-  beforeEach() {
+  
+  });
+  beforeEach(() => {
     mockFileSystem();
     mockDate.set('02 Jan 2000 00:00:00 GMT');
-  },
-  afterEach() {
+  
+  });
+  afterEach(() => {
     mockFileSystem.restore();
     mockDate.reset();
-  }
-});
+  
+  });
 
-QUnit.test('Status in uninitialised folder should throw "not initialised" error', async assert => {
-  assert.throwsAsync(
-    async () => {
+  test('Status in uninitialised folder should throw ', not initialised" error', async assert => {
+  await expect(async () => {
       await kanbn.status();
-    },
-    /Not initialised in this folder/
+    }).toThrowAsync(/Not initialised in this folder/
   );
 });
 
-QUnit.test('Status untracked and quiet, no untracked tasks', async assert => {
+  test('Status untracked and quiet, no untracked tasks', async () => {
   await kanbn.initialise();
 
   // Get status with untracked and quiet options
-  assert.deepEqual(await kanbn.status(true, true), []);
+  expect(await kanbn.status(true).toEqual(true), []);
 });
 
-QUnit.test('Status untracked and quiet should return list of untracked tasks', async assert => {
+  test('Status untracked and quiet should return list of untracked tasks', async () => {
 
   // Add some untracked files
   fixtures({
@@ -52,14 +52,14 @@ QUnit.test('Status untracked and quiet should return list of untracked tasks', a
       }
     ]
   });
-  assert.deepEqual(await kanbn.status(true, true), [
+  expect(await kanbn.status(true).toEqual(true), [
     'task-1.md',
     'task-2.md',
     'task-3.md'
   ]);
 });
 
-QUnit.test('Status quiet should show basic status information', async assert => {
+  test('Status quiet should show basic status information', async () => {
   fixtures({
     name: 'test',
     tasks: [
@@ -100,7 +100,7 @@ QUnit.test('Status quiet should show basic status information', async assert => 
   });
 });
 
-QUnit.test('Status non-quiet should show more status information', async assert => {
+  test('Status non-quiet should show more status information', async () => {
   fixtures({
     tasks: [
       {
@@ -210,7 +210,7 @@ QUnit.test('Status non-quiet should show more status information', async assert 
   });
 });
 
-QUnit.test('Status non-quiet with due data should show due tasks information', async assert => {
+  test('Status non-quiet with due data should show due tasks information', async () => {
   fixtures({
     tasks: [
       {
@@ -422,7 +422,7 @@ QUnit.test('Status non-quiet with due data should show due tasks information', a
   });
 });
 
-QUnit.test('Status non-quiet with sprints defined should show sprint information', async assert => {
+  test('Status non-quiet with sprints defined should show sprint information', async () => {
   fixtures({
     tasks: [
       {
@@ -571,7 +571,7 @@ QUnit.test('Status non-quiet with sprints defined should show sprint information
   });
 });
 
-QUnit.test('Status non-quiet with specific sprint by number', async assert => {
+  test('Status non-quiet with specific sprint by number', async () => {
   fixtures({
     tasks: [
       {
@@ -636,7 +636,7 @@ QUnit.test('Status non-quiet with specific sprint by number', async assert => {
     }
   });
   const status = await kanbn.status(false, false, false, 1);
-  assert.equal('sprint' in status, true);
+  expect('sprint' in status).toEqual(true);
   assert.deepEqual(status.sprint, {
     current: 2,
     number: 1,
@@ -687,7 +687,7 @@ QUnit.test('Status non-quiet with specific sprint by number', async assert => {
   });
 });
 
-QUnit.test('Status non-quiet with specific sprint by name', async assert => {
+  test('Status non-quiet with specific sprint by name', async () => {
   fixtures({
     tasks: [
       {
@@ -752,7 +752,7 @@ QUnit.test('Status non-quiet with specific sprint by name', async assert => {
     }
   });
   const status = await kanbn.status(false, false, false, 'Sprint 1');
-  assert.equal('sprint' in status, true);
+  expect('sprint' in status).toEqual(true);
   assert.deepEqual(status.sprint, {
     current: 2,
     number: 1,
@@ -803,7 +803,7 @@ QUnit.test('Status non-quiet with specific sprint by name', async assert => {
   });
 });
 
-QUnit.test('Status non-quiet with single date', async assert => {
+  test('Status non-quiet with single date', async () => {
   fixtures({
     tasks: [
       {
@@ -854,8 +854,8 @@ QUnit.test('Status non-quiet with single date', async assert => {
     }
   });
   const status = await kanbn.status(false, false, false, null, [new Date('16 December 1999 00:00:00 GMT')]);
-  assert.equal('period' in status, true);
-  assert.deepEqual(status.period, {
+  expect('period' in status).toEqual(true);
+  expect(status.period).toEqual({
     start: new Date('16 December 1999 00:00:00 GMT'),
     end: new Date('16 December 1999 23:59:59:999 GMT'),
     created: {
@@ -889,7 +889,7 @@ QUnit.test('Status non-quiet with single date', async assert => {
   });
 });
 
-QUnit.test('Status non-quiet with date range', async assert => {
+  test('Status non-quiet with date range', async () => {
   fixtures({
     tasks: [
       {
@@ -943,8 +943,8 @@ QUnit.test('Status non-quiet with date range', async assert => {
     new Date('16 December 1999 00:00:00 GMT'),
     new Date('20 December 1999 00:00:00 GMT')
   ]);
-  assert.equal('period' in status, true);
-  assert.deepEqual(status.period, {
+  expect('period' in status).toEqual(true);
+  expect(status.period).toEqual({
     start: new Date('16 December 1999 00:00:00 GMT'),
     end: new Date('20 December 1999 00:00:00 GMT'),
     created: {
@@ -994,3 +994,5 @@ QUnit.test('Status non-quiet with date range', async assert => {
     }
   });
 });
+
+});\

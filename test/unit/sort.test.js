@@ -2,41 +2,41 @@ const mockFileSystem = require('mock-fs');
 const kanbn = require('../../src/main');
 const fixtures = require('../fixtures');
 
-QUnit.module('sort tests', {
-  before() {
+describe('sort tests', () => {
+  beforeAll(() => {
     require('../qunit-throws-async');
-  },
-  beforeEach() {
+  
+  });
+  beforeEach(() => {
     mockFileSystem();
-  },
-  afterEach() {
+  
+  });
+  afterEach(() => {
     mockFileSystem.restore();
-  }
-});
+  
+  });
 
-QUnit.test('Sort in uninitialised folder should throw "not initialised" error', async assert => {
-  assert.throwsAsync(
-    async () => {
-      await kanbn.sort('column', {});
+  test('Sort in uninitialised folder should throw ', not initialised" error', async assert => {
+  await expect(async () => {
+      await kanbn.sort('column').toThrowAsync({});
     },
     /Not initialised in this folder/
   );
 });
 
-QUnit.test('Sort non-existent column should throw "non-existent column" error', async assert => {
+  test('Sort non-existent column should throw ', non-existent column" error', async assert => {
   fixtures({
     countTasks: 0,
     countColumns: 1
   });
-  assert.throwsAsync(
-    async () => {
-      await kanbn.sort('Column 2', {});
+  await expect(async () => {
+      await kanbn.sort('Column 2').toThrowAsync({});
     },
     /Column "Column 2" doesn't exist/
   );
 });
 
-QUnit.test('Sort on string field', async assert => {
+  test('Sort on string field', async () => {
   fixtures({
     noRandom: true,
     tasks: [
@@ -125,7 +125,7 @@ QUnit.test('Sort on string field', async assert => {
   assert.deepEqual(index.columns['Column 1'], ['a-task-3', 'c-task-2', 'b-task-1', 'a-task-1']);
 });
 
-QUnit.test('Sort on string field and save sorter settings', async assert => {
+  test('Sort on string field and save sorter settings', async () => {
   fixtures({
     noRandom: true,
     tasks: [
@@ -186,7 +186,7 @@ QUnit.test('Sort on string field and save sorter settings', async assert => {
   assert.deepEqual(index.columns['Column 1'], ['b-task-1', 'c-task-2', 'a-task-3', 'b-task-4', 'a-task-5']);
 });
 
-QUnit.test('Sort on numeric field', async assert => {
+  test('Sort on numeric field', async () => {
   fixtures({
     noRandom: true,
     tasks: [
@@ -236,7 +236,7 @@ QUnit.test('Sort on numeric field', async assert => {
   assert.deepEqual(index.columns['Column 1'], ['task-1', 'task-3', 'task-2']);
 });
 
-QUnit.test('Sort on date field', async assert => {
+  test('Sort on date field', async () => {
   fixtures({
     noRandom: true,
     tasks: [
@@ -286,7 +286,7 @@ QUnit.test('Sort on date field', async assert => {
   assert.deepEqual(index.columns['Column 1'], ['task-3', 'task-1', 'task-2']);
 });
 
-QUnit.test('Sort on custom field', async assert => {
+  test('Sort on custom field', async () => {
   fixtures({
     noRandom: true,
     tasks: [
@@ -343,3 +343,5 @@ QUnit.test('Sort on custom field', async assert => {
   index = await kanbn.getIndex();
   assert.deepEqual(index.columns['Column 1'], ['task-1', 'task-3', 'task-2']);
 });
+
+});\

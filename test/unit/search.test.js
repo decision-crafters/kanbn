@@ -2,28 +2,28 @@ const mockFileSystem = require('mock-fs');
 const kanbn = require('../../src/main');
 const fixtures = require('../fixtures');
 
-QUnit.module('search tests', {
-  before() {
+describe('search tests', () => {
+  beforeAll(() => {
     require('../qunit-throws-async');
-  },
-  beforeEach() {
+  
+  });
+  beforeEach(() => {
     mockFileSystem();
-  },
-  afterEach() {
+  
+  });
+  afterEach(() => {
     mockFileSystem.restore();
-  }
-});
+  
+  });
 
-QUnit.test('Search in uninitialised folder should throw "not initialised" error', async assert => {
-  assert.throwsAsync(
-    async () => {
+  test('Search in uninitialised folder should throw ', not initialised" error', async assert => {
+  await expect(async () => {
       await kanbn.search();
-    },
-    /Not initialised in this folder/
+    }).toThrowAsync(/Not initialised in this folder/
   );
 });
 
-QUnit.test('Search without filters should return all tasks', async assert => {
+  test('Search without filters should return all tasks', async () => {
   fixtures({
     noRandom: true,
     tasks: [
@@ -90,7 +90,7 @@ QUnit.test('Search without filters should return all tasks', async assert => {
   ]);
 });
 
-QUnit.test('Search without filters and quiet option should return all task ids', async assert => {
+  test('Search without filters and quiet option should return all task ids', async () => {
   fixtures({
     noRandom: true,
     tasks: [
@@ -114,14 +114,14 @@ QUnit.test('Search without filters and quiet option should return all task ids',
       ]
     }
   });
-  assert.deepEqual(await kanbn.search({}, true), [
+  expect(await kanbn.search({}).toEqual(true), [
     'task-1',
     'task-2',
     'task-3'
   ]);
 });
 
-QUnit.test('Search with string filter', async assert => {
+  test('Search with string filter', async () => {
   fixtures({
     noRandom: true,
     tasks: [
@@ -146,26 +146,26 @@ QUnit.test('Search with string filter', async assert => {
 
   // Search using exact match
   let result = await kanbn.search({ id: 'test-task' });
-  assert.equal(result.length, 1);
-  assert.equal(result[0].id, 'test-task');
+  expect(result.length).toEqual(1);
+  expect(result[0].id).toEqual('test-task');
 
   // Search using partial match
   result = await kanbn.search({ id: 'task'});
-  assert.equal(result.length, 3);
+  expect(result.length).toEqual(3);
   assert.deepEqual(result.map(r => r.id), ['test-task', 'task-two', 'task-three']);
 
   // Search using array match
   result = await kanbn.search({ id: ['two', 'three']});
-  assert.equal(result.length, 2);
+  expect(result.length).toEqual(2);
   assert.deepEqual(result.map(r => r.id), ['task-two', 'task-three']);
 
   // Search using regex
   result = await kanbn.search({ id: '^task-(two|three)?'});
-  assert.equal(result.length, 2);
+  expect(result.length).toEqual(2);
   assert.deepEqual(result.map(r => r.id), ['task-two', 'task-three']);
 });
 
-QUnit.test('Search with date filter', async assert => {
+  test('Search with date filter', async () => {
   fixtures({
     noRandom: true,
     tasks: [
@@ -210,19 +210,19 @@ QUnit.test('Search with date filter', async assert => {
 
   // Search using single date
   let result = await kanbn.search({ completed: new Date('03 January 2020 12:30:00 GMT') });
-  assert.equal(result.length, 1);
-  assert.equal(result[0].id, 'task-2');
+  expect(result.length).toEqual(1);
+  expect(result[0].id).toEqual('task-2');
 
   // Search using array of dates
   result = await kanbn.search({ completed: [
     new Date('02 January 2020 00:00:00 GMT'),
     new Date('06 January 2020 00:00:00 GMT')
   ]});
-  assert.equal(result.length, 2);
+  expect(result.length).toEqual(2);
   assert.deepEqual(result.map(r => r.id), ['task-2', 'task-3']);
 });
 
-QUnit.test('Search with string filter on optional metadata property', async assert => {
+  test('Search with string filter on optional metadata property', async () => {
   fixtures({
     noRandom: true,
     tasks: [
@@ -253,26 +253,26 @@ QUnit.test('Search with string filter on optional metadata property', async asse
 
   // Search using exact match
   let result = await kanbn.search({ assigned: 'User 1' });
-  assert.equal(result.length, 1);
-  assert.equal(result[0].id, 'task-1');
+  expect(result.length).toEqual(1);
+  expect(result[0].id).toEqual('task-1');
 
   // Search using partial match
   result = await kanbn.search({ assigned: 'User'});
-  assert.equal(result.length, 2);
+  expect(result.length).toEqual(2);
   assert.deepEqual(result.map(r => r.id), ['task-1', 'task-2']);
 
   // Search using array match
   result = await kanbn.search({ assigned: ['User 1', 'User 2']});
-  assert.equal(result.length, 2);
+  expect(result.length).toEqual(2);
   assert.deepEqual(result.map(r => r.id), ['task-1', 'task-2']);
 
   // Search using regex
   result = await kanbn.search({ assigned: '^User [12]'});
-  assert.equal(result.length, 2);
+  expect(result.length).toEqual(2);
   assert.deepEqual(result.map(r => r.id), ['task-1', 'task-2']);
 });
 
-QUnit.test('Search with string filter on concatenated property', async assert => {
+  test('Search with string filter on concatenated property', async () => {
   fixtures({
     noRandom: true,
     tasks: [
@@ -309,26 +309,26 @@ QUnit.test('Search with string filter on concatenated property', async assert =>
 
   // Search using partial match for sub-task name
   let result = await kanbn.search({ 'sub-task': 'Sub-task 1' });
-  assert.equal(result.length, 1);
-  assert.equal(result[0].id, 'task-1');
+  expect(result.length).toEqual(1);
+  expect(result[0].id).toEqual('task-1');
 
   // Search using partial match for completed sub-task
   result = await kanbn.search({ 'sub-task': '\\[x\\]'});
-  assert.equal(result.length, 1);
-  assert.equal(result[0].id, 'task-1');
+  expect(result.length).toEqual(1);
+  expect(result[0].id).toEqual('task-1');
 
   // Search using partial match for uncompleted sub-task
   result = await kanbn.search({ 'sub-task': '\\[ \\]'});
-  assert.equal(result.length, 1);
-  assert.equal(result[0].id, 'task-2');
+  expect(result.length).toEqual(1);
+  expect(result[0].id).toEqual('task-2');
 
   // Search using partial match
   result = await kanbn.search({ 'sub-task': 'Sub-task'});
-  assert.equal(result.length, 2);
+  expect(result.length).toEqual(2);
   assert.deepEqual(result.map(r => r.id), ['task-1', 'task-2']);
 });
 
-QUnit.test('Search with number filter', async assert => {
+  test('Search with number filter', async () => {
   fixtures({
     noRandom: true,
     tasks: [
@@ -383,16 +383,16 @@ QUnit.test('Search with number filter', async assert => {
 
   // Search using single number
   let result = await kanbn.search({ 'count-sub-tasks': 3 });
-  assert.equal(result.length, 1);
-  assert.equal(result[0].id, 'task-3');
+  expect(result.length).toEqual(1);
+  expect(result[0].id).toEqual('task-3');
 
   // Search using array of numbers
   result = await kanbn.search({ 'count-sub-tasks': [2, 4] });
-  assert.equal(result.length, 2);
+  expect(result.length).toEqual(2);
   assert.deepEqual(result.map(r => r.id), ['task-2', 'task-3']);
 });
 
-QUnit.test('Search with string filter on custom field', async assert => {
+  test('Search with string filter on custom field', async () => {
   fixtures({
     noRandom: true,
     tasks: [
@@ -436,11 +436,11 @@ QUnit.test('Search with string filter on custom field', async assert => {
     }
   });
   const result = await kanbn.search({ test: 'cd' });
-  assert.equal(result.length, 2);
+  expect(result.length).toEqual(2);
   assert.deepEqual(result.map(r => r.id), ['task-2', 'task-3']);
 });
 
-QUnit.test('Search with number filter on custom field', async assert => {
+  test('Search with number filter on custom field', async () => {
   fixtures({
     noRandom: true,
     tasks: [
@@ -486,16 +486,16 @@ QUnit.test('Search with number filter on custom field', async assert => {
 
   // Search using single number
   let result = await kanbn.search({ test: 1 });
-  assert.equal(result.length, 1);
-  assert.equal(result[0].id, 'task-1');
+  expect(result.length).toEqual(1);
+  expect(result[0].id).toEqual('task-1');
 
   // Search using array of numbers
   result = await kanbn.search({ test: [2, 4] });
-  assert.equal(result.length, 2);
+  expect(result.length).toEqual(2);
   assert.deepEqual(result.map(r => r.id), ['task-2', 'task-3']);
 });
 
-QUnit.test('Search with boolean filter on custom field', async assert => {
+  test('Search with boolean filter on custom field', async () => {
   fixtures({
     noRandom: true,
     tasks: [
@@ -532,11 +532,11 @@ QUnit.test('Search with boolean filter on custom field', async assert => {
     }
   });
   const result = await kanbn.search({ test: true });
-  assert.equal(result.length, 1);
-  assert.equal(result[0].id, 'task-1');
+  expect(result.length).toEqual(1);
+  expect(result[0].id).toEqual('task-1');
 });
 
-QUnit.test('Search with boolean filter on custom field', async assert => {
+  test('Search with boolean filter on custom field', async () => {
   fixtures({
     noRandom: true,
     tasks: [
@@ -582,14 +582,16 @@ QUnit.test('Search with boolean filter on custom field', async assert => {
 
   // Search using single date
   let result = await kanbn.search({ test: new Date('01 January 2020 00:00:00 GMT') });
-  assert.equal(result.length, 1);
-  assert.equal(result[0].id, 'task-1');
+  expect(result.length).toEqual(1);
+  expect(result[0].id).toEqual('task-1');
 
   // Search using array of dates
   result = await kanbn.search({ test: [
     new Date('02 January 2020 00:00:00 GMT'),
     new Date('06 January 2020 00:00:00 GMT')
   ]});
-  assert.equal(result.length, 2);
+  expect(result.length).toEqual(2);
   assert.deepEqual(result.map(r => r.id), ['task-2', 'task-3']);
 });
+
+});\
