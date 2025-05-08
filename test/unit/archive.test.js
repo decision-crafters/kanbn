@@ -2,41 +2,33 @@ const mockFileSystem = require('mock-fs');
 const kanbn = require('../../src/main');
 const context = require('../context');
 
-QUnit.module('archive tests', {
-  before() {
+describe('archive tests', () => {
+  beforeAll(() => {
     require('../qunit-throws-async');
-  },
-  beforeEach() {
-    require('../fixtures')({
-      countColumns: 1,
-      countTasks: 1
-    });
+  
+  });
   },
   afterEach() {
     mockFileSystem.restore();
   }
 });
 
-QUnit.test('Archive task in uninitialised folder should throw "not initialised" error', async assert => {
+  test('Archive task in uninitialised folder should throw ', not initialised" error', async assert => {
   mockFileSystem();
-  assert.throwsAsync(
-    async () => {
+  await expect(async () => {
       await kanbn.archiveTask('task-1');
-    },
-    /Not initialised in this folder/
+    }).toThrowAsync(/Not initialised in this folder/
   );
 });
 
-QUnit.test('Archive non-existent task should throw "task file not found" error', async assert => {
-  assert.throwsAsync(
-    async () => {
+  test('Archive non-existent task should throw ', task file not found" error', async assert => {
+  await expect(async () => {
       await kanbn.archiveTask('task-2');
-    },
-    /No task file found with id "task-2"/
+    }).toThrowAsync(/No task file found with id "task-2"/
   );
 });
 
-QUnit.test('Archive untracked task should throw "task not indexed" error', async assert => {
+  test('Archive untracked task should throw ', task not indexed" error', async assert => {
 
   // Create a mock index and untracked task
   mockFileSystem({
@@ -49,11 +41,9 @@ QUnit.test('Archive untracked task should throw "task not indexed" error', async
   });
 
   // Try to archive an untracked task
-  assert.throwsAsync(
-    async () => {
+  await expect(async () => {
       await kanbn.archiveTask('test-task');
-    },
-    /Task "test-task" is not in the index/
+    }).toThrowAsync(/Task "test-task" is not in the index/
   );
 });
 
@@ -84,7 +74,7 @@ QUnit.test(
   }
 );
 
-QUnit.test('Archive a task', async assert => {
+  test('Archive a task', async () => {
   const BASE_PATH = await kanbn.getMainFolder();
 
   await kanbn.archiveTask('task-1');
@@ -92,3 +82,5 @@ QUnit.test('Archive a task', async assert => {
   context.archivedTaskFileExists(assert, BASE_PATH, 'task-1');
   context.taskFileExists(assert, BASE_PATH, 'task-1', false);
 });
+
+});\

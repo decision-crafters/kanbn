@@ -16,50 +16,19 @@ const mockTaskData = {
 // Set a longer timeout for tests
 QUnit.config.testTimeout = 5000;
 
-QUnit.module('Event Bus Communication Tests', {
-  beforeEach: function() {
-    // Reset event listeners before each test
-    eventBus.removeAllListeners();
+describe('Event Bus Communication Tests', () => {
 
-    // Create a mock Kanbn instance with all required methods
-    this.kanbn = {
-      initialised: async () => true, // Add the missing initialised method
-      getIndex: async () => ({ // Add mock index data
-        name: 'Test Project',
-        description: 'Test project for event testing',
-        columns: {
-          'Backlog': ['test-task-id'],
-          'In Progress': [],
-          'Done': []
-        }
-      }),
-      createTask: async () => 'test-task-id',
-      getTask: async () => ({ name: 'Test Task', metadata: {} }),
-      updateTask: async () => true,
-      findTaskColumn: async () => 'Backlog',
-      moveTask: async () => true
-    };
-
-    // Create a chat handler instance with the mock Kanbn
-    this.chatHandler = new ChatHandler(this.kanbn);
-  },
-  afterEach: function() {
-    // Clean up event listeners after each test
-    eventBus.removeAllListeners();
-  }
-});
-
-QUnit.test('eventBus should emit and receive taskCreated event', function(assert) {
+  test('eventBus should emit and receive taskCreated event', function(assert) {
   const done = assert.async();
   const taskId = 'test-task-1';
   const column = 'Backlog';
 
   // Set up event listener
   eventBus.once('taskCreated', (data) => {
-    assert.equal(data.taskId, taskId, 'Event contains correct taskId');
-    assert.equal(data.column, column, 'Event contains correct column');
-    assert.deepEqual(data.taskData, mockTaskData, 'Event contains correct task data');
-    assert.equal(data.source, 'test', 'Event contains correct source');
+    expect(data.taskId).toEqual(taskId);
+    expect(data.column).toEqual(column);
+    expect(data.taskData).toEqual(mockTaskData);
+    expect(data.source).toEqual('test');
     done();
   });
 
@@ -72,7 +41,7 @@ QUnit.test('eventBus should emit and receive taskCreated event', function(assert
   });
 });
 
-QUnit.test('eventBus should emit and receive contextQueried event', function(assert) {
+  test('eventBus should emit and receive contextQueried event', function(assert) {
   const done = assert.async();
   const mockContext = {
     projectName: 'Test Project',
@@ -82,7 +51,7 @@ QUnit.test('eventBus should emit and receive contextQueried event', function(ass
 
   // Set up event listener
   eventBus.once('contextQueried', (data) => {
-    assert.deepEqual(data.context, mockContext, 'Event contains correct context data');
+    expect(data.context).toEqual(mockContext);
     done();
   });
 
@@ -90,14 +59,14 @@ QUnit.test('eventBus should emit and receive contextQueried event', function(ass
   eventBus.emit('contextQueried', { context: mockContext });
 });
 
-QUnit.test('eventBus should emit and receive contextUpdated event', function(assert) {
+  test('eventBus should emit and receive contextUpdated event', function(assert) {
   const done = assert.async();
   const taskId = 'test-task-1';
 
   // Set up event listener
   eventBus.once('contextUpdated', (data) => {
-    assert.equal(data.taskId, taskId, 'Event contains correct taskId');
-    assert.equal(data.type, 'chat', 'Event contains correct type');
+    expect(data.taskId).toEqual(taskId);
+    expect(data.type).toEqual('chat');
     done();
   });
 
@@ -105,13 +74,13 @@ QUnit.test('eventBus should emit and receive contextUpdated event', function(ass
   eventBus.emit('contextUpdated', { taskId, type: 'chat' });
 });
 
-QUnit.test('eventBus should emit and receive taskCreationFailed event', function(assert) {
+  test('eventBus should emit and receive taskCreationFailed event', function(assert) {
   const done = assert.async();
   const errorMessage = 'Failed to create task';
 
   // Set up event listener
   eventBus.once('taskCreationFailed', (data) => {
-    assert.equal(data.error, errorMessage, 'Event contains correct error message');
+    expect(data.error).toEqual(errorMessage);
     done();
   });
 
@@ -119,17 +88,17 @@ QUnit.test('eventBus should emit and receive taskCreationFailed event', function
   eventBus.emit('taskCreationFailed', { error: errorMessage });
 });
 
-QUnit.test('Multiple events should be handled correctly', function(assert) {
+  test('Multiple events should be handled correctly', function(assert) {
   const done = assert.async(2); // We expect 2 async callbacks
 
   // Set up event listeners
   eventBus.once('taskCreated', (data) => {
-    assert.equal(data.taskId, 'test-task-1', 'taskCreated event received with correct data');
+    expect(data.taskId).toEqual('test-task-1');
     done();
   });
 
   eventBus.once('contextUpdated', (data) => {
-    assert.equal(data.taskId, 'test-task-1', 'contextUpdated event received with correct data');
+    expect(data.taskId).toEqual('test-task-1');
     done();
   });
 
@@ -147,7 +116,7 @@ QUnit.test('Multiple events should be handled correctly', function(assert) {
   });
 });
 
-QUnit.test('ChatHandler should emit events when creating a task', function(assert) {
+  test('ChatHandler should emit events when creating a task', function(assert) {
   const done = assert.async();
   const taskName = 'New Test Task';
 
@@ -156,10 +125,10 @@ QUnit.test('ChatHandler should emit events when creating a task', function(asser
 
   // Set up event listener
   eventBus.once('taskCreated', (data) => {
-    assert.equal(data.taskId, 'new-test-task', 'taskCreated event emitted with correct taskId');
-    assert.equal(data.column, 'Backlog', 'taskCreated event emitted with correct column');
-    assert.equal(data.taskData.name, taskName, 'taskCreated event emitted with correct task name');
-    assert.equal(data.source, 'chat', 'taskCreated event emitted with correct source');
+    expect(data.taskId).toEqual('new-test-task');
+    expect(data.column).toEqual('Backlog');
+    expect(data.taskData.name).toEqual(taskName);
+    expect(data.source).toEqual('chat');
     done();
   });
 
@@ -167,14 +136,14 @@ QUnit.test('ChatHandler should emit events when creating a task', function(asser
   this.chatHandler.handleCreateTask([null, null, null, taskName]);
 });
 
-QUnit.test('Events should trigger expected side effects', function(assert) {
+  test('Events should trigger expected side effects', function(assert) {
   const done = assert.async();
   let sideEffectTriggered = false;
 
   // Set up a function that will be triggered by an event
   function handleTaskCreation(data) {
     sideEffectTriggered = true;
-    assert.equal(data.taskId, 'side-effect-task', 'Side effect function received correct data');
+    expect(data.taskId).toEqual('side-effect-task');
     done();
   }
 
@@ -192,3 +161,5 @@ QUnit.test('Events should trigger expected side effects', function(assert) {
   // Verify the side effect was triggered
   assert.true(sideEffectTriggered, 'Side effect was triggered by the event');
 });
+
+});\

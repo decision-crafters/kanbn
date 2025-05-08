@@ -54,27 +54,9 @@ let originalAIService;
 let originalOllamaClient;
 let originalOpenRouterClient;
 
-QUnit.module('AI Service tests', {
-  before: function() {
-    // Store the original modules
-    originalAIService = require('../../src/lib/ai-service');
-    originalOllamaClient = require('../../src/lib/ollama-client');
-    originalOpenRouterClient = require('../../src/lib/openrouter-client');
-  },
-  after: function() {
-    // Restore the original modules
-    mockRequire('../../src/lib/ai-service', originalAIService);
-    mockRequire('../../src/lib/ollama-client', originalOllamaClient);
-    mockRequire('../../src/lib/openrouter-client', originalOpenRouterClient);
-    mockRequire.stopAll();
-  },
-  beforeEach: function() {
-    // Reset mocks before each test
-    mockRequire('axios', mockAxios);
-  }
-});
+describe('AI Service tests', () => {
 
-QUnit.test('should use OpenRouter when API key is available', async function(assert) {
+  test('should use OpenRouter when API key is available', async function(assert) {
   // Load the modules with our mocks
   mockRequire.reRequire('../../src/lib/openrouter-client');
   mockRequire.reRequire('../../src/lib/ollama-client');
@@ -93,10 +75,10 @@ QUnit.test('should use OpenRouter when API key is available', async function(ass
   ]);
   
   // Verify that OpenRouter was used
-  assert.strictEqual(response, 'This is a test response from the mock OpenRouter API.', 'OpenRouter should be used when API key is available');
+  expect(response).toEqual('This is a test response from the mock OpenRouter API.');
 });
 
-QUnit.test('should fall back to Ollama when OpenRouter API key is not available', async function(assert) {
+  test('should fall back to Ollama when OpenRouter API key is not available', async function(assert) {
   // Create a mock OllamaClient that always returns true for isAvailable
   const MockOllamaClient = class extends originalOllamaClient {
     async isAvailable() {
@@ -133,10 +115,10 @@ QUnit.test('should fall back to Ollama when OpenRouter API key is not available'
   ]);
   
   // Verify that Ollama was used as a fallback
-  assert.strictEqual(response, 'This is a test response from the mock Ollama API.', 'Ollama should be used when OpenRouter API key is not available');
+  expect(response).toEqual('This is a test response from the mock Ollama API.');
 });
 
-QUnit.test('should provide clear error message when both OpenRouter and Ollama are unavailable', async function(assert) {
+  test('should provide clear error message when both OpenRouter and Ollama are unavailable', async function(assert) {
   // Create a mock OllamaClient that returns false for isAvailable
   const MockOllamaClient = class extends originalOllamaClient {
     async isAvailable() {
@@ -173,16 +155,16 @@ QUnit.test('should provide clear error message when both OpenRouter and Ollama a
     ]);
     
     // If we get here, the test failed
-    assert.ok(false, 'chatCompletion should have thrown an error');
+    expect(false).toBeTruthy();
   } catch (error) {
     // Verify that a clear error message was provided
-    assert.ok(error.message.includes('AI services are not available'), 'Error message should indicate that both services are unavailable');
-    assert.ok(error.message.includes('OPENROUTER_API_KEY'), 'Error message should mention OPENROUTER_API_KEY');
-    assert.ok(error.message.includes('Ollama'), 'Error message should mention Ollama');
+    expect(error.message.includes('AI services are not available').toBeTruthy(), 'Error message should indicate that both services are unavailable');
+    expect(error.message.includes('OPENROUTER_API_KEY').toBeTruthy(), 'Error message should mention OPENROUTER_API_KEY');
+    expect(error.message.includes('Ollama').toBeTruthy(), 'Error message should mention Ollama');
   }
 });
 
-QUnit.test('should load and save conversation history', async function(assert) {
+  test('should load and save conversation history', async function(assert) {
   // Load the AIService module
   const AIService = require('../../src/lib/ai-service');
   
@@ -221,9 +203,9 @@ QUnit.test('should load and save conversation history', async function(assert) {
     );
     
     // Verify that the history was updated
-    assert.strictEqual(updatedHistory.length, 2, 'History should have 2 entries');
-    assert.strictEqual(updatedHistory[0].role, 'user', 'First entry should be user message');
-    assert.strictEqual(updatedHistory[1].role, 'assistant', 'Second entry should be assistant response');
+    expect(updatedHistory.length).toEqual(2);
+    expect(updatedHistory[0].role).toEqual('user');
+    expect(updatedHistory[1].role).toEqual('assistant');
     
     // Verify that the history was saved to disk
     assert.ok(fs.existsSync(path.join(conversationsDir, `${conversationId}.json`)), 'Conversation file should exist');
@@ -232,9 +214,9 @@ QUnit.test('should load and save conversation history', async function(assert) {
     const loadedHistory = aiService.loadConversationHistory(testFolder, conversationId);
     
     // Verify that the loaded history matches the saved history
-    assert.strictEqual(loadedHistory.length, 2, 'Loaded history should have 2 entries');
-    assert.strictEqual(loadedHistory[0].role, 'user', 'First entry should be user message');
-    assert.strictEqual(loadedHistory[1].role, 'assistant', 'Second entry should be assistant response');
+    expect(loadedHistory.length).toEqual(2);
+    expect(loadedHistory[0].role).toEqual('user');
+    expect(loadedHistory[1].role).toEqual('assistant');
   } finally {
     // Clean up the test folder
     if (fs.existsSync(testFolder)) {
@@ -242,3 +224,5 @@ QUnit.test('should load and save conversation history', async function(assert) {
     }
   }
 });
+
+});\

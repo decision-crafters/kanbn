@@ -2,12 +2,12 @@ const mockFileSystem = require('mock-fs');
 const kanbn = require('../../src/main');
 const context = require('../context');
 
-QUnit.module('initialise with custom config tests', {
-  afterEach() {
+describe('initialise with custom config tests', () => {
+  afterEach(() => {
     mockFileSystem.restore();
     kanbn.clearConfigCache();
-  }
-});
+  
+  });
 
 QUnit.test(
   'Initialise with advanced JSON config should create folders and index in custom location',
@@ -61,3 +61,4 @@ QUnit.test(
     assert.equal(await kanbn.initialised(), true);
   }
 );
+});\

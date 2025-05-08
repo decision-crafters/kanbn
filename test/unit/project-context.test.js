@@ -95,19 +95,9 @@ class MockKanbnWithColumns {
 // Original module to restore after tests
 let originalProjectContext;
 
-QUnit.module('Project Context tests', {
-  before: function() {
-    // Store the original module
-    originalProjectContext = require('../../src/lib/project-context');
-  },
-  after: function() {
-    // Restore the original module
-    mockRequire('../../src/lib/project-context', originalProjectContext);
-    mockRequire.stopAll();
-  }
-});
+describe('Project Context tests', () => {
 
-QUnit.test('should handle projects with no columns', async function(assert) {
+  test('should handle projects with no columns', async function(assert) {
   // Load the module with our mock
   const ProjectContext = require('../../src/lib/project-context');
   
@@ -118,15 +108,15 @@ QUnit.test('should handle projects with no columns', async function(assert) {
   const context = await projectContext.getContext();
   
   // Verify that default columns are created
-  assert.strictEqual(context.projectName, 'Test Project', 'Project name should match');
-  assert.strictEqual(context.projectDescription, 'Test project with no columns', 'Project description should match');
-  assert.ok(Array.isArray(context.columns), 'Columns should be an array');
-  assert.strictEqual(context.columns.length, 1, 'Should have one default column');
-  assert.strictEqual(context.columns[0], 'Backlog', 'Default column should be Backlog');
-  assert.strictEqual(context.taskCount, 0, 'Task count should be 0');
+  expect(context.projectName).toEqual('Test Project');
+  expect(context.projectDescription).toEqual('Test project with no columns');
+  expect(Array.isArray(context.columns).toBeTruthy(), 'Columns should be an array');
+  expect(context.columns.length).toEqual(1);
+  expect(context.columns[0]).toEqual('Backlog');
+  expect(context.taskCount).toEqual(0);
 });
 
-QUnit.test('should properly extract project context with columns', async function(assert) {
+  test('should properly extract project context with columns', async function(assert) {
   // Load the module with our mock
   const ProjectContext = require('../../src/lib/project-context');
   
@@ -137,30 +127,30 @@ QUnit.test('should properly extract project context with columns', async functio
   const context = await projectContext.getContext();
   
   // Verify project details
-  assert.strictEqual(context.projectName, 'Test Project', 'Project name should match');
-  assert.strictEqual(context.projectDescription, 'Test project with columns', 'Project description should match');
+  expect(context.projectName).toEqual('Test Project');
+  expect(context.projectDescription).toEqual('Test project with columns');
   
   // Verify columns
-  assert.strictEqual(context.columns.length, 3, 'Should have three columns');
+  expect(context.columns.length).toEqual(3);
   assert.deepEqual(context.columns, ['Backlog', 'In Progress', 'Done'], 'Columns should match');
   
   // Verify task count
-  assert.strictEqual(context.taskCount, 5, 'Task count should be 5');
+  expect(context.taskCount).toEqual(5);
   
   // Verify tasks by column count
-  assert.strictEqual(context.tasksByColumn['Backlog'], 2, 'Backlog should have 2 tasks');
-  assert.strictEqual(context.tasksByColumn['In Progress'], 1, 'In Progress should have 1 task');
-  assert.strictEqual(context.tasksByColumn['Done'], 2, 'Done should have 2 tasks');
+  expect(context.tasksByColumn['Backlog']).toEqual(2);
+  expect(context.tasksByColumn['In Progress']).toEqual(1);
+  expect(context.tasksByColumn['Done']).toEqual(2);
   
   // Verify tags
-  assert.ok(Array.isArray(context.tags), 'Tags should be an array');
-  assert.strictEqual(context.tags.length, 3, 'Should have 3 unique tags');
-  assert.ok(context.tags.includes('high-priority'), 'Tags should include high-priority');
-  assert.ok(context.tags.includes('medium-priority'), 'Tags should include medium-priority');
-  assert.ok(context.tags.includes('bug') || context.tags.includes('feature'), 'Tags should include bug or feature');
+  expect(Array.isArray(context.tags).toBeTruthy(), 'Tags should be an array');
+  expect(context.tags.length).toEqual(3);
+  expect(context.tags.includes('high-priority').toBeTruthy(), 'Tags should include high-priority');
+  expect(context.tags.includes('medium-priority').toBeTruthy(), 'Tags should include medium-priority');
+  expect(context.tags.includes('bug').toBeTruthy() || context.tags.includes('feature'), 'Tags should include bug or feature');
 });
 
-QUnit.test('should include references when requested', async function(assert) {
+  test('should include references when requested', async function(assert) {
   // Load the module with our mock
   const ProjectContext = require('../../src/lib/project-context');
   
@@ -171,13 +161,13 @@ QUnit.test('should include references when requested', async function(assert) {
   const context = await projectContext.getContext(true);
   
   // Verify references
-  assert.ok(context.references, 'References should be included');
-  assert.ok(context.references['task-5'], 'Task 5 should have references');
-  assert.strictEqual(context.references['task-5'].length, 2, 'Task 5 should have 2 references');
+  expect(context.references).toBeTruthy();
+  expect(context.references['task-5']).toBeTruthy();
+  expect(context.references['task-5'].length).toEqual(2);
   assert.deepEqual(context.references['task-5'], ['REF-123', 'REF-456'], 'References should match');
 });
 
-QUnit.test('should extract board data for AI context', async function(assert) {
+  test('should extract board data for AI context', async function(assert) {
   // Load the module with our mock
   const ProjectContext = require('../../src/lib/project-context');
   
@@ -191,16 +181,16 @@ QUnit.test('should extract board data for AI context', async function(assert) {
   const boardData = projectContext.extractBoardData(context);
   
   // Verify board data
-  assert.ok(boardData.includes('Here is the current state of your board:'), 'Board data should have correct header');
-  assert.ok(boardData.includes('Backlog (2 tasks):'), 'Board data should include Backlog count');
-  assert.ok(boardData.includes('In Progress (1 tasks):'), 'Board data should include In Progress count');
-  assert.ok(boardData.includes('Done (2 tasks):'), 'Board data should include Done count');
-  assert.ok(boardData.includes('task-1: Task 1'), 'Board data should include task-1');
-  assert.ok(boardData.includes('task-3: Task 3'), 'Board data should include task-3');
-  assert.ok(boardData.includes('(Due: 2025-05-01)'), 'Board data should include due date');
+  expect(boardData.includes('Here is the current state of your board:').toBeTruthy(), 'Board data should have correct header');
+  expect(boardData.includes('Backlog (2 tasks).toBeTruthy():'), 'Board data should include Backlog count');
+  expect(boardData.includes('In Progress (1 tasks).toBeTruthy():'), 'Board data should include In Progress count');
+  expect(boardData.includes('Done (2 tasks).toBeTruthy():'), 'Board data should include Done count');
+  expect(boardData.includes('task-1: Task 1').toBeTruthy(), 'Board data should include task-1');
+  expect(boardData.includes('task-3: Task 3').toBeTruthy(), 'Board data should include task-3');
+  expect(boardData.includes('(Due: 2025-05-01).toBeTruthy()'), 'Board data should include due date');
 });
 
-QUnit.test('should create system message with focus on tasks', async function(assert) {
+  test('should create system message with focus on tasks', async function(assert) {
   // Load the module with our mock
   const ProjectContext = require('../../src/lib/project-context');
   
@@ -215,8 +205,10 @@ QUnit.test('should create system message with focus on tasks', async function(as
   
   // Verify system message
   assert.strictEqual(systemMessage.role, 'system', 'System message should have role "system"');
-  assert.ok(systemMessage.content.includes('FOCUS ON TASKS'), 'System message should emphasize focusing on tasks');
-  assert.ok(systemMessage.content.includes('DO NOT suggest new columns'), 'System message should discourage suggesting new columns');
+  expect(systemMessage.content.includes('FOCUS ON TASKS').toBeTruthy(), 'System message should emphasize focusing on tasks');
+  expect(systemMessage.content.includes('DO NOT suggest new columns').toBeTruthy(), 'System message should discourage suggesting new columns');
   assert.ok(systemMessage.content.includes('Backlog, In Progress, Done'), 'System message should list existing columns');
-  assert.ok(systemMessage.content.includes('task-1: Task 1'), 'System message should include task details');
+  expect(systemMessage.content.includes('task-1: Task 1').toBeTruthy(), 'System message should include task details');
 });
+
+});\

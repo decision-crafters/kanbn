@@ -33,54 +33,26 @@ const mockAxios = {
 // Set a longer timeout for tests
 QUnit.config.testTimeout = 5000;
 
-QUnit.module('Chat Controller Event Tests', {
-  before: function() {
-    // Mock the required modules
-    mockRequire('axios', mockAxios);
-    mockRequire('../../src/main', mockKanbn);
+describe('Chat Controller Event Tests', () => {
 
-    // Set environment variables for testing
-    process.env.KANBN_ENV = 'test';
-
-    // Import the chat controller after mocking dependencies
-    this.chatController = require('../../src/controller/chat');
-  },
-  beforeEach: function() {
-    // Reset event listeners before each test
-    eventBus.removeAllListeners();
-
-    // Reset global chat history
-    global.chatHistory = [];
-  },
-  afterEach: function() {
-    // Clean up event listeners after each test
-    eventBus.removeAllListeners();
-  },
-  after: function() {
-    // Clean up mocks
-    mockRequire.stopAll();
-    delete process.env.KANBN_ENV;
-  }
-});
-
-QUnit.test('logAIInteraction should emit taskCreated event', async function(assert) {
+  test('logAIInteraction should emit taskCreated event', async function(assert) {
   const done = assert.async();
 
   // Access the internal logAIInteraction function
   const logAIInteraction = this.chatController.__logAIInteraction;
 
   if (!logAIInteraction) {
-    assert.ok(false, 'Could not access logAIInteraction function');
+    expect(false).toBeTruthy();
     done();
     return;
   }
 
   // Set up event listener
   eventBus.once('taskCreated', (data) => {
-    assert.equal(data.column, 'Backlog', 'Event contains correct column');
-    assert.ok(data.taskId.startsWith('ai-interaction-'), 'Event contains correct taskId format');
-    assert.equal(data.source, 'chat', 'Event contains correct source');
-    assert.equal(data.taskData.metadata.tags[0], 'ai-interaction', 'Task has correct tag');
+    expect(data.column).toEqual('Backlog');
+    expect(data.taskId.startsWith('ai-interaction-').toBeTruthy(), 'Event contains correct taskId format');
+    expect(data.source).toEqual('chat');
+    expect(data.taskData.metadata.tags[0]).toEqual('ai-interaction');
     done();
   });
 
@@ -88,22 +60,22 @@ QUnit.test('logAIInteraction should emit taskCreated event', async function(asse
   await logAIInteraction('chat', 'Test input', 'Test output');
 });
 
-QUnit.test('getProjectContext should emit contextQueried event', async function(assert) {
+  test('getProjectContext should emit contextQueried event', async function(assert) {
   const done = assert.async();
 
   // Access the internal getProjectContext function
   const getProjectContext = this.chatController.__getProjectContext;
 
   if (!getProjectContext) {
-    assert.ok(false, 'Could not access getProjectContext function');
+    expect(false).toBeTruthy();
     done();
     return;
   }
 
   // Set up event listener
   eventBus.once('contextQueried', (data) => {
-    assert.ok(data.context, 'Event contains context data');
-    assert.equal(data.context.projectName, 'Test Project', 'Context has correct project name');
+    expect(data.context).toBeTruthy();
+    expect(data.context.projectName).toEqual('Test Project');
     assert.deepEqual(data.context.columns, ['Backlog', 'In Progress', 'Done'], 'Context has correct columns');
     done();
   });
@@ -112,17 +84,17 @@ QUnit.test('getProjectContext should emit contextQueried event', async function(
   await getProjectContext();
 });
 
-QUnit.test('Chat command should trigger event chain', async function(assert) {
+  test('Chat command should trigger event chain', async function(assert) {
   const done = assert.async(2); // We expect 2 async callbacks
 
   // Set up event listeners
   eventBus.once('contextQueried', () => {
-    assert.ok(true, 'contextQueried event was emitted');
+    expect(true).toBeTruthy();
     done();
   });
 
   eventBus.once('taskCreated', () => {
-    assert.ok(true, 'taskCreated event was emitted');
+    expect(true).toBeTruthy();
     done();
   });
 
@@ -132,7 +104,7 @@ QUnit.test('Chat command should trigger event chain', async function(assert) {
   });
 });
 
-QUnit.test('Events should be emitted in the correct order', async function(assert) {
+  test('Events should be emitted in the correct order', async function(assert) {
   const done = assert.async();
   const eventOrder = [];
 
@@ -162,3 +134,5 @@ QUnit.test('Events should be emitted in the correct order', async function(asser
     message: 'Test message'
   });
 });
+
+});\

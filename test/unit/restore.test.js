@@ -2,55 +2,50 @@ const mockFileSystem = require('mock-fs');
 const kanbn = require('../../src/main');
 const context = require('../context');
 
-QUnit.module('restore tests', {
-  before() {
+describe('restore tests', () => {
+  beforeAll(() => {
     require('../qunit-throws-async');
-  },
-  afterEach() {
+  
+  });
+  afterEach(() => {
     mockFileSystem.restore();
-  }
-});
+  
+  });
 
-QUnit.test('Restore task in uninitialised folder should throw "not initialised" error', async assert => {
+  test('Restore task in uninitialised folder should throw ', not initialised" error', async assert => {
   mockFileSystem();
-  assert.throwsAsync(
-    async () => {
+  await expect(async () => {
       await kanbn.restoreTask('task-1');
-    },
-    /Not initialised in this folder/
+    }).toThrowAsync(/Not initialised in this folder/
   );
 });
 
-QUnit.test('Restore task with no archive folder should throw "no archive folder" error', async assert => {
+  test('Restore task with no archive folder should throw ', no archive folder" error', async assert => {
   mockFileSystem({
     '.kanbn': {
       'index.md': '# Test Project\n\n## Test Column'
     }
   });
-  assert.throwsAsync(
-    async () => {
+  await expect(async () => {
       await kanbn.restoreTask('task-1');
-    },
-    /Archive folder doesn't exist/
+    }).toThrowAsync(/Archive folder doesn't exist/
   );
 });
 
-QUnit.test('Restore non-existing task should throw "archived task not found" error', async assert => {
+  test('Restore non-existing task should throw ', archived task not found" error', async assert => {
   mockFileSystem({
     '.kanbn': {
       'index.md': '# Test Project\n\n## Test Column',
       'archive': {}
     }
   });
-  assert.throwsAsync(
-    async () => {
+  await expect(async () => {
       await kanbn.restoreTask('task-1');
-    },
-    /No archived task found with id "task-1"/
+    }).toThrowAsync(/No archived task found with id "task-1"/
   );
 });
 
-QUnit.test('Restore task with duplicate indexed task should throw "already indexed" error', async assert => {
+  test('Restore task with duplicate indexed task should throw ', already indexed" error', async assert => {
   mockFileSystem({
     '.kanbn': {
       'index.md': '# Test Project\n\n## Test Column\n\n- test-task-1',
@@ -62,15 +57,13 @@ QUnit.test('Restore task with duplicate indexed task should throw "already index
       }
     }
   });
-  assert.throwsAsync(
-    async () => {
+  await expect(async () => {
       await kanbn.restoreTask('test-task-1');
-    },
-    /There is already an indexed task with id "test-task-1"/
+    }).toThrowAsync(/There is already an indexed task with id "test-task-1"/
   );
 });
 
-QUnit.test('Restore task with duplicate untracked task should throw "already exists" error', async assert => {
+  test('Restore task with duplicate untracked task should throw ', already exists" error', async assert => {
   mockFileSystem({
     '.kanbn': {
       'index.md': '# Test Project\n\n## Test Column',
@@ -82,15 +75,13 @@ QUnit.test('Restore task with duplicate untracked task should throw "already exi
       }
     }
   });
-  assert.throwsAsync(
-    async () => {
+  await expect(async () => {
       await kanbn.restoreTask('test-task-1');
-    },
-    /There is already an untracked task with id "test-task-1"/
+    }).toThrowAsync(/There is already an untracked task with id "test-task-1"/
   );
 });
 
-QUnit.test('Restore task with no columns in the index should throw "no columns" error', async assert => {
+  test('Restore task with no columns in the index should throw ', no columns" error', async assert => {
   mockFileSystem({
     '.kanbn': {
       'index.md': '# Test Project',
@@ -99,15 +90,13 @@ QUnit.test('Restore task with no columns in the index should throw "no columns" 
       }
     }
   });
-  assert.throwsAsync(
-    async () => {
+  await expect(async () => {
       await kanbn.restoreTask('test-task-1');
-    },
-    /No columns defined in the index/
+    }).toThrowAsync(/No columns defined in the index/
   );
 });
 
-QUnit.test('Restore task to original column', async assert => {
+  test('Restore task to original column', async () => {
   const BASE_PATH = await kanbn.getMainFolder();
   mockFileSystem({
     '.kanbn': {
@@ -127,7 +116,7 @@ QUnit.test('Restore task to original column', async assert => {
   context.archivedTaskFileExists(assert, BASE_PATH, 'test-task-2', false);
 });
 
-QUnit.test('Restore task to first column', async assert => {
+  test('Restore task to first column', async () => {
   const BASE_PATH = await kanbn.getMainFolder();
   mockFileSystem({
     '.kanbn': {
@@ -147,7 +136,7 @@ QUnit.test('Restore task to first column', async assert => {
   context.archivedTaskFileExists(assert, BASE_PATH, 'test-task-2', false);
 });
 
-QUnit.test('Restore task to specified column', async assert => {
+  test('Restore task to specified column', async () => {
   const BASE_PATH = await kanbn.getMainFolder();
   mockFileSystem({
     '.kanbn': {
@@ -166,3 +155,5 @@ QUnit.test('Restore task to specified column', async assert => {
   context.taskFileExists(assert, BASE_PATH, 'test-task-2');
   context.archivedTaskFileExists(assert, BASE_PATH, 'test-task-2', false);
 });
+
+});\

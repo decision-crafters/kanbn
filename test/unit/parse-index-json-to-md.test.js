@@ -1,6 +1,6 @@
 const parseIndex = require('../../src/parse-index');
 
-QUnit.module('Index JSON to markdown conversion tests');
+describe('Index JSON to markdown conversion tests', () => {
 
 const CASE_1 = `---
 option1: a
@@ -111,8 +111,10 @@ const validCases = [
   }
 ];
 
-QUnit.test('Test json to index conversion with valid json', assert => {
+  test('Test json to index conversion with valid json', () => {
   validCases.forEach(validCase => {
-    assert.equal(parseIndex.json2md(validCase.data), validCase.expected.trimStart());
+    expect(parseIndex.json2md(validCase.data)).toEqual(validCase.expected.trimStart());
   });
 });
+
+});\

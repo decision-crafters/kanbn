@@ -1,6 +1,6 @@
 const parseTask = require('../../src/parse-task');
 
-QUnit.module('Task JSON to markdown conversion tests');
+describe('Task JSON to markdown conversion tests', () => {
 
 const CASE_1 = `---
 tags:
@@ -155,8 +155,10 @@ const validCases = [
   }
 ];
 
-QUnit.test('Test json to task conversion with valid json', assert => {
+  test('Test json to task conversion with valid json', () => {
   validCases.forEach(validCase => {
-    assert.equal(parseTask.json2md(validCase.data), validCase.expected.trimStart());
+    expect(parseTask.json2md(validCase.data)).toEqual(validCase.expected.trimStart());
   });
 });
+
+});\

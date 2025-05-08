@@ -2,28 +2,29 @@ const mockFileSystem = require('mock-fs');
 const kanbn = require('../../src/main');
 const context = require('../context');
 
-QUnit.module('sprint tests', {
-  before() {
+describe('sprint tests', () => {
+  beforeAll(() => {
     require('../qunit-throws-async');
-  },
-  beforeEach() {
+  
+  });
+  beforeEach(() => {
     mockFileSystem();
-  },
-  afterEach() {
+  
+  });
+  afterEach(() => {
     mockFileSystem.restore();
-  }
-});
+  
+  });
 
-QUnit.test('Start a sprint in uninitialised folder should throw "not initialised" error', async assert => {
-  assert.throwsAsync(
-    async () => {
-      await kanbn.sprint('Sprint 1', '', new Date());
+  test('Start a sprint in uninitialised folder should throw ', not initialised" error', async assert => {
+  await expect(async () => {
+      await kanbn.sprint('Sprint 1').toThrowAsync('', new Date());
     },
     /Not initialised in this folder/
   );
 });
 
-QUnit.test('Start a sprint should create a new sprint', async assert => {
+  test('Start a sprint should create a new sprint', async () => {
   const SPRINT_NAME = 'Test Sprint';
   const SPRINT_DESCRIPTION = 'Test description...';
   const SPRINT_DATE = new Date();
@@ -44,7 +45,7 @@ QUnit.test('Start a sprint should create a new sprint', async assert => {
   });
 });
 
-QUnit.test('Start a sprint with auto-generated name', async assert => {
+  test('Start a sprint with auto-generated name', async () => {
   const BASE_PATH = await kanbn.getMainFolder();
   const SPRINT_DATE = new Date();
   await kanbn.initialise();
@@ -79,3 +80,5 @@ QUnit.test('Start a sprint with auto-generated name', async assert => {
     ]
   });
 });
+
+});\

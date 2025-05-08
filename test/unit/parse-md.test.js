@@ -1,6 +1,6 @@
 const parseMarkdown = require('../../src/parse-markdown.js');
 
-QUnit.module('General markdown to JSON conversion tests');
+describe('General markdown to JSON conversion tests', () => {
 
 const invalidCases = [
   {
@@ -80,14 +80,16 @@ Content 3
   }
 ];
 
-QUnit.test('Test markdown to json conversion with valid markdown', assert => {
+  test('Test markdown to json conversion with valid markdown', () => {
   validCases.forEach((validCase, i) => {
     assert.deepEqual(parseMarkdown(validCase.md), validCase.json, `Failed on valid case ${i + 1}`);
   });
 });
 
-QUnit.test('Test markdown to json conversion with invalid markdown', assert => {
+  test('Test markdown to json conversion with invalid markdown', () => {
   invalidCases.forEach((invalidCase, i) => {
     assert.throws(() => { parseMarkdown(invalidCase.md); }, invalidCase.error, `Failed on invalid case ${i + 1}`);
   });
 });
+
+});\
