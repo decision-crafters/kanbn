@@ -1,0 +1,50 @@
+# Dependabot configuration file
+version: 2
+updates:
+  # Enable version updates for npm
+  - package-ecosystem: "npm"
+    # Look for `package.json` and `lock` files in the `root` directory
+    directory: "/"
+    # Check for updates once a week
+    schedule:
+      interval: "weekly"
+    # Specify labels for pull requests
+    labels:
+      - "dependencies"
+      - "npm"
+    # Allow up to 10 open pull requests for npm dependencies
+    open-pull-requests-limit: 10
+    # Ignore major version updates for packages with breaking changes
+    ignore:
+      # Ignore major updates for packages that might have breaking changes
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+    # Group all non-major updates into a single PR
+    groups:
+      minor-patch-updates:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+        exclude-patterns:
+          - "@langchain/*"
+          - "langchain"
+      # Group LangChain updates separately
+      langchain-updates:
+        patterns:
+          - "@langchain/*"
+          - "langchain"
+        update-types:
+          - "minor"
+          - "patch"
+
+  # Enable version updates for GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "dependencies"
+      - "github-actions"
+    open-pull-requests-limit: 5

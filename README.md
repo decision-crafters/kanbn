@@ -19,8 +19,9 @@
 # Install kanbn globally
 npm install -g @tosin2013/kanbn
 
-# Note: If you encounter issues on certain Linux distributions (e.g., Red Hat Linux 9.5),
-# try using a newer Node.js version (12, 16, 20, or 22)
+# Note: Requires Node.js 18 or higher
+# If you encounter issues on certain Linux distributions (e.g., Red Hat Linux 9.5),
+# try using Node.js 20 or 22
 
 # Initialize a new board
 kanbn init

@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: [16.x, 18.x, 20.x, 22.x]
+        node-version: [18.x, 20.x, 22.x]
       fail-fast: true
 
     steps:
@@ -47,43 +47,28 @@ jobs:
       - name: Run MCP server tests
         run: |
           set -e
-          if npm run test:mcp 2>/dev/null; then
-            echo "MCP server tests passed"
-          else
-            echo "MCP server tests not available or failed"
-            # Don't fail the build if MCP tests aren't available yet
-            exit $([ "${{ matrix.node-version }}" == "22.x" ] && echo 1 || echo 0)
-          fi
+          echo "Running MCP server tests with Node.js ${{ matrix.node-version }}"
+          npm run test:mcp
         env:
           KANBN_ENV: test
           MCP_TEST_MODE: true
 
-      # Run MCP resource tests if available
+      # Run MCP resource tests
       - name: Run MCP resource tests
         run: |
           set -e
-          if npm run test:mcp:resources 2>/dev/null; then
-            echo "MCP resource tests passed"
-          else
-            echo "MCP resource tests not available or failed"
-            # Don't fail the build if MCP tests aren't available yet
-            exit $([ "${{ matrix.node-version }}" == "22.x" ] && echo 1 || echo 0)
-          fi
+          echo "Running MCP resource tests with Node.js ${{ matrix.node-version }}"
+          npm run test:mcp:resources
         env:
           KANBN_ENV: test
           MCP_TEST_MODE: true
 
-      # Run MCP tools tests if available
+      # Run MCP tools tests
       - name: Run MCP tools tests
         run: |
           set -e
-          if npm run test:mcp:tools 2>/dev/null; then
-            echo "MCP tools tests passed"
-          else
-            echo "MCP tools tests not available or failed"
-            # Don't fail the build if MCP tests aren't available yet
-            exit $([ "${{ matrix.node-version }}" == "22.x" ] && echo 1 || echo 0)
-          fi
+          echo "Running MCP tools tests with Node.js ${{ matrix.node-version }}"
+          npm run test:mcp:tools
         env:
           KANBN_ENV: test
           MCP_TEST_MODE: true

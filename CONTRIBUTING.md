@@ -71,7 +71,7 @@ Contribute to our testing documentation:
 1. **Prerequisites**
    ```bash
    # Required software
-   - Node.js (LTS version recommended)
+   - Node.js 18 or higher (LTS version recommended)
    - Git
    - npm or yarn
    ```
