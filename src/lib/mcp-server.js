@@ -1,5 +1,11 @@
 const crypto = require('crypto');
-const { McpServer } = require('@modelcontextprotocol/typescript-sdk');
+// Dynamic import for ES modules
+let McpServer;
+const importMcpServer = async () => {
+  const sdk = await import('@modelcontextprotocol/sdk/dist/cjs/server.js');
+  McpServer = sdk.McpServer;
+  return McpServer;
+};
 const AIService = require('./ai-service');
 const ProjectContext = require('./project-context');
 const ContextSerializer = require('./context-serializer');
@@ -19,20 +25,27 @@ class KanbnMcpServer {
       debug: options.debug || false,
       testMode: process.env.MCP_TEST_MODE === 'true'
     };
-
-    if (this.options.testMode) {
-      this.registerTestTools();
-    }
-
+    
     // Initialize AI service
     this.ai = new AIService({
       apiKey: process.env.OPENROUTER_API_KEY,
       model: this.options.model,
       ollamaUrl: `http://localhost:${this.options.port}`
     });
-
+    
+    // Server will be initialized in async init method
+    this.server = null;
+  }
+  
+  /**
+   * Initialize the MCP server asynchronously
+   */
+  async init() {
+    // Load the MCP server module dynamically
+    const McpServerClass = await importMcpServer();
+    
     // Create MCP server
-    this.server = McpServer.create()
+    this.server = McpServerClass.create()
       .serverInfo('kanbn-server', require('../package.json').version)
       .capabilities({
         resources: true,
@@ -40,6 +53,10 @@ class KanbnMcpServer {
         prompts: true
       })
       .build();
+      
+    if (this.options.testMode) {
+      this.registerTestTools();
+    }
 
     // Register middleware and core functionality
     this.registerAuth();
@@ -713,6 +730,11 @@ class KanbnMcpServer {
    */
   async start() {
     try {
+      // Initialize first if not already done
+      if (!this.server) {
+        await this.init();
+      }
+      
       await this.server.start(this.options.port);
       utility.debugLog(`MCP server running on port ${this.options.port}`);
       return true;
@@ -726,8 +748,10 @@ class KanbnMcpServer {
    * Stop the MCP server
    */
   async stop() {
-    await this.server.stop();
-    utility.debugLog('MCP server stopped');
+    if (this.server) {
+      await this.server.stop();
+      utility.debugLog('MCP server stopped');
+    }
   }
 }
 

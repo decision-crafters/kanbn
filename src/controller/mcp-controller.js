@@ -12,9 +12,18 @@ module.exports = async (kanbn, args) => {
       debug: process.env.DEBUG === 'true'
     });
     
-    await server.start();
+    // Initialize and start the server
+    const started = await server.start();
+    
+    if (!started) {
+      throw new Error('Failed to start MCP server');
+    }
+    
+    console.log(`🚀 MCP server running on port ${McpConfig.port}`);
+    console.log(`💡 Use 'Ctrl+C' to stop the server`);
     
     process.on('SIGINT', async () => {
+      console.log('\n🛑 Stopping MCP server...');
       await server.stop();
       process.exit(0);
     });

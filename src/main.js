@@ -13,7 +13,6 @@ const taskUtils = require("./lib/task-utils");
 const filterUtils = require("./lib/filter-utils");
 const indexUtils = require("./lib/index-utils");
 const statusUtils = require("./lib/status-utils");
-const { McpServer } = require('@modelcontextprotocol/typescript-sdk');
 
 const DEFAULT_FOLDER_NAME = ".kanbn";
 const DEFAULT_INDEX_FILE_NAME = "index.md";
