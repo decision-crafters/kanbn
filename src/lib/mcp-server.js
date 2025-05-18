@@ -150,6 +150,55 @@ class KanbnMcpServer {
         return await this.kanbn.getTask(taskId);
       }
     });
+
+    // Epic templates resource
+    this.server.addResource({
+      name: 'epic-templates',
+      description: 'Templates for different epic types',
+      schema: {
+        type: 'object',
+        additionalProperties: {
+          type: 'object',
+          properties: {
+            description: { type: 'string' },
+            acceptanceCriteria: { type: 'array', items: { type: 'string' } },
+            metadataFields: { type: 'object' }
+          }
+        }
+      },
+      get: async () => ({
+        'feature': {
+          description: 'New product capability',
+          acceptanceCriteria: [
+            'All user flows documented',
+            'QA test cases written'
+          ],
+          metadataFields: {
+            'businessValue': 'number'
+          }
+        },
+        'technical': {
+          description: 'Technical infrastructure work',
+          acceptanceCriteria: [
+            'Performance benchmarks met',
+            'Documentation updated'
+          ],
+          metadataFields: {
+            'complexity': 'number'
+          }
+        },
+        'bugfix': {
+          description: 'Defect resolution',
+          acceptanceCriteria: [
+            'Root cause identified',
+            'Regression tests added'
+          ],
+          metadataFields: {
+            'severity': 'number'
+          }
+        }
+      })
+    });
   }
 
   /**
@@ -252,6 +301,34 @@ class KanbnMcpServer {
         return { success: true };
       }
     });
+
+    // Epic creation tool
+    this.server.addTool({
+      name: 'create-epic',
+      description: 'Break project idea into epics and stories',
+      parameters: {
+        projectIdea: { type: 'string' },
+        framework: { 
+          type: 'string',
+          enum: ['scrum', 'kanban', 'custom'],
+          default: 'scrum' 
+        }
+      },
+      execute: async ({ projectIdea, framework }) => {
+        const messages = [
+          {
+            role: 'system',
+            content: `Break this project idea into epics and user stories using ${framework} framework. 
+            Return as JSON with epics array containing stories arrays.`
+          },
+          {
+            role: 'user',
+            content: projectIdea
+          }
+        ];
+        return this.ai.chatCompletion(messages);
+      }
+    });
   }
 
   /**
@@ -276,6 +353,24 @@ class KanbnMcpServer {
       - Blockers
       - Estimated completion`,
       variables: ['task', 'progress']
+    });
+
+    this.server.addPrompt({
+      name: 'epic-breakdown',
+      template: `Break the project "{{name}}" into epics using this framework:
+      
+      Framework: {{framework}}
+      Team Size: {{teamSize}}
+      Timeline: {{timeline}}
+      
+      For each epic, include:
+      - Objective
+      - Key deliverables
+      - Dependencies
+      - Estimated story points
+      
+      Format the output as markdown with H2 for each epic and bullet points for details.`,
+      variables: ['name', 'framework', 'teamSize', 'timeline']
     });
   }
 

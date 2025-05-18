@@ -32,6 +32,9 @@
 - [ ] Create column management tool (`create-column`)
 
 ### AI Integration Backlog
+- [x] Add epic creation tool
+- [x] Add epic templates resource
+- [x] Add epic breakdown prompt
 - [ ] Refactor chat controller to MCP tools
 - [ ] Expose conversation history as resource
 - [ ] Add advanced prompt templates:
