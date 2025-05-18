@@ -1,89 +1,103 @@
 # Kanbn MCP Server Implementation Tasks
 
 ## ✅ Completed Phase 1: Core Functionality
-- [x] Set up MCP server foundation (`src/lib/mcp-server.js`)
-- [x] Add MCP dependencies (`package.json`)
-- [x] Configure environment variables (`.env.example`)
-- [x] Implement authentication middleware
-- [x] Implement CORS handling
-- [x] Implement error handling
-- [x] Create base resources:
-  - [x] Board state resource
-  - [x] Task resource
-- [x] Implement core tools:
-  - [x] `create-task` tool
-  - [x] `decompose-task` tool
-- [x] Register base prompts:
-  - [x] Task description template
-  - [x] Status update template
+- [x] MCP server foundation (`src/lib/mcp-server.js`)
+- [x] MCP dependencies (`package.json`)
+- [x] Environment configuration (`.env.example`)
+- [x] Authentication & CORS middleware
+- [x] Error handling
+- [x] Base resources:
+  - [x] Board state
+  - [x] Task data
+  - [x] Epic templates
+  - [x] Column definitions
+  - [x] Workload metrics
+- [x] Core tools:
+  - [x] Task creation
+  - [x] Task decomposition
+  - [x] Task movement
+  - [x] Task updates
+  - [x] Task deletion
+  - [x] Epic creation
+  - [x] Column management
+  - [x] Comment system
 
-## 🚧 Current Phase 2: Enhanced Functionality (In Progress)
+## 🚧 Current Phase 2: Testing & Stabilization (In Progress)
 
-### High Priority Tasks (Complete These First)
-- [x] Implement `move-task` tool (Blocking other work)
-- [ ] Add column definitions resource
-- [ ] Write unit tests for existing tools
-- [x] Implement task update tool (`update-task`)
+### High Priority
+- [ ] Unit test coverage (Critical Path)
+  - [ ] Auth middleware
+  - [ ] Resource endpoints
+  - [ ] Tool validation
+  - [ ] Error cases
 
-### Medium Priority Tasks
-- [ ] Add workload metrics resource
-- [x] Implement task deletion tool (`delete-task`)
-- [ ] Add comment management tool (`add-comment`)
-- [ ] Create column management tool (`create-column`)
+- [ ] Integration testing
+  - [ ] AI host compatibility
+  - [ ] CLI-MCP interaction
+  - [ ] Data consistency checks
 
-### AI Integration Backlog
-- [x] Add epic creation tool
-- [x] Add epic templates resource
-- [x] Add epic breakdown prompt
-- [ ] Refactor chat controller to MCP tools
-- [ ] Expose conversation history as resource
-- [ ] Add advanced prompt templates:
-  - [ ] Sprint retrospective analysis
-  - [ ] Task dependency mapping
-  - [ ] Risk assessment
+### Medium Priority
+- [ ] Performance optimization
+  - [ ] Resource caching
+  - [ ] Connection pooling
+  - [ ] Memory profiling
 
-## 🔜 Phase 3: Future Enhancements
+- [ ] Documentation
+  - [ ] API reference
+  - [ ] Example curl commands
+  - [ ] Troubleshooting guide
 
-### Authentication
-- [ ] OAuth integration
+## 🔜 Phase 3: Advanced Features
+
+### AI Enhancements
+- [ ] Prompt versioning system
+- [ ] Context-aware task generation
+- [ ] Automated retrospective analysis
+
+### Security
 - [ ] JWT validation
 - [ ] Rate limiting
+- [ ] Audit logging
 
-### Documentation
-- [ ] API reference
-- [ ] Example integrations
-- [ ] Developer quickstart
+### Ecosystem
+- [ ] VS Code extension
+- [ ] GitHub Copilot plugin
+- [ ] CLI tool enhancements
 
-### Testing
-- [ ] Integration tests with AI hosts
-- [ ] End-to-end workflow tests
-- [ ] Performance benchmarking
+## Immediate Next Steps
 
-## Immediate Next Steps (Estimated Time)
+1. **Testing Framework Setup** (1 day)
+   - Configure Jest for MCP tests
+   - Create mock AI host
+   - Set up test fixtures
 
-1. **`move-task` Tool Implementation** (2 hours)
-   - Add parameters: `taskId`, `fromColumn`, `toColumn`
-   - Implement validation logic
-   - Connect to kanbn.moveTask()
+2. **Critical Path Tests** (2 days)
+   ```javascript
+   // Example test case needed:
+   test('move-task validates column existence', async () => {
+     const res = await mcpServer.invokeTool('move-task', {
+       taskId: 'test-1',
+       fromColumn: 'Backlog', 
+       toColumn: 'Nonexistent'
+     });
+     expect(res.error).toMatch(/column does not exist/i);
+   });
+   ```
 
-2. **Column Definitions Resource** (1.5 hours)
-   - Schema for column metadata
-   - Getter implementation
-   - Caching strategy
-
-3. **Unit Test Coverage** (3 hours)
-   - Test auth middleware
-   - Verify resource responses
-   - Validate tool execution
+3. **Performance Baseline** (1 day)
+   - Measure:
+   - Tool invocation latency
+   - Resource loading times
+   - Concurrent connection handling
 
 ## Current Blockers
-1. Need final decision on column metadata structure
-2. Need clarification on move validation rules
-3. Testing environment needs configuration
+1. Need test mock for MCP client
+2. Missing performance metrics instrumentation
+3. Documentation templates required
 
 ## Recent Progress
-✔ Completed core server infrastructure  
-✔ Implemented first two tools  
-✔ Added base resources  
-✔ Set up authentication  
-✔ Created prompt templates
+✔ Completed all core MCP tools  
+✔ Implemented workload metrics  
+✔ Added column management  
+✔ Stabilized epic creation flow  
+✔ Deployed to test environment
