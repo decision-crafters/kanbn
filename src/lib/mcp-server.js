@@ -199,6 +199,90 @@ class KanbnMcpServer {
         }
       })
     });
+
+    // Column definitions resource
+    this.server.addResource({
+      name: 'column-definitions',
+      description: 'Detailed column metadata and workflow states',
+      schema: {
+        type: 'object',
+        additionalProperties: {
+          type: 'object',
+          properties: {
+            description: { type: 'string' },
+            workflowState: { 
+              type: 'string',
+              enum: ['backlog', 'active', 'completed']
+            },
+            taskLimit: { type: 'number' },
+            color: { type: 'string' }
+          }
+        }
+      },
+      get: async () => {
+        const index = await this.kanbn.getIndex();
+        return index.columnMetadata || {};
+      }
+    });
+
+    // Workload metrics resource
+    this.server.addResource({
+      name: 'workload-metrics',
+      description: 'Workload statistics and burndown data',
+      schema: {
+        type: 'object',
+        properties: {
+          totalTasks: { type: 'number' },
+          completedTasks: { type: 'number' },
+          estimatedWorkload: { type: 'number' },
+          remainingWorkload: { type: 'number' },
+          columns: {
+            type: 'object',
+            additionalProperties: {
+              type: 'object',
+              properties: {
+                taskCount: { type: 'number' },
+                workload: { type: 'number' }
+              }
+            }
+          }
+        }
+      },
+      get: async () => {
+        const index = await this.kanbn.getIndex();
+        const tasks = await this.kanbn.loadAllTrackedTasks(index);
+        
+        const metrics = {
+          totalTasks: Object.keys(tasks).length,
+          completedTasks: 0,
+          estimatedWorkload: 0,
+          remainingWorkload: 0,
+          columns: {}
+        };
+
+        for (const [columnName, taskIds] of Object.entries(index.columns)) {
+          metrics.columns[columnName] = {
+            taskCount: taskIds.length,
+            workload: 0
+          };
+
+          for (const taskId of taskIds) {
+            const task = tasks[taskId];
+            const workload = task.metadata?.workload || 1;
+            metrics.columns[columnName].workload += workload;
+            metrics.estimatedWorkload += workload;
+            
+            if (columnName === 'Done') {
+              metrics.completedTasks++;
+            } else {
+              metrics.remainingWorkload += workload;
+            }
+          }
+        }
+
+        return metrics;
+      }
+    });
   }
 
   /**
@@ -327,6 +411,77 @@ class KanbnMcpServer {
           }
         ];
         return this.ai.chatCompletion(messages);
+      }
+    });
+
+    // Column creation tool
+    this.server.addTool({
+      name: 'create-column',
+      description: 'Create a new column on the board',
+      parameters: {
+        name: { type: 'string' },
+        description: { type: 'string' },
+        workflowState: { 
+          type: 'string',
+          enum: ['backlog', 'active', 'completed'],
+          default: 'active'
+        }
+      },
+      execute: async ({ name, description, workflowState }) => {
+        const index = await this.kanbn.getIndex();
+        if (index.columns[name]) {
+          throw new Error(`Column "${name}" already exists`);
+        }
+        index.columns[name] = [];
+        index.columnMetadata = index.columnMetadata || {};
+        index.columnMetadata[name] = { description, workflowState };
+        await this.kanbn.saveIndex(index);
+        return { success: true };
+      }
+    });
+
+    // Column sorting tool
+    this.server.addTool({
+      name: 'sort-column',
+      description: 'Sort tasks in a column',
+      parameters: {
+        column: { type: 'string' },
+        field: { 
+          type: 'string',
+          enum: ['name', 'created', 'updated', 'priority'],
+          default: 'name'
+        },
+        direction: { 
+          type: 'string',
+          enum: ['ascending', 'descending'],
+          default: 'ascending'
+        }
+      },
+      execute: async ({ column, field, direction }) => {
+        await this.kanbn.sort(column, [{ field, direction }], true);
+        return { success: true };
+      }
+    });
+
+    // Comment management tool
+    this.server.addTool({
+      name: 'add-comment',
+      description: 'Add comment to a task',
+      parameters: {
+        taskId: { type: 'string' },
+        comment: { type: 'string' },
+        author: { type: 'string' }
+      },
+      execute: async ({ taskId, comment, author }) => {
+        const task = await this.kanbn.getTask(taskId);
+        task.comments = task.comments || [];
+        task.comments.push({
+          text: comment,
+          author: author || 'System',
+          date: new Date().toISOString()
+        });
+        await this.kanbn.updateTask(taskId, task);
+        return { success: true };
       }
     });
   }
