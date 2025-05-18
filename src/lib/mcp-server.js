@@ -35,10 +35,64 @@ class KanbnMcpServer {
       })
       .build();
 
-    // Register core functionality
+    // Register middleware and core functionality
+    this.registerAuth();
+    this.registerCors();
+    this.registerErrorHandling();
     this.registerResources();
     this.registerTools();
     this.registerPrompts();
+  }
+
+  /**
+   * Register authentication middleware
+   */
+  registerAuth() {
+    this.server.use(async (context, next) => {
+      // Verify API key if configured
+      if (process.env.MCP_API_KEY) {
+        const apiKey = context.request.headers['x-api-key'];
+        if (apiKey !== process.env.MCP_API_KEY) {
+          context.throw(401, 'Invalid API key');
+        }
+      }
+      await next();
+    });
+  }
+
+  /**
+   * Register error handling middleware
+   */ 
+  registerErrorHandling() {
+    this.server.use(async (context, next) => {
+      try {
+        await next();
+      } catch (error) {
+        utility.debugLog(`MCP Error: ${error.message}`);
+        context.status = error.status || 500;
+        context.body = {
+          error: error.message,
+          details: process.env.DEBUG === 'true' ? error.stack : undefined
+        };
+      }
+    });
+  }
+
+  /**
+   * Register CORS middleware
+   */
+  registerCors() {
+    this.server.use(async (context, next) => {
+      const origin = context.get('Origin');
+      if (process.env.MCP_ALLOWED_ORIGINS && origin) {
+        const allowedOrigins = process.env.MCP_ALLOWED_ORIGINS.split(',');
+        if (allowedOrigins.includes(origin)) {
+          context.set('Access-Control-Allow-Origin', origin);
+          context.set('Access-Control-Allow-Headers', 'Content-Type, X-API-Key');
+        }
+      }
+      await next();
+    });
   }
 
   /**
