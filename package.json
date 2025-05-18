@@ -18,7 +18,10 @@
     "test:binary": "./test-binary-ai-init.sh",
     "test:interactive": "./test-interactive-ai-init.sh",
     "test:prompt-flag": "./test-prompt-flag.sh",
-    "test:all": "npm run test && npm run test:real && npm run test:ai-init && npm run test:prompt-flag",
+    "test:mcp": "node test/mcp-server-mock.js",
+    "test:mcp:resources": "node test/mcp-resources-test.js",
+    "test:mcp:tools": "node test/mcp-tools-test.js",
+    "test:all": "npm run test && npm run test:real && npm run test:ai-init && npm run test:prompt-flag && npm run test:mcp",
     "lint": "echo 'No linting configured'",
     "docs": "./scripts/serve-docs.sh",
     "docs:install": "npm install -g docsify-cli"
@@ -58,6 +61,7 @@
   "dependencies": {
     "@langchain/core": "^0.3.48",
     "@langchain/ollama": "^0.2.0",
+    "@modelcontextprotocol/sdk": "^1.11.2",
     "asciichart": "^1.5.25",
     "auto-load": "^3.0.4",
     "axios": "^1.8.4",

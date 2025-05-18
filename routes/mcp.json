@@ -1,0 +1,17 @@
+{
+  "commands": ["mcp"],
+  "args": {
+    "boolean": ["help"],
+    "alias": {
+      "help": ["h"]
+    }
+  },
+  "help": {
+    "description": "Start the Model Context Protocol server",
+    "usage": "kanbn mcp [options]",
+    "options": {
+      "--help, -h": "Show this help message"
+    }
+  },
+  "controller": "./src/controller/mcp-controller"
+}

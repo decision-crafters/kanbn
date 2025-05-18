@@ -11,6 +11,7 @@
 - 🏃‍♂️ Sprint planning and execution
 - 📱 Command-line interface for speed and efficiency
 - 🌐 RAG integrations with HTML-to-Markdown conversion
+- 🔌 Model Context Protocol (MCP) server for AI tool/resource interactions
 
 ## 🚀 Quick Start
 
@@ -232,7 +233,8 @@ Where <command> is one of:
   archive ....... Archive a task
   restore ....... Restore a task from the archive
   remove-all .... Remove the kanbn board and all tasks
-  decompose ..... Use AI to break down tasks into subtas
+  decompose ..... Use AI to break down tasks into subtasks
+  mcp ........... Start the Model Context Protocol server
 ```
 
 ### AI Features
@@ -255,6 +257,10 @@ kanbn task task-id --prompt  # Generate AI-friendly prompt from task data
 # RAG Integrations
 kanbn integrations --add --name docs --url https://example.com/docs  # Add web content as context
 kanbn chat --integration docs  # Chat with context from integrations
+
+# MCP Server
+kanbn mcp  # Start the Model Context Protocol server
+# Access MCP resources and tools via HTTP API at http://localhost:11434
 ```
 
 #### Epic Management
@@ -265,6 +271,22 @@ Epics are high-level tasks that can be broken down into smaller, actionable subt
 - **Decomposing Epics**: AI automatically breaks down epics into smaller tasks
 - **Viewing Epics**: List all epics or details of specific epics
 - **Managing Epic Tasks**: View all tasks associated with a specific epic
+
+#### Model Context Protocol (MCP) Server
+
+The MCP server provides a standardized HTTP API for AI tool and resource interactions:
+
+- **Resources**: Access board state, tasks, metrics, and more via HTTP GET requests
+- **Tools**: Execute actions like task creation, movement, and decomposition via HTTP POST requests
+- **Prompts**: Use templated prompts for consistent AI interactions
+- **Authentication**: Secure your MCP server with API key authentication
+
+Start the MCP server with:
+```bash
+kanbn mcp
+```
+
+The server runs on port 11434 by default and can be configured via environment variables.
 
 #### Environment Variables for AI Features
 
@@ -279,6 +301,13 @@ OPENROUTER_MODEL=google/gemma-3-4b-it:free  # Optional, default is shown
 USE_OLLAMA=true  # Enable Ollama instead of OpenRouter
 OLLAMA_HOST=http://localhost:11434  # Ollama API URL
 OLLAMA_MODEL=qwen3  # Recommended model for epic decomposition
+
+# Option 3: MCP Server (Model Context Protocol)
+MCP_PORT=11434  # Port for MCP server (default: 11434)
+MCP_DEFAULT_MODEL=llama3  # Default AI model for MCP
+MCP_ALLOWED_ORIGINS=http://localhost:3000  # CORS allowed origins
+MCP_API_KEY=your_api_key_here  # Authentication key for MCP server
+MCP_TEST_MODE=true  # Enable test mode for MCP server
 
 # Testing
 USE_REAL_API=true  # Optional: Force real API calls in test environment
