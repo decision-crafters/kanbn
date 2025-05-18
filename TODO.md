@@ -13,30 +13,34 @@
 - [x] Implement core tools:
   - [x] `create-task` tool
   - [x] `decompose-task` tool
+- [x] Register base prompts:
+  - [x] Task description template
+  - [x] Status update template
 
-## 🚧 Current Phase 2: Enhanced Functionality
-### Tools Implementation
-- [ ] `move-task` tool (Priority)
-- [ ] `update-task` tool
-- [ ] `delete-task` tool
-- [ ] `add-comment` tool
-- [ ] `create-column` tool
+## 🚧 Current Phase 2: Enhanced Functionality (In Progress)
 
-### Resource Expansion
-- [ ] Column definitions resource (In Progress)
-- [ ] Workload metrics resource
-- [ ] Sprint planning resource
-- [ ] Burndown chart data
+### High Priority Tasks (Complete These First)
+- [ ] Implement `move-task` tool (Blocking other work)
+- [ ] Add column definitions resource
+- [ ] Write unit tests for existing tools
+- [ ] Implement task update tool (`update-task`)
 
-### AI Integration
+### Medium Priority Tasks
+- [ ] Add workload metrics resource
+- [ ] Implement task deletion tool (`delete-task`)
+- [ ] Add comment management tool (`add-comment`)
+- [ ] Create column management tool (`create-column`)
+
+### AI Integration Backlog
 - [ ] Refactor chat controller to MCP tools
 - [ ] Expose conversation history as resource
-- [ ] Add prompt templates:
-  - [ ] Task refinement prompts
-  - [ ] Status report generation
-  - [ ] Retrospective analysis
+- [ ] Add advanced prompt templates:
+  - [ ] Sprint retrospective analysis
+  - [ ] Task dependency mapping
+  - [ ] Risk assessment
 
-## 🔜 Phase 3: Advanced Features
+## 🔜 Phase 3: Future Enhancements
+
 ### Authentication
 - [ ] OAuth integration
 - [ ] JWT validation
@@ -48,34 +52,35 @@
 - [ ] Developer quickstart
 
 ### Testing
-- [ ] Unit tests for MCP server (Priority)
 - [ ] Integration tests with AI hosts
 - [ ] End-to-end workflow tests
+- [ ] Performance benchmarking
 
-## Current Blockers & Action Items
-1. **High Priority**:
-   - [ ] Complete `move-task` tool implementation
-   - [ ] Add column definitions resource
-   - [ ] Write unit tests for existing tools
+## Immediate Next Steps (Estimated Time)
 
-2. **Medium Priority**:
-   - [ ] Finalize authentication approach
-   - [ ] Document API usage examples
-   - [ ] Set up CI/CD for MCP tests
+1. **`move-task` Tool Implementation** (2 hours)
+   - Add parameters: `taskId`, `fromColumn`, `toColumn`
+   - Implement validation logic
+   - Connect to kanbn.moveTask()
 
-3. **Nice-to-have**:
-   - [ ] Add Swagger/OpenAPI docs
-   - [ ] Create Postman collection
-   - [ ] Build VS Code extension demo
+2. **Column Definitions Resource** (1.5 hours)
+   - Schema for column metadata
+   - Getter implementation
+   - Caching strategy
 
-## Recent Progress (Last 7 Days)
-✔ Added core authentication middleware  
-✔ Implemented CORS handling  
-✔ Created initial resources (board state, tasks)  
-✔ Set up error handling framework  
-✔ Added first two tools (create-task, decompose-task)
+3. **Unit Test Coverage** (3 hours)
+   - Test auth middleware
+   - Verify resource responses
+   - Validate tool execution
 
-## Immediate Next Steps
-1. Implement `move-task` tool (estimate: 2h)
-2. Create column definitions resource (estimate: 1h) 
-3. Write unit tests for existing tools (estimate: 3h)
+## Current Blockers
+1. Need final decision on column metadata structure
+2. Need clarification on move validation rules
+3. Testing environment needs configuration
+
+## Recent Progress
+✔ Completed core server infrastructure  
+✔ Implemented first two tools  
+✔ Added base resources  
+✔ Set up authentication  
+✔ Created prompt templates
