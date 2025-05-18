@@ -13,6 +13,7 @@ const taskUtils = require("./lib/task-utils");
 const filterUtils = require("./lib/filter-utils");
 const indexUtils = require("./lib/index-utils");
 const statusUtils = require("./lib/status-utils");
+const { McpServer } = require('@modelcontextprotocol/typescript-sdk');
 
 const DEFAULT_FOLDER_NAME = ".kanbn";
 const DEFAULT_INDEX_FILE_NAME = "index.md";
@@ -309,9 +310,11 @@ class Kanbn {
   ROOT = process.cwd();
   CONFIG_YAML = path.join(this.ROOT, "kanbn.yml");
   CONFIG_JSON = path.join(this.ROOT, "kanbn.json");
+  MCP_PORT = 11434; // Default MCP server port
 
   // Memoize config
   configMemo = null;
+  mcpServer = null;
 
   constructor(root = null) {
     if(root) {
@@ -1686,6 +1689,50 @@ class Kanbn {
       throw new Error("Not initialised in this folder");
     }
     rimraf.sync(await this.getMainFolder());
+  }
+
+  /**
+   * Start the MCP server
+   * @param {number} [port] Optional port override
+   * @return {Promise<boolean>} True if server started successfully
+   */
+  async startMcpServer(port) {
+    try {
+      if (this.mcpServer) {
+        await this.stopMcpServer();
+      }
+      
+      const KanbnMcpServer = require('./lib/mcp-server');
+      this.mcpServer = new KanbnMcpServer(this, {
+        port: port || this.MCP_PORT,
+        model: process.env.MCP_DEFAULT_MODEL,
+        debug: process.env.DEBUG === 'true'
+      });
+      
+      return await this.mcpServer.start();
+    } catch (error) {
+      utility.error(`Failed to start MCP server: ${error.message}`);
+      return false;
+    }
+  }
+
+  /**
+   * Stop the MCP server
+   * @return {Promise<void>}
+   */
+  async stopMcpServer() {
+    if (this.mcpServer) {
+      await this.mcpServer.stop();
+      this.mcpServer = null;
+    }
+  }
+
+  /**
+   * Check if MCP server is running
+   * @return {boolean}
+   */
+  isMcpServerRunning() {
+    return !!this.mcpServer;
   }
 };
 

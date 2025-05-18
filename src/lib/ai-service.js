@@ -99,11 +99,22 @@ class AIService {
     } catch (error) {
       console.error('Error using Ollama:', error);
 
-      // If both OpenRouter and Ollama fail, provide a clear error message
+      // Special handling for MCP connection errors
+      if (error.message.includes('ECONNREFUSED') && error.message.includes('11434')) {
+        throw new Error(
+          'Ollama/MCP connection failed. Please ensure either:\n' +
+          '1. Ollama is running (https://ollama.com), or\n' +
+          '2. Kanbn MCP server is running (kanbn --mcp)\n' +
+          '\nError details: ' + error.message
+        );
+      }
+
+      // Default error message
       throw new Error(
         'AI services are not available. Please ensure either:\n' +
         '1. Set OPENROUTER_API_KEY environment variable, or\n' +
         '2. Install and run Ollama (https://ollama.com)\n' +
+        '3. Start Kanbn MCP server (kanbn --mcp)\n' +
         '\nError details: ' + error.message
       );
     }
