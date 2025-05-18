@@ -18,7 +18,10 @@
     "test:binary": "./test-binary-ai-init.sh",
     "test:interactive": "./test-interactive-ai-init.sh",
     "test:prompt-flag": "./test-prompt-flag.sh",
-    "test:all": "npm run test && npm run test:real && npm run test:ai-init && npm run test:prompt-flag",
+    "test:all": "npm run test && npm run test:real && npm run test:ai-init && npm run test:prompt-flag && npm run test:mcp",
+    "test:mcp": "node test/mcp-test-tool.js",
+    "test:mcp:resources": "node test/mcp-test-tool.js --resources",
+    "test:mcp:tools": "node test/mcp-test-tool.js --tools",
     "lint": "echo 'No linting configured'",
     "docs": "./scripts/serve-docs.sh",
     "docs:install": "npm install -g docsify-cli"

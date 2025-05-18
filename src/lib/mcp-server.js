@@ -15,8 +15,13 @@ class KanbnMcpServer {
     this.options = {
       port: options.port || 11434,
       model: options.model || process.env.MCP_DEFAULT_MODEL,
-      debug: options.debug || false
+      debug: options.debug || false,
+      testMode: process.env.MCP_TEST_MODE === 'true'
     };
+
+    if (this.options.testMode) {
+      this.registerTestTools();
+    }
 
     // Initialize AI service
     this.ai = new AIService({
@@ -625,6 +630,16 @@ class KanbnMcpServer {
   /**
    * Register MCP prompts
    */
+  registerTestTools() {
+    this.server.addTool({
+      name: 'test-reset',
+      description: 'Reset test data',
+      execute: async () => {
+        return { success: true };
+      }
+    });
+  }
+
   registerPrompts() {
     this.server.addPrompt({
       name: 'retrospective-template',
