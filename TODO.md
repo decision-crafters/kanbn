@@ -25,6 +25,12 @@
 ## 🚧 Current Phase 2: Testing & Stabilization (In Progress)
 
 ### High Priority
+- [ ] Migrate test framework to Jest
+  - [ ] Configure Jest setup
+  - [ ] Convert existing QUnit tests to Jest
+  - [ ] Add Jest-specific test utilities
+  - [ ] Update CI/CD pipeline for Jest
+
 - [ ] Unit test coverage (Critical Path)
   - [ ] Auth middleware
   - [ ] Resource endpoints
@@ -66,7 +72,26 @@
 
 ## Immediate Next Steps
 
-1. **Testing Framework Setup** (1 day)
+1. **Jest Migration Setup** (1 day)
+   - Install Jest dependencies
+   - Create Jest config
+   - Set up basic test conversion example
+   ```javascript
+   // Example of converted test:
+   describe('move-task validation', () => {
+     test('validates column existence', async () => {
+       const res = await mcpServer.invokeTool('move-task', {
+         taskId: 'test-1',
+         fromColumn: 'Backlog',
+         toColumn: 'Nonexistent'
+       });
+       expect(res).toHaveProperty('error');
+       expect(res.error).toMatch(/column does not exist/i);
+     });
+   });
+   ```
+
+2. **Testing Framework Setup** (1 day)
    - Configure Jest for MCP tests
    - Create mock AI host
    - Set up test fixtures
