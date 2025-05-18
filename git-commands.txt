@@ -1,0 +1,9 @@
+# Stage the TODO changes documenting the Jest migration plan
+git add TODO.md
+
+# Create the initial commit with a descriptive message
+git commit -m "docs: document Jest migration plan in TODO
+
+- Add detailed Jest migration section under Phase 2
+- Include example test conversion patterns
+- Outline immediate next steps for testing framework"
