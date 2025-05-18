@@ -99,6 +99,51 @@ class KanbnMcpServer {
    * Register MCP resources
    */
   registerResources() {
+    // Prompt versions resource
+    this.server.addResource({
+      name: 'prompt-versions',
+      description: 'Version history of all prompts',
+      schema: {
+        type: 'object',
+        additionalProperties: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              version: { type: 'string' },
+              content: { type: 'string' },
+              timestamp: { type: 'string' }
+            }
+          }
+        }
+      },
+      get: async () => {
+        return {
+          'task-description': [
+            {
+              version: '1.0',
+              content: this.server.prompts['task-description'].template,
+              timestamp: new Date().toISOString()
+            }
+          ],
+          'status-update': [
+            {
+              version: '1.0', 
+              content: this.server.prompts['status-update'].template,
+              timestamp: new Date().toISOString()
+            }
+          ],
+          'epic-breakdown': [
+            {
+              version: '1.0',
+              content: this.server.prompts['epic-breakdown'].template,
+              timestamp: new Date().toISOString()
+            }
+          ]
+        };
+      }
+    });
+
     // Board state resource
     this.server.addResource({
       name: 'board-state',
@@ -463,6 +508,97 @@ class KanbnMcpServer {
       }
     });
 
+    // Prompt versioning tool
+    this.server.addTool({
+      name: 'rollback-prompt',
+      description: 'Revert a prompt to previous version',
+      parameters: {
+        promptName: { type: 'string' },
+        version: { type: 'string' }
+      },
+      execute: async ({ promptName, version }) => {
+        const versions = await this.server.getResource('prompt-versions');
+        if (!versions[promptName]) {
+          throw new Error(`Prompt "${promptName}" not found`);
+        }
+        const targetVersion = versions[promptName].find(v => v.version === version);
+        if (!targetVersion) {
+          throw new Error(`Version ${version} not found for prompt "${promptName}"`);
+        }
+        this.server.prompts[promptName].template = targetVersion.content;
+        return { success: true };
+      }
+    });
+
+    // Context-aware task generation
+    this.server.addTool({
+      name: 'generate-context-task',
+      description: 'Create task using current project context',
+      parameters: {
+        taskDescription: { type: 'string' },
+        contextFields: {
+          type: 'array',
+          items: {
+            type: 'string',
+            enum: ['relatedTasks', 'currentSprint', 'teamVelocity']
+          }
+        }
+      },
+      execute: async ({ taskDescription, contextFields }) => {
+        const context = {};
+        const index = await this.kanbn.getIndex();
+        
+        if (contextFields.includes('relatedTasks')) {
+          context.relatedTasks = await this.kanbn.loadAllTrackedTasks(index);
+        }
+        
+        const messages = [
+          {
+            role: 'system',
+            content: `Create a well-formed task using this context: ${JSON.stringify(context)}`
+          },
+          {
+            role: 'user',
+            content: taskDescription
+          }
+        ];
+        
+        return this.ai.chatCompletion(messages);
+      }
+    });
+
+    // Sprint retrospective analysis
+    this.server.addTool({
+      name: 'analyze-sprint',
+      description: 'Perform retrospective analysis of completed sprint',
+      parameters: {
+        sprintId: { type: 'string' },
+        analysisType: {
+          type: 'string',
+          enum: ['basic', 'detailed', 'metrics'],
+          default: 'basic'
+        }
+      },
+      execute: async ({ sprintId, analysisType }) => {
+        const completedTasks = await this.kanbn.loadTasksInColumn('Done');
+        const messages = [
+          {
+            role: 'system',
+            content: `Analyze this sprint's completed tasks (${completedTasks.length} tasks) and provide ${analysisType} retrospective. Focus on:`
+              + '\n- What went well'
+              + '\n- Improvement opportunities'
+              + '\n- Actionable recommendations'
+          },
+          {
+            role: 'user',
+            content: `Sprint ID: ${sprintId}\nTasks:\n${JSON.stringify(completedTasks.slice(0, 5))}`
+          }
+        ];
+        
+        return this.ai.chatCompletion(messages);
+      }
+    });
+
     // Comment management tool
     this.server.addTool({
       name: 'add-comment',
@@ -490,6 +626,24 @@ class KanbnMcpServer {
    * Register MCP prompts
    */
   registerPrompts() {
+    this.server.addPrompt({
+      name: 'retrospective-template',
+      template: `Analyze this sprint data and generate a retrospective report covering:
+      
+      Sprint: {{sprintName}}
+      Dates: {{startDate}} to {{endDate}}
+      Completed Tasks: {{taskCount}}
+      
+      Include sections for:
+      1. Key accomplishments
+      2. Challenges faced
+      3. Velocity analysis
+      4. Recommended improvements
+      
+      Format as markdown with clear section headers.`,
+      variables: ['sprintName', 'startDate', 'endDate', 'taskCount']
+    });
+
     this.server.addPrompt({
       name: 'task-description',
       template: `Describe the task "{{name}}" in detail including:
