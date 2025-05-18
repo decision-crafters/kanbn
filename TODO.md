@@ -20,14 +20,14 @@
 ## 🚧 Current Phase 2: Enhanced Functionality (In Progress)
 
 ### High Priority Tasks (Complete These First)
-- [ ] Implement `move-task` tool (Blocking other work)
+- [x] Implement `move-task` tool (Blocking other work)
 - [ ] Add column definitions resource
 - [ ] Write unit tests for existing tools
-- [ ] Implement task update tool (`update-task`)
+- [x] Implement task update tool (`update-task`)
 
 ### Medium Priority Tasks
 - [ ] Add workload metrics resource
-- [ ] Implement task deletion tool (`delete-task`)
+- [x] Implement task deletion tool (`delete-task`)
 - [ ] Add comment management tool (`add-comment`)
 - [ ] Create column management tool (`create-column`)
 

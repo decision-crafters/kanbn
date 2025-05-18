@@ -200,6 +200,58 @@ class KanbnMcpServer {
         return this.ai.chatCompletion(messages);
       }
     });
+
+    // Task movement tool
+    this.server.addTool({
+      name: 'move-task',
+      description: 'Move a task between columns',
+      parameters: {
+        taskId: { type: 'string' },
+        fromColumn: { type: 'string' },
+        toColumn: { type: 'string' }
+      },
+      execute: async ({ taskId, fromColumn, toColumn }) => {
+        const index = await this.kanbn.getIndex();
+        if (!index.columns[toColumn]) {
+          throw new Error(`Column "${toColumn}" does not exist`);
+        }
+        await this.kanbn.moveTask(taskId, fromColumn, toColumn);
+        return { success: true };
+      }
+    });
+
+    // Task update tool
+    this.server.addTool({
+      name: 'update-task',
+      description: 'Update task properties',
+      parameters: {
+        taskId: { type: 'string' },
+        updates: {
+          type: 'object',
+          properties: {
+            name: { type: 'string' },
+            description: { type: 'string' },
+            metadata: { type: 'object' }
+          }
+        }
+      },
+      execute: async ({ taskId, updates }) => {
+        return await this.kanbn.updateTask(taskId, updates);
+      }
+    });
+
+    // Task deletion tool
+    this.server.addTool({
+      name: 'delete-task',
+      description: 'Delete a task',
+      parameters: {
+        taskId: { type: 'string' }
+      },
+      execute: async ({ taskId }) => {
+        await this.kanbn.removeTask(taskId);
+        return { success: true };
+      }
+    });
   }
 
   /**
