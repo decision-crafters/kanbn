@@ -22,8 +22,10 @@ class AIService {
    */
   constructor(options = {}) {
     // Force IPv4 by replacing localhost with 127.0.0.1 in Ollama URL
-    let ollamaUrl = options.ollamaUrl || process.env.OLLAMA_HOST || process.env.OLLAMA_URL || 'http://localhost:11434';
-    ollamaUrl = ollamaUrl.replace('localhost', '127.0.0.1');
+    let ollamaUrl = options.ollamaUrl || process.env.OLLAMA_HOST || 'http://127.0.0.1:11434';
+    if (ollamaUrl.includes('11434') && process.env.MCP_PORT === '11434') {
+      ollamaUrl = ollamaUrl.replace('11434', '11435');
+    }
 
     this.options = {
       apiKey: options.apiKey || process.env.OPENROUTER_API_KEY || null,

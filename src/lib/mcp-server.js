@@ -1,3 +1,4 @@
+const crypto = require('crypto');
 const { McpServer } = require('@modelcontextprotocol/typescript-sdk');
 const AIService = require('./ai-service');
 const ProjectContext = require('./project-context');
@@ -70,14 +71,23 @@ class KanbnMcpServer {
    */ 
   registerErrorHandling() {
     this.server.use(async (context, next) => {
+      context.state.requestId = crypto.randomUUID();
+      
       try {
         await next();
       } catch (error) {
-        utility.debugLog(`MCP Error: ${error.message}`);
+        const isClientError = error.status >= 400 && error.status < 500;
+        if (!isClientError) {
+          utility.error(`[${context.state.requestId}] ${error.stack}`);
+        }
+        
         context.status = error.status || 500;
         context.body = {
           error: error.message,
-          details: process.env.DEBUG === 'true' ? error.stack : undefined
+          ...(process.env.DEBUG === 'true' && { 
+            stack: error.stack,
+            details: error.details 
+          })
         };
       }
     });
