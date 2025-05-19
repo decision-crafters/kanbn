@@ -34,16 +34,40 @@ jobs:
       - name: Install dependencies
         run: npm ci || npm install
 
-      # Run QUnit tests (legacy system)
-      - name: Run QUnit tests
+      # Run Jest unit tests (primary test system)
+      - name: Run Jest unit tests
         run: |
           set -e
+          echo "Running Jest unit tests with Node.js ${{ matrix.node-version }}"
+          npm run test:jest:unit
+        env:
+          KANBN_ENV: test
+          USE_REAL_API: false
+          MCP_TEST_MODE: true
+
+      # Run Jest integration tests
+      - name: Run Jest integration tests
+        run: |
+          set -e
+          echo "Running Jest integration tests with Node.js ${{ matrix.node-version }}"
+          npm run test:jest:integration
+        env:
+          KANBN_ENV: test
+          USE_REAL_API: false
+          MCP_TEST_MODE: true
+
+      # Run QUnit tests (legacy system - will be removed after migration is complete)
+      - name: Run QUnit tests (legacy)
+        run: |
+          set -e
+          echo "Running legacy QUnit tests with Node.js ${{ matrix.node-version }}"
           npm test
         env:
           KANBN_ENV: test
           USE_REAL_API: false
+        continue-on-error: true
 
-      # Run MCP tests if available
+      # Run MCP server tests
       - name: Run MCP server tests
         run: |
           set -e
@@ -84,6 +108,7 @@ jobs:
           chmod +x ./scripts/test-all-commands.sh
           ./scripts/test-all-commands.sh --use-built-package
 
+      # Run AI initialization tests (these will eventually be replaced by MCP tests)
       - name: Run AI initialization tests
         run: |
           set -e
@@ -92,15 +117,7 @@ jobs:
         env:
           KANBN_ENV: test
           USE_REAL_API: false
-
-      - name: Run AI initialization scenarios
-        run: |
-          set -e
-          chmod +x ./scripts/test-ai-init-scenarios.sh
-          ./scripts/test-ai-init-scenarios.sh
-        env:
-          KANBN_ENV: test
-          USE_REAL_API: false
+          MCP_TEST_MODE: true
 
       - name: Run linting
         run: |

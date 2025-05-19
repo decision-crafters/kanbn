@@ -339,7 +339,26 @@ We welcome contributions! Please read our [Contributing Guide](CONTRIBUTING.md) 
 Run tests with:
 
 ```bash
+# Run all tests (Jest and legacy QUnit)
+npm run test:all
+
+# Run Jest tests only (recommended)
+npm run test:jest
+
+# Run Jest unit tests
+npm run test:jest:unit
+
+# Run Jest integration tests
+npm run test:jest:integration
+
+# Run Jest tests with coverage report
+npm run test:jest:coverage
+
+# Run legacy QUnit tests (will be deprecated)
 npm test
+
+# Run MCP server tests
+npm run test:mcp
 ```
 
 ### Testing OpenRouter API Integration

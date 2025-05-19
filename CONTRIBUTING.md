@@ -97,13 +97,33 @@ Contribute to our testing documentation:
 ### Running Tests
 
 ```bash
-# Run all tests
-npm test
+# Run all tests (Jest and legacy QUnit)
+npm run test:all
 
-# Run specific test categories
+# Run Jest tests (recommended)
+npm run test:jest
+
+# Run Jest unit tests
+npm run test:jest:unit
+
+# Run Jest integration tests
+npm run test:jest:integration
+
+# Run Jest tests with coverage report
+npm run test:jest:coverage
+
+# Run Jest tests in watch mode (development)
+npm run test:jest:watch
+
+# Run legacy QUnit tests (will be deprecated)
+npm test
 npm run test:unit
 npm run test:integration
-npm run test:e2e
+
+# Run MCP server tests
+npm run test:mcp
+npm run test:mcp:resources
+npm run test:mcp:tools
 
 # Run with debug output
 DEBUG=true npm test
@@ -115,13 +135,18 @@ DEBUG=true npm test
 - Place unit tests in `test/unit/`
 - Place integration tests in `test/integration/`
 - Place end-to-end tests in `test/e2e/`
-- Use `*.test.js` naming convention
+- Place MCP tests in `test/mcp/`
+- Use `*.test.js` naming convention for all test files
+- Jest is the preferred testing framework for new tests
 
 ### 2. Writing Tests
+- Use Jest for new tests (`describe`, `test`, `expect` syntax)
 - Follow existing test patterns
 - Include clear test descriptions
 - Add comments for complex logic
 - Use appropriate assertions
+- Group related tests in describe blocks
+- Use beforeEach/afterEach for test setup and teardown
 
 ### 3. Test Quality Standards
 - Ensure tests are isolated

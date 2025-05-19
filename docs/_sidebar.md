@@ -22,4 +22,5 @@
 
 - Contributing
   - [Contributing Guide](CONTRIBUTING.md)
+  - [Testing Guide](TESTING.md)
   - [Code of Conduct](CODE_OF_CONDUCT.md)
