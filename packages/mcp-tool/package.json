@@ -5,6 +5,7 @@
   "main": "index.js",
   "files": [
     "tools/*.json",
+    "index.js",
     "README.md"
   ],
   "keywords": ["kanbn", "mcp", "mcp-tool"],

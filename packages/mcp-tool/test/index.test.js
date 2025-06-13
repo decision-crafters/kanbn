@@ -1,5 +1,5 @@
 const QUnit = require('qunit');
-const tools = require('..');
+const { tools } = require('..');
 
 QUnit.module('@kanbn/mcp-tool');
 

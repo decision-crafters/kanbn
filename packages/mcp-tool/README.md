@@ -6,7 +6,7 @@ This package bundles Kanbn MCP tool definitions (input and output schemas).
 
 ### Register tools with an MCP server
 ```js
-const tools = require('@kanbn/mcp-tool');
+const { tools } = require('@kanbn/mcp-tool');
 Object.values(tools).forEach(toolDef => server.addTool(toolDef));
 ```
 
