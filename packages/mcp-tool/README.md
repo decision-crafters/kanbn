@@ -2,6 +2,15 @@
 
 This package bundles Kanbn MCP tool definitions (input and output schemas).
 
+## Included Tools
+
+- `kanbn_task_add`
+- `kanbn_task_view`
+- `kanbn_task_list`
+- `kanbn_task_update`
+- `kanbn_task_move`
+- `kanbn_task_delete`
+
 ## Usage
 
 ### Register tools with an MCP server

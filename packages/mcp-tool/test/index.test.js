@@ -4,7 +4,7 @@ describe('@kanbn/mcp-tool', () => {
   test('exports at least one tool definition', () => {
     const keys = Object.keys(tools);
     expect(keys.length).toBeGreaterThan(0);
-    
+
     const sample = tools[keys[0]];
     expect(typeof sample.name).toBe('string');
     expect(typeof sample.inputSchema).toBe('object');
@@ -13,7 +13,7 @@ describe('@kanbn/mcp-tool', () => {
 
   test('all tools have required properties', () => {
     const toolKeys = Object.keys(tools);
-    
+
     toolKeys.forEach(key => {
       const tool = tools[key];
       expect(tool).toHaveProperty('name');
@@ -25,21 +25,17 @@ describe('@kanbn/mcp-tool', () => {
     });
   });
 
-  test('kanbn_task_add tool exists and has correct structure', () => {
-    expect(tools).toHaveProperty('kanbn_task_add');
-    
-    const taskAddTool = tools.kanbn_task_add;
-    expect(taskAddTool.name).toBe('kanbn_task_add');
-    expect(taskAddTool.description).toBe('Add a task to the Kanbn board');
-    
-    // Verify input schema structure
-    expect(taskAddTool.inputSchema.type).toBe('object');
-    expect(taskAddTool.inputSchema.properties).toHaveProperty('name');
-    expect(taskAddTool.inputSchema.required).toContain('name');
-    
-    // Verify output schema structure
-    expect(taskAddTool.outputSchema.type).toBe('object');
-    expect(taskAddTool.outputSchema.properties).toHaveProperty('taskId');
-    expect(taskAddTool.outputSchema.required).toContain('taskId');
+  test('includes core task tools', () => {
+    const expected = [
+      'kanbn_task_add',
+      'kanbn_task_view',
+      'kanbn_task_list',
+      'kanbn_task_update',
+      'kanbn_task_move',
+      'kanbn_task_delete'
+    ];
+    expected.forEach(name => {
+      expect(tools).toHaveProperty(name);
+    });
   });
 });

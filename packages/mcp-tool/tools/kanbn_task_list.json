@@ -1,0 +1,19 @@
+{
+  "name": "kanbn_task_list",
+  "description": "List all tasks on the Kanbn board",
+  "inputSchema": {
+    "type": "object",
+    "properties": {},
+    "additionalProperties": false
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "tasks": {
+        "type": "array",
+        "items": {"type": "object"}
+      }
+    },
+    "required": ["tasks"]
+  }
+}
