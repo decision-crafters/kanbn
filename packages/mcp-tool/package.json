@@ -3,10 +3,14 @@
   "version": "0.1.0",
   "description": "Kanbn MCP tool definitions (input/output schemas) for MCP server & mcp-test",
   "main": "index.js",
+  "scripts": {
+    "test": "jest"
+  },
   "files": [
     "tools/*.json",
     "index.js",
-    "README.md"
+    "README.md",
+    "test/"
   ],
   "keywords": ["kanbn", "mcp", "mcp-tool"],
   "author": "Tosin Akinsoho",
@@ -15,5 +19,11 @@
     "type": "git",
     "url": "https://github.com/decision-crafters/kanbn.git",
     "directory": "packages/mcp-tool"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0"
+  },
+  "jest": {
+    "testEnvironment": "node"
   }
 }
