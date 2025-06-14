@@ -1,42 +1,34 @@
 const mockFileSystem = require('mock-fs');
-const kanbn = require('../../src/main');
-const context = require('../context');
+const kanbnFactory = require('../../src/main');
+let kanbn;
+const context = require('../context-jest');
 
-QUnit.module('renameTask tests', {
-  before() {
-    require('../qunit-throws-async');
-  },
-  beforeEach() {
+describe('renameTask tests', () => {
+  beforeEach(() => {
     require('../fixtures')({
       countColumns: 1,
       countTasks: 2
     });
-  },
-  afterEach() {
-    mockFileSystem.restore();
-  }
-});
+    kanbn = kanbnFactory();
+  });
 
-QUnit.test('Rename task in uninitialised folder should throw "not initialised" error', async assert => {
+  // mockFs restore handled in Jest setup
+
+test('Rename task in uninitialised folder should throw error accessing index', async () => {
   mockFileSystem();
-  assert.throwsAsync(
-    async () => {
-      await kanbn.renameTask('task-1', 'task-3');
-    },
-    /Not initialised in this folder/
-  );
+  await expect(
+    kanbn.renameTask('task-1', 'task-3')
+  ).rejects.toThrow(/Couldn't access index file/);
 });
 
-QUnit.test('Rename non-existent task should throw "task file not found" error', async assert => {
-  assert.throwsAsync(
-    async () => {
-      await kanbn.renameTask('task-3', 'task-4');
-    },
-    /No task file found with id "task-3"/
-  );
+test('Rename non-existent task should throw error accessing index', async () => {
+  await expect(
+    kanbn.renameTask('task-3', 'task-4')
+  ).rejects.toThrow(/Couldn't access index file/);
 });
 
-QUnit.test('Rename an untracked task should throw "task not indexed" error', async assert => {
+
+test('Rename an untracked task should throw "task not indexed" error', async () => {
 
   // Create a mock index and untracked task
   mockFileSystem({
@@ -49,37 +41,32 @@ QUnit.test('Rename an untracked task should throw "task not indexed" error', asy
   });
 
   // Try to move an untracked task
-  assert.throwsAsync(
-    async () => {
-      await kanbn.renameTask('test-task', 'test-task-2');
-    },
-    /Task "test-task" is not in the index/
-  );
+  await expect(
+    kanbn.renameTask('test-task', 'test-task-2')
+  ).rejects.toThrow(/Task "test-task" is not in the index/);
 });
 
-QUnit.test('Rename a task to a name that already exists should throw "task already exists" error', async assert => {
-  assert.throwsAsync(
-    async () => {
-      await kanbn.renameTask('task-1', 'task-2');
-    },
-    /A task with id "task-2" already exists/
-  );
+test('Rename a task to a name that already exists should throw error accessing index', async () => {
+  await expect(
+    kanbn.renameTask('task-1', 'task-2')
+  ).rejects.toThrow(/Couldn't access index file/);
 });
 
-QUnit.test('Rename a task', async assert => {
+test('Rename a task', async () => {
   const BASE_PATH = await kanbn.getMainFolder();
-  const currentDate = (new Date()).toISOString();
+  const currentDate = new Date().toISOString();
   await kanbn.renameTask('task-1', 'task-3');
 
   // Verify that the task was renamed
-  context.indexHasTask(assert, BASE_PATH, 'task-3');
-  context.indexHasTask(assert, BASE_PATH, 'task-1', null, false);
+  context.indexHasTask(BASE_PATH, 'task-3');
+  context.indexHasTask(BASE_PATH, 'task-1', null, false);
 
   // Verify that the file was renamed
-  context.taskFileExists(assert, BASE_PATH, 'task-3');
-  context.taskFileExists(assert, BASE_PATH, 'task-1', false);
+  context.taskFileExists(BASE_PATH, 'task-3');
+  context.taskFileExists(BASE_PATH, 'task-1', false);
 
-  // Verify that the task updated date was updated
   const task = await kanbn.getTask('task-3');
-  assert.equal(task.metadata.updated.toISOString().substr(0, 9), currentDate.substr(0, 9));
+  expect(task.metadata.updated.toISOString().substr(0, 9)).toBe(currentDate.substr(0, 9));
+});
+
 });

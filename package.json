@@ -19,6 +19,9 @@
     "test:interactive": "./test-interactive-ai-init.sh",
     "test:prompt-flag": "./test-prompt-flag.sh",
     "test:all": "npm run test && npm run test:real && npm run test:ai-init && npm run test:prompt-flag",
+    "test:jest-infrastructure": "jest test/jest-infrastructure.test.js --verbose",
+    "test:jest": "jest",
+    "test:jest-watch": "jest --watch",
     "lint": "echo 'No linting configured'",
     "docs": "./scripts/serve-docs.sh",
     "docs:install": "npm install -g docsify-cli"

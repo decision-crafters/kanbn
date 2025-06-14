@@ -5,14 +5,14 @@
 ### 1. Domain Events & Cross-Context Communication
 ```javascript
 // Example: Test chat affecting task workflow
-QUnit.test('chat should trigger task creation event', async function(assert) {
+test('chat should trigger task creation event', async () => {
     const chat = require('../../src/controller/chat');
     const eventEmitted = false;
     // Test implementation
 });
 
 // Example: Test chat history persistence
-QUnit.test('chat history should persist across sessions', async function(assert) {
+test('chat history should persist across sessions', async () => {
     // Test implementation
 });
 ```
@@ -20,12 +20,12 @@ QUnit.test('chat history should persist across sessions', async function(assert)
 ### 2. Bounded Context Boundaries
 ```javascript
 // Example: Test context synchronization
-QUnit.test('task updates should reflect in chat context', async function(assert) {
+test('task updates should reflect in chat context', async () => {
     // Test implementation
 });
 
 // Example: Test project configuration changes
-QUnit.test('column changes should update chat context', async function(assert) {
+test('column changes should update chat context', async () => {
     // Test implementation
 });
 ```
@@ -33,12 +33,12 @@ QUnit.test('column changes should update chat context', async function(assert) {
 ### 3. Aggregate Root Integrity
 ```javascript
 // Example: Test board consistency
-QUnit.test('concurrent chat and task modifications', async function(assert) {
+test('concurrent chat and task modifications', async () => {
     // Test implementation
 });
 
 // Example: Test board state validation
-QUnit.test('board state should remain valid after chat operations', async function(assert) {
+test('board state should remain valid after chat operations', async () => {
     // Test implementation
 });
 ```
@@ -46,12 +46,12 @@ QUnit.test('board state should remain valid after chat operations', async functi
 ### 4. Value Objects & Entities
 ```javascript
 // Example: Test chat interaction immutability
-QUnit.test('chat interactions should be immutable', async function(assert) {
+test('chat interactions should be immutable', async () => {
     // Test implementation
 });
 
 // Example: Test message validation
-QUnit.test('chat messages should maintain structure', async function(assert) {
+test('chat messages should maintain structure', async () => {
     // Test implementation
 });
 ```
@@ -59,12 +59,12 @@ QUnit.test('chat messages should maintain structure', async function(assert) {
 ### 5. Infrastructure Layer
 ```javascript
 // Example: Test API resilience
-QUnit.test('should handle API failures gracefully', async function(assert) {
+test('should handle API failures gracefully', async () => {
     // Test implementation
 });
 
 // Example: Test persistence
-QUnit.test('chat history should persist correctly', async function(assert) {
+test('chat history should persist correctly', async () => {
     // Test implementation
 });
 ```
@@ -72,12 +72,12 @@ QUnit.test('chat history should persist correctly', async function(assert) {
 ### 6. User Workflow Tests
 ```javascript
 // Example: Test multi-step interactions
-QUnit.test('should handle complex chat workflows', async function(assert) {
+test('should handle complex chat workflows', async () => {
     // Test implementation
 });
 
 // Example: Test context preservation
-QUnit.test('should maintain user context across interactions', async function(assert) {
+test('should maintain user context across interactions', async () => {
     // Test implementation
 });
 ```
@@ -85,12 +85,12 @@ QUnit.test('should maintain user context across interactions', async function(as
 ### 7. System Boundaries
 ```javascript
 // Example: Test rate limiting
-QUnit.test('should respect API rate limits', async function(assert) {
+test('should respect API rate limits', async () => {
     // Test implementation
 });
 
 // Example: Test resource management
-QUnit.test('should manage system resources efficiently', async function(assert) {
+test('should manage system resources efficiently', async () => {
     // Test implementation
 });
 ```
