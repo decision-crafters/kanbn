@@ -1,0 +1,19 @@
+{
+  "name": "kanbn_task_update",
+  "description": "Update a task's properties",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "taskId": {"type": "string"},
+      "name": {"type": "string"},
+      "description": {"type": "string"},
+      "column": {"type": "string"}
+    },
+    "required": ["taskId"]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {"updated": {"type": "boolean"}},
+    "required": ["updated"]
+  }
+}

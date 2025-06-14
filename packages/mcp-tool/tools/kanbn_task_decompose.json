@@ -1,0 +1,14 @@
+{
+  "name": "kanbn_task_decompose",
+  "description": "Execute the decompose command",
+  "inputSchema": {
+    "type": "object",
+    "properties": {},
+    "additionalProperties": true
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {},
+    "additionalProperties": true
+  }
+}

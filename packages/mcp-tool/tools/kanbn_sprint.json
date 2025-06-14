@@ -1,0 +1,14 @@
+{
+  "name": "kanbn_sprint",
+  "description": "Execute the sprint command",
+  "inputSchema": {
+    "type": "object",
+    "properties": {},
+    "additionalProperties": true
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {},
+    "additionalProperties": true
+  }
+}

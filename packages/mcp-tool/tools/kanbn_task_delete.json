@@ -1,0 +1,16 @@
+{
+  "name": "kanbn_task_delete",
+  "description": "Delete a task by its ID",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "taskId": {"type": "string"}
+    },
+    "required": ["taskId"]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {"deleted": {"type": "boolean"}},
+    "required": ["deleted"]
+  }
+}

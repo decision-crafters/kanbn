@@ -1,0 +1,14 @@
+{
+  "name": "kanbn_init",
+  "description": "Execute the init command",
+  "inputSchema": {
+    "type": "object",
+    "properties": {},
+    "additionalProperties": true
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {},
+    "additionalProperties": true
+  }
+}

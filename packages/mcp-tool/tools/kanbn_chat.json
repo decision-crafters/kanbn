@@ -1,0 +1,14 @@
+{
+  "name": "kanbn_chat",
+  "description": "Execute the chat command",
+  "inputSchema": {
+    "type": "object",
+    "properties": {},
+    "additionalProperties": true
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {},
+    "additionalProperties": true
+  }
+}
