@@ -1,25 +1,26 @@
 // test/unit/main.test.js
-const mockRequire = require('mock-require');
+jest.mock('../../src/lib/task-utils', () => ({
+  findTaskColumn: jest.fn(() => 'stub-col'),
+  taskCompleted: jest.fn(() => true),
+  renameTaskInIndex: jest.fn(() => 'renamed-id'),
+}));
+
+jest.mock('../../src/lib/index-utils', () => ({
+  sortTasks: jest.fn(() => ['stub-task']),
+}));
+
 let findTaskColumn, taskCompleted, sortTasks, renameTaskInIndex;
 
 describe('main wrapper tests', () => {
   beforeAll(() => {
-    // Stub task-utils
-    mockRequire(require.resolve('../../src/lib/task-utils'), {
-      findTaskColumn: (idx, id) => 'stub-col',
-      taskCompleted: (idx, task) => true,
-      renameTaskInIndex: (idx, id, newId) => 'renamed-id'
-    });
-    // Stub index-utils
-    mockRequire(require.resolve('../../src/lib/index-utils'), {
-      sortTasks: (tasks, sorters) => ['stub-task']
-    });
-    // Import wrappers after stubbing
+    // Import wrappers after jest.mock stubs are in place
     ({ findTaskColumn, taskCompleted, sortTasks, renameTaskInIndex } = require('../../src/main'));
   });
+
   afterAll(() => {
-    // Remove all mocks
-    mockRequire.stopAll();
+    // Reset any mocked modules
+    jest.resetModules();
+    jest.clearAllMocks();
   });
 
   test('findTaskColumn should delegate to task-utils', () => {
