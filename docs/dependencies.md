@@ -54,8 +54,7 @@
 ## Development Dependencies
 
 ### Testing Framework
-- `qunit` (v2.13.0): Unit testing framework
-  - `qunit-reporter-junit` (v1.1.1): JUnit report generation
+- `jest` (v29.7.0): Unit and integration testing framework
 - `jest-html-reporter` (v4.1.0): HTML test reports
 - `junit-viewer` (v4.11.1): JUnit report viewing
 
