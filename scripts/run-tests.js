@@ -34,8 +34,12 @@ if (generateReport) {
   jestArgs.push('--reporters=default', '--reporters=jest-html-reporter');
 }
 
+const jestBin = process.platform === 'win32'
+  ? path.join('node_modules', '.bin', 'jest.cmd')
+  : path.join('node_modules', '.bin', 'jest');
+
 const result = spawnSync(
-  path.join('node_modules', '.bin', 'jest'),
+  jestBin,
   jestArgs,
   { stdio: 'inherit', env: { ...process.env, KANBN_ENV: 'test' } }
 );

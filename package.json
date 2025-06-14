@@ -40,7 +40,7 @@
     "url": "https://github.com/decision-crafters/kanbn/issues"
   },
   "engines": {
-    "node": ">=8"
+    "node": ">=12.13.0"
   },
   "keywords": [
     "kanbn",

@@ -93,7 +93,7 @@
 
 ## Version Constraints
 
-- Node.js: >= 8.0.0
+- Node.js: >= 12.13.0
 - Package overrides:
   - `glob`: ^7.2.3
 
