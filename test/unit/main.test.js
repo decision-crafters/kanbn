@@ -1,45 +1,44 @@
 // test/unit/main.test.js
-const QUnit = require('qunit');
 const mockRequire = require('mock-require');
 let findTaskColumn, taskCompleted, sortTasks, renameTaskInIndex;
 
-QUnit.module('main wrapper tests', {
-  before: () => {
+describe('main wrapper tests', () => {
+  beforeAll(() => {
     // Stub task-utils
-    mockRequire('../../src/lib/task-utils', {
+    mockRequire(require.resolve('../../src/lib/task-utils'), {
       findTaskColumn: (idx, id) => 'stub-col',
       taskCompleted: (idx, task) => true,
       renameTaskInIndex: (idx, id, newId) => 'renamed-id'
     });
     // Stub index-utils
-    mockRequire('../../src/lib/index-utils', {
+    mockRequire(require.resolve('../../src/lib/index-utils'), {
       sortTasks: (tasks, sorters) => ['stub-task']
     });
     // Import wrappers after stubbing
     ({ findTaskColumn, taskCompleted, sortTasks, renameTaskInIndex } = require('../../src/main'));
-  },
-  after: () => {
+  });
+  afterAll(() => {
     // Remove all mocks
     mockRequire.stopAll();
-  }
-});
+  });
 
-QUnit.test('findTaskColumn should delegate to task-utils', assert => {
-  const result = findTaskColumn({ columns: {} }, 'task-1');
-  assert.equal(result, 'stub-col', 'Wrapper returns stubbed column');
-});
+  test('findTaskColumn should delegate to task-utils', () => {
+    const result = findTaskColumn({ columns: {} }, 'task-1');
+    expect(result).toBe('stub-col');
+  });
 
-QUnit.test('taskCompleted should delegate to task-utils', assert => {
-  const result = taskCompleted({}, { id: 'task-2' });
-  assert.equal(result, true, 'Wrapper returns stubbed completion');
-});
+  test('taskCompleted should delegate to task-utils', () => {
+    const result = taskCompleted({}, { id: 'task-2' });
+    expect(result).toBe(true);
+  });
 
-QUnit.test('sortTasks should delegate to index-utils', assert => {
-  const result = sortTasks([], [{ field: 'id' }]);
-  assert.deepEqual(result, ['stub-task'], 'Wrapper returns stubbed sorted list');
-});
+  test('sortTasks should delegate to index-utils', () => {
+    const result = sortTasks([], [{ field: 'id' }]);
+    expect(result).toEqual(['stub-task']);
+  });
 
-QUnit.test('renameTaskInIndex should delegate to task-utils', assert => {
-  const result = renameTaskInIndex({ columns: {} }, 'old-id', 'new-id');
-  assert.equal(result, 'renamed-id', 'Wrapper returns stubbed renamed ID');
+  test('renameTaskInIndex should delegate to task-utils', () => {
+    const result = renameTaskInIndex({ columns: {} }, 'old-id', 'new-id');
+    expect(result).toBe('renamed-id');
+  });
 });
