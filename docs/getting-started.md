@@ -339,7 +339,7 @@ See our [Contribution Guide](CONTRIBUTING.md) for:
 
 ## Version Compatibility
 
-- Node.js >= 8.0.0
+- Node.js >= 12.13.0
 - Git (latest stable version)
 - NPM >= 6.0.0
 
