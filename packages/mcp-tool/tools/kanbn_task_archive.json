@@ -1,0 +1,14 @@
+{
+  "name": "kanbn_task_archive",
+  "description": "Execute the archive command",
+  "inputSchema": {
+    "type": "object",
+    "properties": {},
+    "additionalProperties": true
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {},
+    "additionalProperties": true
+  }
+}

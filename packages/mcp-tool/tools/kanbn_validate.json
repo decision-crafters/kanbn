@@ -1,0 +1,14 @@
+{
+  "name": "kanbn_validate",
+  "description": "Execute the validate command",
+  "inputSchema": {
+    "type": "object",
+    "properties": {},
+    "additionalProperties": true
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {},
+    "additionalProperties": true
+  }
+}

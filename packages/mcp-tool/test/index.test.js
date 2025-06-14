@@ -37,5 +37,8 @@ describe('@kanbn/mcp-tool', () => {
     expected.forEach(name => {
       expect(tools).toHaveProperty(name);
     });
+
+    // should include every CLI command as a tool (23 total)
+    expect(Object.keys(tools).length).toBe(23);
   });
 });

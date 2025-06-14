@@ -1,0 +1,14 @@
+{
+  "name": "kanbn_task_rename",
+  "description": "Execute the rename command",
+  "inputSchema": {
+    "type": "object",
+    "properties": {},
+    "additionalProperties": true
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {},
+    "additionalProperties": true
+  }
+}

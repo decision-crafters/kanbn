@@ -1,0 +1,14 @@
+{
+  "name": "kanbn_remove_all",
+  "description": "Execute the remove-all command",
+  "inputSchema": {
+    "type": "object",
+    "properties": {},
+    "additionalProperties": true
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {},
+    "additionalProperties": true
+  }
+}

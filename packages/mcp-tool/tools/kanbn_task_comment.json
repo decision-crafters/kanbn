@@ -1,0 +1,14 @@
+{
+  "name": "kanbn_task_comment",
+  "description": "Execute the comment command",
+  "inputSchema": {
+    "type": "object",
+    "properties": {},
+    "additionalProperties": true
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {},
+    "additionalProperties": true
+  }
+}

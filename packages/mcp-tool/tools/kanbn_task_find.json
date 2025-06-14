@@ -1,0 +1,14 @@
+{
+  "name": "kanbn_task_find",
+  "description": "Execute the find command",
+  "inputSchema": {
+    "type": "object",
+    "properties": {},
+    "additionalProperties": true
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {},
+    "additionalProperties": true
+  }
+}
