@@ -8,11 +8,32 @@ const assert = {
   ok: (value, message) => expect(value).toBeTruthy()
 };
 
+const assertFirst = new Set([
+  'kanbnFolderExists',
+  'tasksFolderExists',
+  'archiveFolderExists',
+  'indexExists',
+  'indexHasName',
+  'indexHasDescription',
+  'indexHasColumns',
+  'indexHasOptions',
+  'indexHasTask',
+  'taskFileExists',
+  'archivedTaskFileExists',
+  'taskHasName',
+  'taskHasDescription',
+  'taskHasMetadata',
+  'taskHasSubTasks',
+  'taskHasRelations',
+  'taskHasPositionInColumn',
+  'taskHasComments'
+]);
+
 const wrapped = {};
 for (const [name, fn] of Object.entries(context)) {
   if (typeof fn === 'function') {
     wrapped[name] = (...args) => {
-      if (fn.length > 0) {
+      if (assertFirst.has(name)) {
         return fn(assert, ...args);
       }
       return fn(...args);

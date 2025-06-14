@@ -82,8 +82,15 @@ const jestContext = {
   },
 
   indexHasTask(basePath, taskId, columnName = null, expected = true) {
+    const indexPath = path.join(basePath, 'index.md');
+    if (!fs.existsSync(indexPath)) {
+      if (!expected) {
+        return;
+      }
+      throw new Error(`Index file missing at ${indexPath}`);
+    }
     const parseIndex = require('../src/parse-index');
-    const indexContent = fs.readFileSync(path.join(basePath, 'index.md'), 'utf-8');
+    const indexContent = fs.readFileSync(indexPath, 'utf-8');
     const index = parseIndex.md2json(indexContent);
     if (columnName === null) {
       const all = Object.values(index.columns).flat();
@@ -103,8 +110,15 @@ const jestContext = {
   },
 
   indexHasColumn(basePath, columnName, expected = true) {
+    const indexPath = path.join(basePath, 'index.md');
+    if (!fs.existsSync(indexPath)) {
+      if (!expected) {
+        return;
+      }
+      throw new Error(`Index file missing at ${indexPath}`);
+    }
     const parseIndex = require('../src/parse-index');
-    const content = fs.readFileSync(path.join(basePath, 'index.md'), 'utf-8');
+    const content = fs.readFileSync(indexPath, 'utf-8');
     const index = parseIndex.md2json(content);
     if (expected) {
       expect(Object.keys(index.columns)).toContain(columnName);
@@ -114,8 +128,15 @@ const jestContext = {
   },
 
   taskHasStatusValue(basePath, taskId, statusValue, expected = true) {
+    const taskPath = path.join(basePath, 'tasks', `${taskId}.md`);
+    if (!fs.existsSync(taskPath)) {
+      if (!expected) {
+        return;
+      }
+      throw new Error(`Task file missing at ${taskPath}`);
+    }
     const parseTask = require('../src/parse-task');
-    const content = fs.readFileSync(path.join(basePath, 'tasks', `${taskId}.md`), 'utf-8');
+    const content = fs.readFileSync(taskPath, 'utf-8');
     const task = parseTask.md2json(content);
     if (expected) {
       expect(task.status).toBe(statusValue);
@@ -125,8 +146,15 @@ const jestContext = {
   },
 
   taskHasAssignedValue(basePath, taskId, assignedValue, expected = true) {
+    const taskPath = path.join(basePath, 'tasks', `${taskId}.md`);
+    if (!fs.existsSync(taskPath)) {
+      if (!expected) {
+        return;
+      }
+      throw new Error(`Task file missing at ${taskPath}`);
+    }
     const parseTask = require('../src/parse-task');
-    const content = fs.readFileSync(path.join(basePath, 'tasks', `${taskId}.md`), 'utf-8');
+    const content = fs.readFileSync(taskPath, 'utf-8');
     const task = parseTask.md2json(content);
     if (expected) {
       expect(task.assigned).toBe(assignedValue);
@@ -136,7 +164,14 @@ const jestContext = {
   },
 
   taskHasContent(basePath, taskId, expectedContent, expected = true) {
-    const content = fs.readFileSync(path.join(basePath, 'tasks', `${taskId}.md`), 'utf-8');
+    const taskPath = path.join(basePath, 'tasks', `${taskId}.md`);
+    if (!fs.existsSync(taskPath)) {
+      if (!expected) {
+        return;
+      }
+      throw new Error(`Task file missing at ${taskPath}`);
+    }
+    const content = fs.readFileSync(taskPath, 'utf-8');
     if (expected) {
       expect(content).toContain(expectedContent);
     } else {
