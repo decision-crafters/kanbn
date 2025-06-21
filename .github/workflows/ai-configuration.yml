@@ -198,106 +198,63 @@ jobs:
 
     - name: Generate comprehensive AI documentation
       run: |
-        cat > generate_ai_docs.py << 'PYTHON_EOF'
-        import os
-        from openai import OpenAI
-
-        client = OpenAI(
-            api_key=os.environ.get('DEEPSEEK_API_KEY'),
-            base_url="https://api.deepseek.com"
-        )
-
-        def generate_ai_configuration_guide():
-            system_prompt = """You are a technical documentation expert specializing in AI integration and DevOps.
-
-        Create comprehensive documentation for setting up and configuring AI features in the Kanbn project's GitHub Actions workflows.
-
-        Cover these topics:
-        1. **DeepSeek API Setup**: Account creation, API key generation, pricing
-        2. **GitHub Integration**: Repository secrets, workflow permissions
-        3. **Configuration Options**: Environment variables, model selection
-        4. **Workflow Features**: What each AI workflow does and when it runs
-        5. **Troubleshooting**: Common issues and solutions
-        6. **Cost Management**: Usage monitoring and optimization
-        7. **Security**: Best practices for API key management
-        8. **Customization**: How to modify workflows for specific needs
-
-        Format as comprehensive Markdown documentation."""
-
-            user_content = """Generate a complete setup and configuration guide for AI-powered GitHub Actions workflows in the Kanbn project.
-
-        The project uses DeepSeek API for:
-        - Automated code review
-        - Test generation
-        - Documentation generation  
-        - Security analysis
-        - Performance optimization suggestions
-        - Risk assessment
-
-        Create practical, step-by-step documentation."""
-
-            try:
-                response = client.chat.completions.create(
-                    model='deepseek-chat',
-                    messages=[
-                        {"role": "system", "content": system_prompt},
-                        {"role": "user", "content": user_content}
-                    ],
-                    max_tokens=3000,
-                    temperature=0.3
-                )
-                
-                return response.choices[0].message.content
-            except Exception as e:
-                return f"Error generating documentation: {str(e)}"
-
-        def create_environment_template():
-            lines = []
-            lines.append("# Kanbn AI Configuration")
-            lines.append("# Copy this file to .env and fill in your values")
-            lines.append("")
-            lines.append("# DeepSeek AI API (Primary AI provider for GitHub Actions)")
-            lines.append("DEEPSEEK_API_KEY=your_deepseek_api_key_here")
-            lines.append("")
-            lines.append("# OpenRouter AI API (Alternative for local development)")
-            lines.append("OPENROUTER_API_KEY=your_openrouter_key_here")
-            lines.append("OPENROUTER_MODEL=openai/gpt-3.5-turbo")
-            lines.append("")
-            lines.append("# Ollama (Local AI for development)")
-            lines.append("USE_OLLAMA=false")
-            lines.append("OLLAMA_HOST=http://localhost:11434")
-            lines.append("OLLAMA_MODEL=llama3")
-            lines.append("")
-            lines.append("# GitHub Actions Configuration")
-            lines.append("GITHUB_TOKEN=automatically_provided_by_github")
-            lines.append("")
-            lines.append("# Optional: Custom model settings")
-            lines.append("AI_TEMPERATURE=0.3")
-            lines.append("AI_MAX_TOKENS=2000")
-            lines.append("")
-            lines.append("# Debug mode")
-            lines.append("DEBUG=false")
-            return '\n'.join(lines)
-
-        # Generate documentation
-        print("Generating AI configuration documentation...")
+        echo "Generating AI configuration documentation..."
         
-        docs = generate_ai_configuration_guide()
-        env_template = create_environment_template()
+        # Create environment template
+        cat > .env.ai-template << 'EOF'
+        # Kanbn AI Configuration
+        # Copy this file to .env and fill in your values
         
-        # Write documentation
-        with open('AI_CONFIGURATION_GUIDE.md', 'w') as f:
-            f.write(docs)
+        # DeepSeek AI API (Primary AI provider for GitHub Actions)
+        DEEPSEEK_API_KEY=your_deepseek_api_key_here
         
-        # Write environment template
-        with open('.env.ai-template', 'w') as f:
-            f.write(env_template)
+        # OpenRouter AI API (Alternative for local development)
+        OPENROUTER_API_KEY=your_openrouter_key_here
+        OPENROUTER_MODEL=openai/gpt-3.5-turbo
         
-        print("✅ Generated AI configuration documentation")
-        print("✅ Generated environment template")
-        PYTHON_EOF
-
-        python generate_ai_docs.py
+        # Ollama (Local AI for development)
+        USE_OLLAMA=false
+        OLLAMA_HOST=http://localhost:11434
+        OLLAMA_MODEL=llama3
+        
+        # GitHub Actions Configuration
+        GITHUB_TOKEN=automatically_provided_by_github
+        
+        # Optional: Custom model settings
+        AI_TEMPERATURE=0.3
+        AI_MAX_TOKENS=2000
+        
+        # Debug mode
+        DEBUG=false
+        EOF
+        
+        # Create documentation guide
+        cat > AI_CONFIGURATION_GUIDE.md << 'EOF'
+        # AI Configuration Guide for Kanbn
+        
+        ## DeepSeek API Setup
+        1. Visit https://platform.deepseek.com/
+        2. Create an account and generate API key
+        3. Add key to GitHub repository secrets as DEEPSEEK_API_KEY
+        
+        ## GitHub Integration
+        - Repository Settings → Secrets → Actions
+        - Add DEEPSEEK_API_KEY with your API key value
+        
+        ## Available AI Workflows
+        - AI Code Review: Automated PR analysis
+        - AI Test Generation: Creates missing tests
+        - AI Documentation: Updates docs automatically
+        - AI Smart Pipeline: Risk assessment and optimization
+        
+        ## Troubleshooting
+        - Run AI Configuration workflow with 'troubleshoot' option
+        - Check workflow logs for API connection status
+        - Ensure API key has sufficient credits
+        EOF
+        
+        echo "✅ Generated AI configuration documentation"
+        echo "✅ Generated environment template"
       env:
         DEEPSEEK_API_KEY: ${{ env.DEEPSEEK_API_KEY }}
 
