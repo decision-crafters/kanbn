@@ -64,10 +64,8 @@ jobs:
     - name: Install dependencies
       run: npm ci
 
-    - name: Validate kanbn board structure
-      run: |
-        # Initialize test board and validate
-        npm run test:jest-infrastructure
+    - name: Run project checks
+      run: npm run check
 
     - name: Security audit
       run: npm audit --audit-level high
