@@ -198,7 +198,7 @@ jobs:
 
     - name: Generate comprehensive AI documentation
       run: |
-        cat > generate_ai_docs.py << 'EOF'
+        cat > generate_ai_docs.py << 'PYTHON_EOF'
         import os
         from openai import OpenAI
 
@@ -252,33 +252,32 @@ jobs:
                 return f"Error generating documentation: {str(e)}"
 
         def create_environment_template():
-            """Create .env template for AI configuration"""
-            template = """# Kanbn AI Configuration
-# Copy this file to .env and fill in your values
-
-# DeepSeek AI API (Primary AI provider for GitHub Actions)
-DEEPSEEK_API_KEY=your_deepseek_api_key_here
-
-# OpenRouter AI API (Alternative for local development)
-OPENROUTER_API_KEY=your_openrouter_key_here
-OPENROUTER_MODEL=openai/gpt-3.5-turbo
-
-# Ollama (Local AI for development)
-USE_OLLAMA=false
-OLLAMA_HOST=http://localhost:11434
-OLLAMA_MODEL=llama3
-
-# GitHub Actions Configuration
-GITHUB_TOKEN=automatically_provided_by_github
-
-# Optional: Custom model settings
-AI_TEMPERATURE=0.3
-AI_MAX_TOKENS=2000
-
-# Debug mode
-DEBUG=false
-"""
-            return template
+            lines = []
+            lines.append("# Kanbn AI Configuration")
+            lines.append("# Copy this file to .env and fill in your values")
+            lines.append("")
+            lines.append("# DeepSeek AI API (Primary AI provider for GitHub Actions)")
+            lines.append("DEEPSEEK_API_KEY=your_deepseek_api_key_here")
+            lines.append("")
+            lines.append("# OpenRouter AI API (Alternative for local development)")
+            lines.append("OPENROUTER_API_KEY=your_openrouter_key_here")
+            lines.append("OPENROUTER_MODEL=openai/gpt-3.5-turbo")
+            lines.append("")
+            lines.append("# Ollama (Local AI for development)")
+            lines.append("USE_OLLAMA=false")
+            lines.append("OLLAMA_HOST=http://localhost:11434")
+            lines.append("OLLAMA_MODEL=llama3")
+            lines.append("")
+            lines.append("# GitHub Actions Configuration")
+            lines.append("GITHUB_TOKEN=automatically_provided_by_github")
+            lines.append("")
+            lines.append("# Optional: Custom model settings")
+            lines.append("AI_TEMPERATURE=0.3")
+            lines.append("AI_MAX_TOKENS=2000")
+            lines.append("")
+            lines.append("# Debug mode")
+            lines.append("DEBUG=false")
+            return '\n'.join(lines)
 
         # Generate documentation
         print("Generating AI configuration documentation...")
@@ -296,7 +295,7 @@ DEBUG=false
         
         print("✅ Generated AI configuration documentation")
         print("✅ Generated environment template")
-        EOF
+        PYTHON_EOF
 
         python generate_ai_docs.py
       env:
