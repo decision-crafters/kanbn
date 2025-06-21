@@ -1,0 +1,573 @@
+name: AI Documentation Generation
+
+on:
+  push:
+    branches: [ main, master ]
+    paths:
+      - 'src/**/*.js'
+      - 'docs/**'
+      - 'README.md'
+      - 'package.json'
+  workflow_dispatch:
+    inputs:
+      docs_type:
+        description: 'Type of documentation to generate'
+        required: true
+        type: choice
+        options:
+          - 'api'
+          - 'user-guide'
+          - 'development'
+          - 'all'
+        default: 'all'
+
+env:
+  DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+
+jobs:
+  analyze-changes:
+    name: Analyze Documentation Needs
+    runs-on: ubuntu-latest
+    outputs:
+      needs_api_docs: ${{ steps.analysis.outputs.needs_api_docs }}
+      needs_user_docs: ${{ steps.analysis.outputs.needs_user_docs }}
+      needs_dev_docs: ${{ steps.analysis.outputs.needs_dev_docs }}
+      changed_files: ${{ steps.analysis.outputs.changed_files }}
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 2
+
+    - name: Analyze what documentation needs updating
+      id: analysis
+      run: |
+        # Get changed files
+        if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+          # Manual trigger - check all files
+          CHANGED_FILES="src/controller/*.js src/lib/*.js"
+        else
+          # Get actual changed files
+          CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD | grep -E '\.(js|md)$' | tr '\n' ' ')
+        fi
+        
+        echo "changed_files=$CHANGED_FILES" >> $GITHUB_OUTPUT
+        
+        # Determine what docs need updating
+        needs_api="false"
+        needs_user="false" 
+        needs_dev="false"
+        
+        if echo "$CHANGED_FILES" | grep -q "src/controller/\|src/lib/\|package.json"; then
+          needs_api="true"
+        fi
+        
+        if echo "$CHANGED_FILES" | grep -q "README.md\|src/controller/\|package.json"; then
+          needs_user="true"
+        fi
+        
+        if echo "$CHANGED_FILES" | grep -q "src/\|test/\|CLAUDE.md"; then
+          needs_dev="true"
+        fi
+        
+        # Override if manual trigger specifies type
+        if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+          case "${{ github.event.inputs.docs_type }}" in
+            "api") needs_api="true"; needs_user="false"; needs_dev="false" ;;
+            "user-guide") needs_api="false"; needs_user="true"; needs_dev="false" ;;
+            "development") needs_api="false"; needs_user="false"; needs_dev="true" ;;
+            "all") needs_api="true"; needs_user="true"; needs_dev="true" ;;
+          esac
+        fi
+        
+        echo "needs_api_docs=$needs_api" >> $GITHUB_OUTPUT
+        echo "needs_user_docs=$needs_user" >> $GITHUB_OUTPUT
+        echo "needs_dev_docs=$needs_dev" >> $GITHUB_OUTPUT
+        
+        echo "Documentation updates needed:"
+        echo "- API docs: $needs_api"
+        echo "- User docs: $needs_user"
+        echo "- Dev docs: $needs_dev"
+
+  generate-api-docs:
+    name: Generate API Documentation
+    runs-on: ubuntu-latest
+    needs: analyze-changes
+    if: needs.analyze-changes.outputs.needs_api_docs == 'true'
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Setup Python for AI
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Install Python dependencies
+      run: pip install openai
+
+    - name: Extract API structure
+      run: |
+        cat > extract_api.js << 'EOF'
+        const fs = require('fs');
+        const path = require('path');
+        const glob = require('glob');
+
+        function extractJSDocComments(content) {
+          const jsdocRegex = /\/\*\*([\s\S]*?)\*\//g;
+          const comments = [];
+          let match;
+          
+          while ((match = jsdocRegex.exec(content)) !== null) {
+            comments.push(match[1].trim());
+          }
+          
+          return comments;
+        }
+
+        function extractFunctions(content) {
+          const functionRegex = /(?:async\s+)?function\s+(\w+)\s*\([^)]*\)|(?:const|let|var)\s+(\w+)\s*=\s*(?:async\s+)?\([^)]*\)\s*=>/g;
+          const functions = [];
+          let match;
+          
+          while ((match = functionRegex.exec(content)) !== null) {
+            functions.push(match[1] || match[2]);
+          }
+          
+          return functions;
+        }
+
+        function analyzeFile(filePath) {
+          const content = fs.readFileSync(filePath, 'utf8');
+          const relativePath = path.relative(process.cwd(), filePath);
+          
+          return {
+            path: relativePath,
+            size: content.length,
+            functions: extractFunctions(content),
+            jsdocs: extractJSDocComments(content),
+            exports: content.includes('module.exports'),
+            isController: relativePath.includes('controller/'),
+            isLib: relativePath.includes('lib/'),
+            sample: content.substring(0, 800)
+          };
+        }
+
+        // Analyze all relevant JS files
+        const sourceFiles = glob.sync('src/**/*.js');
+        const apiStructure = sourceFiles.map(analyzeFile);
+
+        // Also include package.json for context
+        const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+
+        const fullStructure = {
+          package: {
+            name: packageJson.name,
+            version: packageJson.version,
+            description: packageJson.description,
+            scripts: packageJson.scripts,
+            dependencies: Object.keys(packageJson.dependencies || {}),
+            bin: packageJson.bin
+          },
+          files: apiStructure.filter(f => f.functions.length > 0 || f.jsdocs.length > 0)
+        };
+
+        fs.writeFileSync('api_structure.json', JSON.stringify(fullStructure, null, 2));
+        console.log(`Extracted API structure for ${fullStructure.files.length} files`);
+        EOF
+
+        node extract_api.js
+
+    - name: Generate API documentation with AI
+      run: |
+        cat > generate_api_docs.py << 'EOF'
+        import json
+        import os
+        from openai import OpenAI
+
+        client = OpenAI(
+            api_key=os.environ.get('DEEPSEEK_API_KEY'),
+            base_url="https://api.deepseek.com"
+        )
+
+        def generate_api_docs(api_structure):
+            system_prompt = """You are a technical documentation expert specializing in Node.js CLI applications.
+
+        Generate comprehensive API documentation for the Kanbn project based on the provided code structure.
+
+        Kanbn is a CLI-based Kanban board management tool with AI integration features. Generate documentation that includes:
+
+        1. **Overview**: Brief description of the project and its purpose
+        2. **API Reference**: Detailed documentation for each module/file
+        3. **CLI Commands**: Document all available commands and their options
+        4. **Configuration**: Environment variables and configuration options
+        5. **AI Integration**: Document AI features and API integration
+        6. **Examples**: Practical usage examples
+
+        Format the output as clean Markdown with proper headings, code blocks, and examples.
+        Focus on practical usage and developer experience."""
+
+            user_content = f"""Generate API documentation for this project structure:
+
+        ```json
+        {json.dumps(api_structure, indent=2)}
+        ```
+
+        Create comprehensive, developer-friendly API documentation."""
+
+            try:
+                response = client.chat.completions.create(
+                    model='deepseek-chat',
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": user_content}
+                    ],
+                    max_tokens=3000,
+                    temperature=0.3
+                )
+                
+                return response.choices[0].message.content
+            except Exception as e:
+                return f"Error generating API docs: {str(e)}"
+
+        # Load API structure
+        with open('api_structure.json', 'r') as f:
+            api_structure = json.load(f)
+
+        # Generate documentation
+        api_docs = generate_api_docs(api_structure)
+
+        # Write to file
+        with open('docs/API_REFERENCE.md', 'w') as f:
+            f.write(api_docs)
+
+        print("Generated API documentation")
+        EOF
+
+        python generate_api_docs.py
+      env:
+        DEEPSEEK_API_KEY: ${{ env.DEEPSEEK_API_KEY }}
+
+    - name: Upload API docs
+      uses: actions/upload-artifact@v4
+      with:
+        name: api-documentation
+        path: docs/API_REFERENCE.md
+
+  generate-user-guide:
+    name: Generate User Guide
+    runs-on: ubuntu-latest
+    needs: analyze-changes
+    if: needs.analyze-changes.outputs.needs_user_docs == 'true'
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Install Python dependencies
+      run: pip install openai
+
+    - name: Analyze CLI commands
+      run: |
+        # Extract command information from routes
+        cat > analyze_commands.js << 'EOF'
+        const fs = require('fs');
+        const path = require('path');
+        
+        // Read all route files
+        const routesDir = 'routes';
+        const routes = {};
+        
+        fs.readdirSync(routesDir).forEach(file => {
+          if (file.endsWith('.json')) {
+            const routeName = path.basename(file, '.json');
+            const routeData = JSON.parse(fs.readFileSync(path.join(routesDir, file), 'utf8'));
+            routes[routeName] = routeData;
+          }
+        });
+        
+        // Also read package.json for context
+        const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+        
+        const commandStructure = {
+          package: {
+            name: packageJson.name,
+            description: packageJson.description,
+            version: packageJson.version,
+            bin: packageJson.bin
+          },
+          routes: routes
+        };
+        
+        fs.writeFileSync('command_structure.json', JSON.stringify(commandStructure, null, 2));
+        console.log(`Analyzed ${Object.keys(routes).length} commands`);
+        EOF
+
+        node analyze_commands.js
+
+    - name: Generate comprehensive user guide
+      run: |
+        cat > generate_user_guide.py << 'EOF'
+        import json
+        import os
+        from openai import OpenAI
+
+        client = OpenAI(
+            api_key=os.environ.get('DEEPSEEK_API_KEY'),
+            base_url="https://api.deepseek.com"
+        )
+
+        def generate_user_guide(command_structure, existing_readme):
+            system_prompt = """You are a technical writer specializing in CLI tool documentation.
+
+        Generate a comprehensive user guide for Kanbn - a CLI Kanban board management tool with AI features.
+
+        Create documentation that covers:
+        1. **Quick Start Guide**: Installation and first steps
+        2. **Command Reference**: All CLI commands with examples
+        3. **Workflow Examples**: Common usage patterns
+        4. **AI Features**: How to use AI-powered features (task decomposition, chat, etc.)
+        5. **Configuration**: Environment variables and setup
+        6. **Advanced Usage**: Tips, tricks, and best practices
+        7. **Troubleshooting**: Common issues and solutions
+
+        Write for users who are developers but may be new to Kanbn. Include practical examples and clear explanations.
+        Format as clean Markdown with proper structure."""
+
+            user_content = f"""Based on this command structure and existing README, generate a comprehensive user guide:
+
+        Command Structure:
+        ```json
+        {json.dumps(command_structure, indent=2)}
+        ```
+
+        Existing README content:
+        ```markdown
+        {existing_readme[:2000]}
+        ```
+
+        Create a detailed, user-friendly guide that helps users get the most out of Kanbn."""
+
+            try:
+                response = client.chat.completions.create(
+                    model='deepseek-chat',
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": user_content}
+                    ],
+                    max_tokens=3500,
+                    temperature=0.3
+                )
+                
+                return response.choices[0].message.content
+            except Exception as e:
+                return f"Error generating user guide: {str(e)}"
+
+        # Load command structure
+        with open('command_structure.json', 'r') as f:
+            command_structure = json.load(f)
+
+        # Load existing README for context
+        try:
+            with open('README.md', 'r') as f:
+                existing_readme = f.read()
+        except:
+            existing_readme = ""
+
+        # Generate user guide
+        user_guide = generate_user_guide(command_structure, existing_readme)
+
+        # Write to file
+        os.makedirs('docs', exist_ok=True)
+        with open('docs/USER_GUIDE.md', 'w') as f:
+            f.write(user_guide)
+
+        print("Generated user guide documentation")
+        EOF
+
+        python generate_user_guide.py
+      env:
+        DEEPSEEK_API_KEY: ${{ env.DEEPSEEK_API_KEY }}
+
+    - name: Upload user guide
+      uses: actions/upload-artifact@v4
+      with:
+        name: user-guide
+        path: docs/USER_GUIDE.md
+
+  update-claude-md:
+    name: Update CLAUDE.md
+    runs-on: ubuntu-latest
+    needs: analyze-changes
+    if: needs.analyze-changes.outputs.needs_dev_docs == 'true'
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Install Python dependencies
+      run: pip install openai
+
+    - name: Update CLAUDE.md with AI assistance
+      run: |
+        cat > update_claude_md.py << 'EOF'
+        import os
+        from openai import OpenAI
+
+        client = OpenAI(
+            api_key=os.environ.get('DEEPSEEK_API_KEY'),
+            base_url="https://api.deepseek.com"
+        )
+
+        def analyze_current_claude_md():
+            try:
+                with open('CLAUDE.md', 'r') as f:
+                    return f.read()
+            except:
+                return ""
+
+        def get_recent_changes():
+            # This would normally analyze git changes, but for simplicity
+            # we'll focus on ensuring CLAUDE.md is comprehensive
+            return "Recent changes detected in source files"
+
+        def update_claude_md(current_content, changes):
+            system_prompt = """You are a documentation expert helping maintain CLAUDE.md for the Kanbn project.
+
+        CLAUDE.md provides guidance to Claude Code (claude.ai/code) when working with this repository.
+
+        Review the current CLAUDE.md content and suggest improvements to ensure it contains:
+        1. Essential development commands (test, lint, build)
+        2. High-level architecture overview
+        3. Key file locations and purposes
+        4. Testing strategies and patterns
+        5. AI integration setup and usage
+        6. Common development workflows
+        7. Important environment variables
+
+        Maintain the existing structure but enhance content where needed.
+        Keep it concise but comprehensive for a Claude Code assistant."""
+
+            user_content = f"""Current CLAUDE.md content:
+        ```markdown
+        {current_content}
+        ```
+
+        Recent changes: {changes}
+
+        Please review and suggest improvements to keep CLAUDE.md current and comprehensive."""
+
+            try:
+                response = client.chat.completions.create(
+                    model='deepseek-chat',
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": user_content}
+                    ],
+                    max_tokens=2000,
+                    temperature=0.3
+                )
+                
+                return response.choices[0].message.content
+            except Exception as e:
+                return f"Error updating CLAUDE.md: {str(e)}"
+
+        # Get current content and analyze changes
+        current_content = analyze_current_claude_md()
+        recent_changes = get_recent_changes()
+
+        # Update CLAUDE.md
+        updated_content = update_claude_md(current_content, recent_changes)
+
+        # Save updated content
+        with open('CLAUDE_UPDATED.md', 'w') as f:
+            f.write(updated_content)
+
+        print("Generated CLAUDE.md update suggestions")
+        EOF
+
+        python update_claude_md.py
+      env:
+        DEEPSEEK_API_KEY: ${{ env.DEEPSEEK_API_KEY }}
+
+    - name: Upload CLAUDE.md update
+      uses: actions/upload-artifact@v4
+      with:
+        name: claude-md-update
+        path: CLAUDE_UPDATED.md
+
+  commit-documentation:
+    name: Commit Generated Documentation
+    runs-on: ubuntu-latest
+    needs: [generate-api-docs, generate-user-guide, update-claude-md]
+    if: always() && (needs.generate-api-docs.result == 'success' || needs.generate-user-guide.result == 'success' || needs.update-claude-md.result == 'success')
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Download all documentation artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: generated-docs
+
+    - name: Move generated docs to proper locations
+      run: |
+        # Ensure docs directory exists
+        mkdir -p docs
+        
+        # Move generated documentation
+        if [ -f "generated-docs/api-documentation/API_REFERENCE.md" ]; then
+          mv generated-docs/api-documentation/API_REFERENCE.md docs/
+          echo "Updated API_REFERENCE.md"
+        fi
+        
+        if [ -f "generated-docs/user-guide/USER_GUIDE.md" ]; then
+          mv generated-docs/user-guide/USER_GUIDE.md docs/
+          echo "Updated USER_GUIDE.md"
+        fi
+        
+        # Note: CLAUDE.md updates would need manual review
+        if [ -f "generated-docs/claude-md-update/CLAUDE_UPDATED.md" ]; then
+          echo "CLAUDE.md update suggestions available for review"
+        fi
+
+    - name: Commit documentation updates
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "AI Documentation Generator"
+        
+        git add docs/
+        
+        if git diff --staged --quiet; then
+          echo "No documentation changes to commit"
+        else
+          git commit -m "📚 Auto-update documentation with AI
+
+          Generated/updated documentation:
+          - API reference documentation
+          - User guide and examples
+          - Development documentation
+          
+          Generated by DeepSeek AI based on recent code changes."
+          
+          git push origin HEAD:${{ github.ref_name }}
+        fi

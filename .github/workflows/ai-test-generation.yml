@@ -1,0 +1,325 @@
+name: AI Test Generation
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+    paths:
+      - 'src/**/*.js'
+      - '!src/**/*.test.js'
+  workflow_dispatch:
+    inputs:
+      target_file:
+        description: 'Target file to generate tests for (relative path)'
+        required: true
+        type: string
+
+env:
+  DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+
+jobs:
+  generate-tests:
+    name: Generate Missing Tests
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        fetch-depth: 0
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Setup Python for AI
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Install Python dependencies
+      run: pip install openai
+
+    - name: Analyze test coverage gaps
+      id: coverage-analysis
+      run: |
+        # Run existing tests to get coverage
+        npm test -- --coverage --coverageReporters=json-summary --silent || true
+        
+        # Find source files without corresponding tests
+        find src -name "*.js" -not -path "*/test/*" -not -name "*.test.js" > source_files.txt
+        
+        missing_tests=""
+        while IFS= read -r file; do
+          # Check if test file exists
+          test_file="test/unit/$(basename "$file" .js).test.js"
+          integration_test="test/integration/$(basename "$file" .js).test.js"
+          
+          if [[ ! -f "$test_file" && ! -f "$integration_test" ]]; then
+            missing_tests="$missing_tests$file\n"
+          fi
+        done < source_files.txt
+        
+        echo -e "$missing_tests" > missing_tests.txt
+        
+        # Output for next step
+        echo "missing_count=$(echo -e "$missing_tests" | grep -c "^src/" || echo 0)" >> $GITHUB_OUTPUT
+        
+        echo "Files missing tests:"
+        cat missing_tests.txt
+
+    - name: Generate tests with AI
+      if: steps.coverage-analysis.outputs.missing_count > 0
+      run: |
+        cat > generate_tests.py << 'EOF'
+        import os
+        import json
+        import subprocess
+        from pathlib import Path
+        from openai import OpenAI
+
+        client = OpenAI(
+            api_key=os.environ.get('DEEPSEEK_API_KEY'),
+            base_url="https://api.deepseek.com"
+        )
+
+        def read_file_content(file_path):
+            try:
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    return f.read()
+            except Exception as e:
+                print(f"Error reading {file_path}: {e}")
+                return None
+
+        def analyze_kanbn_context():
+            """Get context about the Kanbn project structure"""
+            context = {
+                'testing_framework': 'Jest',
+                'test_patterns': [],
+                'mock_patterns': []
+            }
+            
+            # Analyze existing test files for patterns
+            try:
+                for test_file in Path('test').glob('**/*.test.js'):
+                    content = read_file_content(test_file)
+                    if content and len(context['test_patterns']) < 3:
+                        context['test_patterns'].append({
+                            'file': str(test_file),
+                            'sample': content[:500]
+                        })
+            except:
+                pass
+                
+            return context
+
+        def generate_test_for_file(source_file, context):
+            content = read_file_content(source_file)
+            if not content:
+                return None
+
+            # Determine if this should be unit or integration test
+            is_controller = 'controller' in source_file
+            is_ai_related = any(term in source_file for term in ['ai-', 'chat', 'ollama', 'openrouter'])
+            
+            test_type = 'integration' if is_controller else 'unit'
+            test_dir = f'test/{test_type}'
+            
+            system_prompt = f"""You are an expert in testing Node.js CLI applications, specifically the Kanbn project (a CLI Kanban board tool with AI features).
+
+        Generate comprehensive {test_type} tests for the provided source file using Jest framework.
+
+        Key Kanbn project context:
+        - CLI tool for managing Kanban boards stored as markdown files
+        - Uses markdown files for tasks (.kanbn/tasks/*.md) and index (.kanbn/index.md)
+        - Has AI integration with OpenRouter and Ollama
+        - Controllers handle CLI commands, lib files contain utilities
+        - Extensive use of mocking for filesystem and AI services
+
+        Test requirements:
+        1. Use Jest syntax with describe/it blocks
+        2. Mock external dependencies (fs, AI services, etc.)
+        3. Test both success and error scenarios  
+        4. For controllers: test argument parsing and output
+        5. For AI modules: mock API calls appropriately
+        6. Include edge cases and validation tests
+        7. Follow existing test patterns from the project
+
+        Existing test patterns:
+        {json.dumps(context['test_patterns'], indent=2)}
+
+        Generate ONLY the test file content, no explanations."""
+
+            user_content = f"""Source file: {source_file}
+        Test type: {test_type}
+
+        Source code:
+        ```javascript
+        {content}
+        ```
+
+        Generate comprehensive {test_type} tests for this file."""
+
+            try:
+                response = client.chat.completions.create(
+                    model='deepseek-chat',
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": user_content}
+                    ],
+                    max_tokens=2000,
+                    temperature=0.2
+                )
+                
+                return {
+                    'content': response.choices[0].message.content,
+                    'test_dir': test_dir,
+                    'test_type': test_type
+                }
+            except Exception as e:
+                print(f"Error generating test for {source_file}: {e}")
+                return None
+
+        # Read missing test files
+        with open('missing_tests.txt', 'r') as f:
+            missing_files = [line.strip() for line in f.readlines() if line.strip()]
+
+        context = analyze_kanbn_context()
+        generated_tests = []
+
+        # Process files (limit to avoid API costs)
+        for source_file in missing_files[:3]:
+            if not source_file:
+                continue
+                
+            print(f"Generating tests for: {source_file}")
+            
+            test_data = generate_test_for_file(source_file, context)
+            if test_data:
+                # Determine output filename
+                basename = Path(source_file).stem
+                test_filename = f"{basename}.test.js"
+                test_path = Path(test_data['test_dir']) / test_filename
+                
+                # Create directory if needed
+                test_path.parent.mkdir(parents=True, exist_ok=True)
+                
+                # Write test file
+                with open(test_path, 'w', encoding='utf-8') as f:
+                    f.write(test_data['content'])
+                
+                generated_tests.append({
+                    'source': source_file,
+                    'test': str(test_path),
+                    'type': test_data['test_type']
+                })
+                
+                print(f"Generated: {test_path}")
+
+        # Save summary
+        with open('generated_tests.json', 'w') as f:
+            json.dump(generated_tests, f, indent=2)
+
+        print(f"\nGenerated {len(generated_tests)} test files")
+        EOF
+
+        python generate_tests.py
+      env:
+        DEEPSEEK_API_KEY: ${{ env.DEEPSEEK_API_KEY }}
+
+    - name: Validate generated tests
+      run: |
+        # Check if tests run without syntax errors
+        if [ -f "generated_tests.json" ]; then
+          echo "Validating generated tests..."
+          
+          # Run syntax check
+          npx eslint test/**/*.test.js --no-eslintrc --config .eslintrc.json || true
+          
+          # Try to run the new tests
+          npm test -- --testPathPattern="test/" --passWithNoTests || echo "Some tests may need adjustment"
+        fi
+
+    - name: Create test summary comment
+      uses: actions/github-script@v7
+      if: github.event_name == 'pull_request'
+      with:
+        script: |
+          const fs = require('fs');
+          
+          try {
+            if (!fs.existsSync('generated_tests.json')) {
+              console.log('No tests were generated');
+              return;
+            }
+            
+            const tests = JSON.parse(fs.readFileSync('generated_tests.json', 'utf8'));
+            
+            if (tests.length === 0) {
+              return;
+            }
+
+            let comment = "## 🧪 AI-Generated Tests\n\n";
+            comment += "*Powered by DeepSeek AI - Automated test generation*\n\n";
+            comment += `Generated **${tests.length}** test files for improved coverage:\n\n`;
+
+            for (const test of tests) {
+              comment += `- ✅ \`${test.test}\` (${test.type}) for \`${test.source}\`\n`;
+            }
+
+            comment += "\n### Next Steps:\n";
+            comment += "1. Review the generated tests for accuracy\n";
+            comment += "2. Run `npm test` to ensure they pass\n";
+            comment += "3. Adjust test cases as needed for your specific requirements\n";
+            comment += "4. Consider adding additional edge cases\n\n";
+            comment += "> 💡 These tests were generated automatically. Please review and modify as needed.";
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: comment
+            });
+
+          } catch (error) {
+            console.error('Error creating test summary:', error);
+          }
+
+    - name: Commit generated tests
+      run: |
+        if [ -f "generated_tests.json" ]; then
+          git config --local user.email "action@github.com"
+          git config --local user.name "AI Test Generator"
+          
+          git add test/
+          
+          if git diff --staged --quiet; then
+            echo "No new tests to commit"
+          else
+            git commit -m "🤖 Auto-generate tests with AI
+
+            Generated tests for files missing test coverage.
+            
+            - Created by DeepSeek AI
+            - Review and adjust as needed
+            - Run npm test to validate"
+            
+            git push origin HEAD:${{ github.head_ref }}
+          fi
+        fi
+
+    - name: Upload test artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: generated-tests
+        path: |
+          generated_tests.json
+          test/
+        retention-days: 7

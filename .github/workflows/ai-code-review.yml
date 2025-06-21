@@ -1,0 +1,292 @@
+name: AI Code Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [ main, master ]
+
+env:
+  DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+  DEEPSEEK_MODEL: "deepseek-chat"
+
+jobs:
+  ai-code-review:
+    name: AI-Powered Code Review
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Setup Python for AI analysis
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Install Python dependencies
+      run: |
+        pip install openai requests
+
+    - name: Get changed files
+      id: changed-files
+      run: |
+        # Get list of changed files
+        CHANGED_FILES=$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.sha }} | grep -E '\.(js|md|json)$' | head -10)
+        echo "Changed files: $CHANGED_FILES"
+        
+        # Convert to JSON array for easier processing
+        echo "files<<EOF" >> $GITHUB_OUTPUT
+        echo "$CHANGED_FILES" >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
+
+    - name: Analyze code changes with AI
+      id: ai-analysis
+      run: |
+        cat > analyze_code.py << 'EOF'
+        import os
+        import sys
+        import json
+        import subprocess
+        from openai import OpenAI
+
+        # Initialize DeepSeek client
+        client = OpenAI(
+            api_key=os.environ.get('DEEPSEEK_API_KEY'),
+            base_url="https://api.deepseek.com"
+        )
+
+        def get_file_diff(file_path, base_sha, head_sha):
+            try:
+                result = subprocess.run(
+                    ['git', 'diff', base_sha, head_sha, '--', file_path],
+                    capture_output=True, text=True, check=True
+                )
+                return result.stdout
+            except subprocess.CalledProcessError:
+                return None
+
+        def analyze_with_ai(file_path, diff_content, file_content=""):
+            system_prompt = """You are a senior software engineer and code reviewer specializing in Node.js applications, particularly CLI tools like Kanbn (a Kanban board management tool).
+
+        Analyze the provided code changes and provide constructive feedback focusing on:
+        1. Code quality and best practices
+        2. Security vulnerabilities or concerns
+        3. Performance implications
+        4. Maintainability and readability
+        5. Kanbn-specific concerns (task management, AI integration, CLI design)
+        6. Testing considerations
+
+        Provide specific, actionable feedback. If no issues are found, briefly acknowledge the good practices used.
+        Keep responses concise but helpful (max 500 words per file)."""
+
+            user_content = f"""File: {file_path}
+
+        Code changes:
+        ```diff
+        {diff_content}
+        ```
+
+        {f"Full file context:\n```javascript\n{file_content[:2000]}...\n```" if file_content else ""}
+
+        Please review these changes."""
+
+            try:
+                response = client.chat.completions.create(
+                    model=os.environ.get('DEEPSEEK_MODEL', 'deepseek-chat'),
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": user_content}
+                    ],
+                    max_tokens=1000,
+                    temperature=0.3
+                )
+                return response.choices[0].message.content
+            except Exception as e:
+                return f"Error analyzing code: {str(e)}"
+
+        # Get changed files
+        changed_files = """${{ steps.changed-files.outputs.files }}""".strip().split('\n')
+        changed_files = [f.strip() for f in changed_files if f.strip()]
+
+        base_sha = "${{ github.event.pull_request.base.sha }}"
+        head_sha = "${{ github.sha }}"
+
+        reviews = []
+
+        for file_path in changed_files[:5]:  # Limit to 5 files to avoid API limits
+            if not file_path:
+                continue
+                
+            print(f"Analyzing {file_path}...")
+            
+            # Get diff for the file
+            diff_content = get_file_diff(file_path, base_sha, head_sha)
+            if not diff_content:
+                continue
+
+            # Get file content for context (if it exists)
+            file_content = ""
+            if os.path.exists(file_path):
+                try:
+                    with open(file_path, 'r', encoding='utf-8') as f:
+                        file_content = f.read()
+                except:
+                    pass
+
+            # Analyze with AI
+            review = analyze_with_ai(file_path, diff_content, file_content)
+            
+            reviews.append({
+                'file': file_path,
+                'review': review,
+                'diff_lines': len(diff_content.split('\n'))
+            })
+
+        # Output results
+        with open('ai_reviews.json', 'w') as f:
+            json.dump(reviews, f, indent=2)
+
+        print(f"Analyzed {len(reviews)} files")
+        EOF
+
+        python analyze_code.py
+      env:
+        DEEPSEEK_API_KEY: ${{ env.DEEPSEEK_API_KEY }}
+
+    - name: Post AI review comments
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fs = require('fs');
+          
+          try {
+            const reviews = JSON.parse(fs.readFileSync('ai_reviews.json', 'utf8'));
+            
+            if (reviews.length === 0) {
+              console.log('No files to review');
+              return;
+            }
+
+            // Create a comprehensive review comment
+            let reviewBody = "## 🤖 AI Code Review\n\n";
+            reviewBody += "*Powered by DeepSeek AI - Automated code analysis*\n\n";
+
+            for (const review of reviews) {
+              reviewBody += `### 📁 \`${review.file}\`\n\n`;
+              reviewBody += `${review.review}\n\n`;
+              reviewBody += `*Lines changed: ~${review.diff_lines}*\n\n---\n\n`;
+            }
+
+            reviewBody += "\n> 💡 This review was generated automatically. Please use your judgment when addressing the feedback.";
+
+            // Post as a pull request comment
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: reviewBody
+            });
+
+            console.log(`Posted AI review for ${reviews.length} files`);
+            
+          } catch (error) {
+            console.error('Error posting AI review:', error);
+            console.log('Continuing without AI review...');
+          }
+
+  security-analysis:
+    name: AI Security Analysis
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Install dependencies
+      run: pip install openai
+
+    - name: Security-focused AI analysis
+      run: |
+        cat > security_analysis.py << 'EOF'
+        import os
+        import subprocess
+        import json
+        from openai import OpenAI
+
+        client = OpenAI(
+            api_key=os.environ.get('DEEPSEEK_API_KEY'),
+            base_url="https://api.deepseek.com"
+        )
+
+        def analyze_security_changes():
+            # Get changed files
+            result = subprocess.run([
+                'git', 'diff', '--name-only', 
+                '${{ github.event.pull_request.base.sha }}',
+                '${{ github.sha }}'
+            ], capture_output=True, text=True)
+            
+            changed_files = [f.strip() for f in result.stdout.split('\n') if f.strip()]
+            
+            # Focus on security-sensitive files
+            security_files = [f for f in changed_files if any(
+                pattern in f for pattern in [
+                    'auth', 'security', 'api', 'config', 
+                    'secret', 'key', 'token', 'password',
+                    'openrouter', 'ollama', 'ai-service'
+                ]
+            )]
+
+            if not security_files:
+                print("No security-sensitive files changed")
+                return
+
+            for file_path in security_files[:3]:  # Limit analysis
+                if not os.path.exists(file_path):
+                    continue
+
+                with open(file_path, 'r') as f:
+                    content = f.read()
+
+                response = client.chat.completions.create(
+                    model='deepseek-chat',
+                    messages=[{
+                        "role": "system",
+                        "content": "You are a cybersecurity expert. Analyze this code for security vulnerabilities, focusing on: API key handling, injection attacks, authentication flaws, data validation, and secure coding practices."
+                    }, {
+                        "role": "user", 
+                        "content": f"File: {file_path}\n\n```javascript\n{content[:3000]}\n```"
+                    }],
+                    max_tokens=800
+                )
+
+                print(f"\n🔒 Security Analysis for {file_path}:")
+                print(response.choices[0].message.content)
+                print("\n" + "="*50 + "\n")
+
+        analyze_security_changes()
+        EOF
+
+        python security_analysis.py > security_report.txt
+      env:
+        DEEPSEEK_API_KEY: ${{ env.DEEPSEEK_API_KEY }}
+
+    - name: Upload security report
+      uses: actions/upload-artifact@v4
+      with:
+        name: security-analysis-report
+        path: security_report.txt
+        retention-days: 30

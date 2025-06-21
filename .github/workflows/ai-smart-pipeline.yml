@@ -1,0 +1,615 @@
+name: AI Smart Pipeline
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  push:
+    branches: [ main, master ]
+  schedule:
+    # Run weekly analysis
+    - cron: '0 2 * * 1'
+  workflow_dispatch:
+    inputs:
+      analysis_type:
+        description: 'Type of AI analysis to run'
+        required: true
+        type: choice
+        options:
+          - 'risk-assessment'
+          - 'optimization-suggestions' 
+          - 'dependency-analysis'
+          - 'architecture-review'
+          - 'all'
+        default: 'all'
+
+env:
+  DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+
+jobs:
+  risk-assessment:
+    name: AI Risk Assessment
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' || contains(github.event.inputs.analysis_type, 'risk') || github.event.inputs.analysis_type == 'all'
+    permissions:
+      contents: read
+      pull-requests: write
+    outputs:
+      risk_level: ${{ steps.assessment.outputs.risk_level }}
+      recommendations: ${{ steps.assessment.outputs.recommendations }}
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Setup Python for AI analysis
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Install dependencies
+      run: pip install openai gitpython
+
+    - name: Analyze PR risk with AI
+      id: assessment
+      run: |
+        cat > risk_assessment.py << 'EOF'
+        import os
+        import json
+        import subprocess
+        from openai import OpenAI
+
+        client = OpenAI(
+            api_key=os.environ.get('DEEPSEEK_API_KEY'),
+            base_url="https://api.deepseek.com"
+        )
+
+        def get_pr_changes():
+            """Get PR changes or recent commits"""
+            try:
+                if os.environ.get('GITHUB_EVENT_NAME') == 'pull_request':
+                    # Get PR diff
+                    base_sha = os.environ.get('GITHUB_BASE_REF', 'main')
+                    result = subprocess.run([
+                        'git', 'diff', '--stat', f'origin/{base_sha}...HEAD'
+                    ], capture_output=True, text=True)
+                    
+                    diff_result = subprocess.run([
+                        'git', 'diff', '--name-only', f'origin/{base_sha}...HEAD'
+                    ], capture_output=True, text=True)
+                    
+                    return {
+                        'stats': result.stdout,
+                        'files': diff_result.stdout.split('\n'),
+                        'type': 'pull_request'
+                    }
+                else:
+                    # Get recent commits for push events
+                    result = subprocess.run([
+                        'git', 'log', '--oneline', '-10'
+                    ], capture_output=True, text=True)
+                    
+                    return {
+                        'stats': result.stdout,
+                        'files': [],
+                        'type': 'push'
+                    }
+            except Exception as e:
+                return {'error': str(e)}
+
+        def analyze_file_risks(files):
+            """Analyze individual files for risk factors"""
+            high_risk_patterns = [
+                'auth', 'security', 'api', 'config', 'secret',
+                'password', 'key', 'token', 'openrouter', 'ollama'
+            ]
+            
+            risk_files = []
+            for file in files:
+                if any(pattern in file.lower() for pattern in high_risk_patterns):
+                    risk_files.append(file)
+            
+            return risk_files
+
+        def assess_risk_with_ai(changes):
+            system_prompt = """You are a senior DevOps engineer and risk assessment specialist.
+
+        Analyze the provided code changes for the Kanbn project (CLI Kanban tool with AI features) and assess:
+
+        1. **Risk Level**: LOW, MEDIUM, HIGH, or CRITICAL
+        2. **Risk Factors**: What makes this risky?
+        3. **Impact Areas**: What could be affected?
+        4. **Recommendations**: Specific actions to mitigate risks
+        5. **Testing Strategy**: What additional testing is needed?
+
+        Consider these factors:
+        - Security implications (API keys, authentication)
+        - Breaking changes to CLI interface
+        - AI integration reliability
+        - Database/file system changes
+        - External dependencies
+        - Performance impacts
+
+        Provide specific, actionable recommendations."""
+
+            user_content = f"""Analyze these code changes for risk:
+
+        Change Type: {changes.get('type', 'unknown')}
+
+        Statistics:
+        {changes.get('stats', 'No stats available')}
+
+        Files Changed:
+        {chr(10).join(changes.get('files', [])[:20])}
+
+        Please provide a comprehensive risk assessment."""
+
+            try:
+                response = client.chat.completions.create(
+                    model='deepseek-chat',
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": user_content}
+                    ],
+                    max_tokens=1500,
+                    temperature=0.2
+                )
+                
+                return response.choices[0].message.content
+            except Exception as e:
+                return f"Error in AI assessment: {str(e)}"
+
+        # Get changes and assess risk
+        changes = get_pr_changes()
+        
+        if 'error' in changes:
+            print(f"Error getting changes: {changes['error']}")
+            risk_assessment = "Unable to assess risk due to git error"
+            risk_level = "MEDIUM"
+        else:
+            risk_files = analyze_file_risks(changes.get('files', []))
+            
+            # AI risk assessment
+            risk_assessment = assess_risk_with_ai(changes)
+            
+            # Extract risk level from AI response
+            risk_level = "MEDIUM"  # default
+            if "CRITICAL" in risk_assessment.upper():
+                risk_level = "CRITICAL"
+            elif "HIGH" in risk_assessment.upper():
+                risk_level = "HIGH"
+            elif "LOW" in risk_assessment.upper():
+                risk_level = "LOW"
+
+        # Output results
+        print(f"Risk Level: {risk_level}")
+        print("Assessment:")
+        print(risk_assessment)
+
+        # Set GitHub outputs
+        with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+            f.write(f"risk_level={risk_level}\n")
+            f.write(f"recommendations<<EOF\n{risk_assessment}\nEOF\n")
+
+        # Save detailed report
+        report = {
+            'risk_level': risk_level,
+            'assessment': risk_assessment,
+            'changes': changes
+        }
+        
+        with open('risk_assessment.json', 'w') as f:
+            json.dump(report, f, indent=2)
+        EOF
+
+        python risk_assessment.py
+      env:
+        DEEPSEEK_API_KEY: ${{ env.DEEPSEEK_API_KEY }}
+
+    - name: Upload risk assessment
+      uses: actions/upload-artifact@v4
+      with:
+        name: risk-assessment-report
+        path: risk_assessment.json
+
+    - name: Comment risk assessment on PR
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const riskLevel = '${{ steps.assessment.outputs.risk_level }}';
+          const recommendations = `${{ steps.assessment.outputs.recommendations }}`;
+          
+          const riskEmoji = {
+            'LOW': '🟢',
+            'MEDIUM': '🟡', 
+            'HIGH': '🟠',
+            'CRITICAL': '🔴'
+          };
+
+          const comment = `## ${riskEmoji[riskLevel] || '⚪'} AI Risk Assessment: **${riskLevel}**
+
+          *Powered by DeepSeek AI - Automated risk analysis*
+
+          ${recommendations}
+
+          ---
+          > 🤖 This assessment was generated automatically. Use your judgment for final decisions.`;
+
+          await github.rest.issues.createComment({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            issue_number: context.issue.number,
+            body: comment
+          });
+
+  optimization-suggestions:
+    name: AI Optimization Analysis
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule' || contains(github.event.inputs.analysis_type, 'optimization') || github.event.inputs.analysis_type == 'all'
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Install dependencies
+      run: pip install openai
+
+    - name: Analyze codebase for optimizations
+      run: |
+        cat > optimization_analysis.py << 'EOF'
+        import os
+        import json
+        import subprocess
+        from pathlib import Path
+        from openai import OpenAI
+
+        client = OpenAI(
+            api_key=os.environ.get('DEEPSEEK_API_KEY'),
+            base_url="https://api.deepseek.com"
+        )
+
+        def analyze_project_structure():
+            """Analyze project for optimization opportunities"""
+            analysis = {
+                'package_json': {},
+                'large_files': [],
+                'test_coverage': {},
+                'dependencies': {}
+            }
+            
+            # Analyze package.json
+            try:
+                with open('package.json', 'r') as f:
+                    pkg = json.load(f)
+                    analysis['package_json'] = {
+                        'scripts': len(pkg.get('scripts', {})),
+                        'dependencies': len(pkg.get('dependencies', {})),
+                        'devDependencies': len(pkg.get('devDependencies', {}))
+                    }
+            except:
+                pass
+            
+            # Find large files
+            try:
+                result = subprocess.run([
+                    'find', '.', '-name', '*.js', '-size', '+10k', '-not', '-path', './node_modules/*'
+                ], capture_output=True, text=True)
+                analysis['large_files'] = result.stdout.strip().split('\n')
+            except:
+                pass
+            
+            # Test file analysis
+            test_files = list(Path('test').rglob('*.js')) if Path('test').exists() else []
+            src_files = list(Path('src').rglob('*.js')) if Path('src').exists() else []
+            
+            analysis['test_coverage'] = {
+                'test_files': len(test_files),
+                'src_files': len(src_files),
+                'ratio': len(test_files) / len(src_files) if src_files else 0
+            }
+            
+            return analysis
+
+        def get_optimization_suggestions(analysis):
+            system_prompt = """You are a Node.js performance expert and code optimization specialist.
+
+        Analyze the provided project structure for the Kanbn CLI tool and suggest specific optimizations:
+
+        1. **Performance Optimizations**: Code efficiency, memory usage, startup time
+        2. **Bundle Size**: Dependency optimization, code splitting opportunities  
+        3. **Build Process**: Compilation, bundling, caching improvements
+        4. **Testing**: Coverage improvements, test performance
+        5. **CI/CD**: Pipeline optimization, build time reduction
+        6. **Architecture**: Code organization, modularity improvements
+
+        Provide specific, actionable recommendations with examples where possible."""
+
+            user_content = f"""Analyze this Node.js CLI project structure for optimization opportunities:
+
+        ```json
+        {json.dumps(analysis, indent=2)}
+        ```
+
+        Project context: Kanbn is a CLI Kanban board tool with AI features, using Node.js with markdown file storage.
+
+        Provide specific optimization recommendations."""
+
+            try:
+                response = client.chat.completions.create(
+                    model='deepseek-chat',
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": user_content}
+                    ],
+                    max_tokens=2000,
+                    temperature=0.3
+                )
+                
+                return response.choices[0].message.content
+            except Exception as e:
+                return f"Error generating optimization suggestions: {str(e)}"
+
+        # Analyze project
+        analysis = analyze_project_structure()
+        
+        # Get AI suggestions
+        suggestions = get_optimization_suggestions(analysis)
+        
+        print("=== OPTIMIZATION SUGGESTIONS ===")
+        print(suggestions)
+        
+        # Save report
+        report = {
+            'analysis': analysis,
+            'suggestions': suggestions,
+            'timestamp': subprocess.run(['date'], capture_output=True, text=True).stdout.strip()
+        }
+        
+        with open('optimization_report.json', 'w') as f:
+            json.dump(report, f, indent=2)
+            
+        # Create markdown report
+        with open('OPTIMIZATION_REPORT.md', 'w') as f:
+            f.write(f"""# Kanbn Optimization Report
+
+        Generated: {report['timestamp']}
+
+        ## Project Analysis
+
+        - **Dependencies**: {analysis['package_json'].get('dependencies', 0)} production, {analysis['package_json'].get('devDependencies', 0)} dev
+        - **Test Coverage Ratio**: {analysis['test_coverage'].get('ratio', 0):.2f}
+        - **Large Files**: {len(analysis['large_files'])} files > 10KB
+
+        ## AI-Generated Suggestions
+
+        {suggestions}
+
+        ---
+        *Generated by DeepSeek AI*
+        """)
+        EOF
+
+        python optimization_analysis.py
+      env:
+        DEEPSEEK_API_KEY: ${{ env.DEEPSEEK_API_KEY }}
+
+    - name: Upload optimization report
+      uses: actions/upload-artifact@v4
+      with:
+        name: optimization-report
+        path: |
+          optimization_report.json
+          OPTIMIZATION_REPORT.md
+
+  dependency-security-analysis:
+    name: AI Dependency Analysis
+    runs-on: ubuntu-latest
+    if: contains(github.event.inputs.analysis_type, 'dependency') || github.event.inputs.analysis_type == 'all' || github.event_name == 'schedule'
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Install Python dependencies
+      run: pip install openai
+
+    - name: Analyze dependencies with AI
+      run: |
+        cat > dependency_analysis.py << 'EOF'
+        import json
+        import subprocess
+        import os
+        from openai import OpenAI
+
+        client = OpenAI(
+            api_key=os.environ.get('DEEPSEEK_API_KEY'),
+            base_url="https://api.deepseek.com"
+        )
+
+        def get_dependency_info():
+            """Extract dependency information"""
+            info = {}
+            
+            # Get package.json info
+            try:
+                with open('package.json', 'r') as f:
+                    pkg = json.load(f)
+                    info['dependencies'] = pkg.get('dependencies', {})
+                    info['devDependencies'] = pkg.get('devDependencies', {})
+            except:
+                pass
+            
+            # Run npm audit
+            try:
+                result = subprocess.run(['npm', 'audit', '--json'], 
+                                      capture_output=True, text=True)
+                if result.stdout:
+                    info['audit'] = json.loads(result.stdout)
+            except:
+                info['audit'] = {'error': 'Could not run npm audit'}
+            
+            # Get outdated packages
+            try:
+                result = subprocess.run(['npm', 'outdated', '--json'], 
+                                      capture_output=True, text=True)
+                if result.stdout:
+                    info['outdated'] = json.loads(result.stdout)
+                else:
+                    info['outdated'] = {}
+            except:
+                info['outdated'] = {}
+            
+            return info
+
+        def analyze_dependencies_with_ai(dep_info):
+            system_prompt = """You are a Node.js security and dependency management expert.
+
+        Analyze the provided dependency information for the Kanbn CLI project and provide:
+
+        1. **Security Assessment**: Critical vulnerabilities and recommendations
+        2. **Maintenance Recommendations**: Outdated packages that should be updated
+        3. **Dependency Optimization**: Unnecessary or duplicate dependencies
+        4. **Version Strategy**: Recommendations for version pinning/ranges
+        5. **Alternative Packages**: Lighter or more secure alternatives
+        6. **CI/CD Integration**: Automated dependency management suggestions
+
+        Focus on security, performance, and maintainability for a CLI tool."""
+
+            # Limit the size of audit data to avoid token limits
+            limited_info = {
+                'dependencies_count': len(dep_info.get('dependencies', {})),
+                'devDependencies_count': len(dep_info.get('devDependencies', {})),
+                'audit_summary': {
+                    'vulnerabilities': dep_info.get('audit', {}).get('metadata', {}).get('vulnerabilities', {}),
+                    'dependencies': dep_info.get('audit', {}).get('metadata', {}).get('dependencies', 0)
+                },
+                'outdated_count': len(dep_info.get('outdated', {})),
+                'sample_dependencies': dict(list(dep_info.get('dependencies', {}).items())[:10])
+            }
+
+            user_content = f"""Analyze these dependencies for the Kanbn CLI project:
+
+        ```json
+        {json.dumps(limited_info, indent=2)}
+        ```
+
+        Provide security and maintenance recommendations."""
+
+            try:
+                response = client.chat.completions.create(
+                    model='deepseek-chat',
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": user_content}
+                    ],
+                    max_tokens=1500,
+                    temperature=0.3
+                )
+                
+                return response.choices[0].message.content
+            except Exception as e:
+                return f"Error analyzing dependencies: {str(e)}"
+
+        # Get dependency information
+        dep_info = get_dependency_info()
+        
+        # Analyze with AI
+        analysis = analyze_dependencies_with_ai(dep_info)
+        
+        print("=== DEPENDENCY ANALYSIS ===")
+        print(analysis)
+        
+        # Create summary
+        summary = {
+            'total_dependencies': len(dep_info.get('dependencies', {})),
+            'total_dev_dependencies': len(dep_info.get('devDependencies', {})),
+            'vulnerabilities': dep_info.get('audit', {}).get('metadata', {}).get('vulnerabilities', {}),
+            'outdated_packages': len(dep_info.get('outdated', {})),
+            'ai_analysis': analysis
+        }
+        
+        with open('dependency_analysis.json', 'w') as f:
+            json.dump(summary, f, indent=2)
+        EOF
+
+        python dependency_analysis.py
+      env:
+        DEEPSEEK_API_KEY: ${{ env.DEEPSEEK_API_KEY }}
+
+    - name: Upload dependency analysis
+      uses: actions/upload-artifact@v4
+      with:
+        name: dependency-analysis
+        path: dependency_analysis.json
+
+  smart-pipeline-summary:
+    name: AI Pipeline Summary
+    runs-on: ubuntu-latest
+    needs: [risk-assessment, optimization-suggestions, dependency-security-analysis]
+    if: always()
+    steps:
+    - name: Download all analysis artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: analysis-results
+
+    - name: Create comprehensive summary
+      run: |
+        echo "# 🤖 AI Smart Pipeline Report" > PIPELINE_SUMMARY.md
+        echo "" >> PIPELINE_SUMMARY.md
+        echo "*Generated: $(date)*" >> PIPELINE_SUMMARY.md
+        echo "" >> PIPELINE_SUMMARY.md
+        
+        # Risk Assessment Summary
+        if [ -f "analysis-results/risk-assessment-report/risk_assessment.json" ]; then
+          echo "## 🔍 Risk Assessment" >> PIPELINE_SUMMARY.md
+          echo "Risk Level: **${{ needs.risk-assessment.outputs.risk_level }}**" >> PIPELINE_SUMMARY.md
+          echo "" >> PIPELINE_SUMMARY.md
+        fi
+        
+        # List available analyses
+        echo "## 📊 Available Analysis Reports" >> PIPELINE_SUMMARY.md
+        echo "" >> PIPELINE_SUMMARY.md
+        
+        if [ -d "analysis-results/optimization-report" ]; then
+          echo "- ✅ **Optimization Analysis** - Performance and architecture suggestions" >> PIPELINE_SUMMARY.md
+        fi
+        
+        if [ -d "analysis-results/dependency-analysis" ]; then
+          echo "- ✅ **Dependency Security Analysis** - Security and maintenance recommendations" >> PIPELINE_SUMMARY.md
+        fi
+        
+        echo "" >> PIPELINE_SUMMARY.md
+        echo "## 🎯 Next Steps" >> PIPELINE_SUMMARY.md
+        echo "" >> PIPELINE_SUMMARY.md
+        echo "1. Review all analysis reports in the artifacts" >> PIPELINE_SUMMARY.md
+        echo "2. Prioritize recommendations based on risk levels" >> PIPELINE_SUMMARY.md
+        echo "3. Create issues for high-priority items" >> PIPELINE_SUMMARY.md
+        echo "4. Schedule regular reviews for ongoing optimization" >> PIPELINE_SUMMARY.md
+        echo "" >> PIPELINE_SUMMARY.md
+        echo "---" >> PIPELINE_SUMMARY.md
+        echo "*Powered by DeepSeek AI*" >> PIPELINE_SUMMARY.md
+
+    - name: Upload pipeline summary
+      uses: actions/upload-artifact@v4
+      with:
+        name: pipeline-summary
+        path: PIPELINE_SUMMARY.md

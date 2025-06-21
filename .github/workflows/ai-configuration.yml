@@ -1,0 +1,536 @@
+name: AI Configuration & Setup
+
+on:
+  workflow_dispatch:
+    inputs:
+      setup_type:
+        description: 'AI setup to configure'
+        required: true
+        type: choice
+        options:
+          - 'deepseek-test'
+          - 'setup-validation'
+          - 'generate-config'
+          - 'troubleshoot'
+        default: 'setup-validation'
+  pull_request:
+    paths:
+      - '.github/workflows/**'
+      - '.env.example'
+      - 'src/lib/ai-*.js'
+
+env:
+  DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+
+jobs:
+  validate-ai-setup:
+    name: Validate AI Configuration
+    runs-on: ubuntu-latest
+    if: github.event.inputs.setup_type == 'setup-validation' || github.event.inputs.setup_type == 'deepseek-test' || github.event_name == 'pull_request'
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Python for API testing
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Install dependencies
+      run: pip install openai requests
+
+    - name: Test DeepSeek API connection
+      id: api-test
+      run: |
+        cat > test_deepseek_api.py << 'EOF'
+        import os
+        import sys
+        from openai import OpenAI
+
+        def test_deepseek_connection():
+            api_key = os.environ.get('DEEPSEEK_API_KEY')
+            
+            if not api_key:
+                print("❌ DEEPSEEK_API_KEY not found in environment")
+                return False
+            
+            print(f"✅ API Key found (length: {len(api_key)})")
+            
+            try:
+                client = OpenAI(
+                    api_key=api_key,
+                    base_url="https://api.deepseek.com"
+                )
+                
+                print("🔄 Testing API connection...")
+                
+                response = client.chat.completions.create(
+                    model="deepseek-chat",
+                    messages=[
+                        {"role": "system", "content": "You are a helpful assistant."},
+                        {"role": "user", "content": "Say 'Hello from Kanbn CI/CD!'"}
+                    ],
+                    max_tokens=50
+                )
+                
+                result = response.choices[0].message.content
+                print(f"✅ API Response: {result}")
+                return True
+                
+            except Exception as e:
+                print(f"❌ API Test Failed: {str(e)}")
+                return False
+
+        def check_environment_variables():
+            print("\n🔍 Environment Variable Check:")
+            
+            required_vars = ['DEEPSEEK_API_KEY']
+            optional_vars = ['OPENROUTER_API_KEY', 'OLLAMA_HOST', 'OLLAMA_MODEL']
+            
+            for var in required_vars:
+                value = os.environ.get(var)
+                if value:
+                    print(f"✅ {var}: Set (length: {len(value)})")
+                else:
+                    print(f"❌ {var}: Not set")
+            
+            print("\nOptional AI variables:")
+            for var in optional_vars:
+                value = os.environ.get(var)
+                if value:
+                    print(f"✅ {var}: {value}")
+                else:
+                    print(f"ℹ️  {var}: Not set")
+
+        def main():
+            print("=== DeepSeek AI Configuration Test ===\n")
+            
+            check_environment_variables()
+            
+            api_success = test_deepseek_connection()
+            
+            print(f"\n=== Test Results ===")
+            print(f"API Connection: {'✅ SUCCESS' if api_success else '❌ FAILED'}")
+            
+            return api_success
+
+        if __name__ == "__main__":
+            success = main()
+            sys.exit(0 if success else 1)
+        EOF
+
+        python test_deepseek_api.py
+      env:
+        DEEPSEEK_API_KEY: ${{ env.DEEPSEEK_API_KEY }}
+
+    - name: Validate GitHub Actions secrets
+      run: |
+        echo "🔍 Checking GitHub Secrets Configuration..."
+        
+        if [ -z "${{ secrets.DEEPSEEK_API_KEY }}" ]; then
+          echo "❌ DEEPSEEK_API_KEY secret not configured"
+          echo "Please add your DeepSeek API key to GitHub repository secrets"
+        else
+          echo "✅ DEEPSEEK_API_KEY secret is configured"
+        fi
+        
+        if [ -z "${{ secrets.GITHUB_TOKEN }}" ]; then
+          echo "❌ GITHUB_TOKEN not available"
+        else
+          echo "✅ GITHUB_TOKEN is available"
+        fi
+
+    - name: Generate setup status report
+      run: |
+        cat > AI_SETUP_STATUS.md << 'EOF'
+        # AI Configuration Status Report
+        
+        Generated: $(date)
+        
+        ## DeepSeek API Status
+        - API Key: ${{ steps.api-test.outcome == 'success' && '✅ Connected' || '❌ Failed' }}
+        - Base URL: https://api.deepseek.com
+        - Model: deepseek-chat
+        
+        ## GitHub Integration
+        - Secrets: ${{ secrets.DEEPSEEK_API_KEY != '' && '✅ Configured' || '❌ Missing' }}
+        - Workflows: ✅ Active
+        
+        ## Available AI Features
+        - 🔍 Code Review
+        - 🧪 Test Generation  
+        - 📚 Documentation Generation
+        - 🔒 Security Analysis
+        - 📊 Smart Pipeline Analysis
+        
+        ## Setup Instructions
+        
+        If API connection failed, ensure:
+        1. DeepSeek API key is valid
+        2. Key is added to GitHub repository secrets as `DEEPSEEK_API_KEY`
+        3. Account has sufficient credits/quota
+        
+        ---
+        *Generated by Kanbn AI Configuration Workflow*
+        EOF
+
+    - name: Upload setup status
+      uses: actions/upload-artifact@v4
+      with:
+        name: ai-setup-status
+        path: AI_SETUP_STATUS.md
+
+  generate-ai-config-docs:
+    name: Generate AI Configuration Documentation
+    runs-on: ubuntu-latest
+    if: github.event.inputs.setup_type == 'generate-config' || github.event_name == 'pull_request'
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Install dependencies
+      run: pip install openai
+
+    - name: Generate comprehensive AI documentation
+      run: |
+        cat > generate_ai_docs.py << 'EOF'
+        import os
+        from openai import OpenAI
+
+        client = OpenAI(
+            api_key=os.environ.get('DEEPSEEK_API_KEY'),
+            base_url="https://api.deepseek.com"
+        )
+
+        def generate_ai_configuration_guide():
+            system_prompt = """You are a technical documentation expert specializing in AI integration and DevOps.
+
+        Create comprehensive documentation for setting up and configuring AI features in the Kanbn project's GitHub Actions workflows.
+
+        Cover these topics:
+        1. **DeepSeek API Setup**: Account creation, API key generation, pricing
+        2. **GitHub Integration**: Repository secrets, workflow permissions
+        3. **Configuration Options**: Environment variables, model selection
+        4. **Workflow Features**: What each AI workflow does and when it runs
+        5. **Troubleshooting**: Common issues and solutions
+        6. **Cost Management**: Usage monitoring and optimization
+        7. **Security**: Best practices for API key management
+        8. **Customization**: How to modify workflows for specific needs
+
+        Format as comprehensive Markdown documentation."""
+
+            user_content = """Generate a complete setup and configuration guide for AI-powered GitHub Actions workflows in the Kanbn project.
+
+        The project uses DeepSeek API for:
+        - Automated code review
+        - Test generation
+        - Documentation generation  
+        - Security analysis
+        - Performance optimization suggestions
+        - Risk assessment
+
+        Create practical, step-by-step documentation."""
+
+            try:
+                response = client.chat.completions.create(
+                    model='deepseek-chat',
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": user_content}
+                    ],
+                    max_tokens=3000,
+                    temperature=0.3
+                )
+                
+                return response.choices[0].message.content
+            except Exception as e:
+                return f"Error generating documentation: {str(e)}"
+
+        def create_environment_template():
+            """Create .env template for AI configuration"""
+            template = """# Kanbn AI Configuration
+# Copy this file to .env and fill in your values
+
+# DeepSeek AI API (Primary AI provider for GitHub Actions)
+DEEPSEEK_API_KEY=your_deepseek_api_key_here
+
+# OpenRouter AI API (Alternative for local development)
+OPENROUTER_API_KEY=your_openrouter_key_here
+OPENROUTER_MODEL=openai/gpt-3.5-turbo
+
+# Ollama (Local AI for development)
+USE_OLLAMA=false
+OLLAMA_HOST=http://localhost:11434
+OLLAMA_MODEL=llama3
+
+# GitHub Actions Configuration
+GITHUB_TOKEN=automatically_provided_by_github
+
+# Optional: Custom model settings
+AI_TEMPERATURE=0.3
+AI_MAX_TOKENS=2000
+
+# Debug mode
+DEBUG=false
+"""
+            return template
+
+        # Generate documentation
+        print("Generating AI configuration documentation...")
+        
+        docs = generate_ai_configuration_guide()
+        env_template = create_environment_template()
+        
+        # Write documentation
+        with open('AI_CONFIGURATION_GUIDE.md', 'w') as f:
+            f.write(docs)
+        
+        # Write environment template
+        with open('.env.ai-template', 'w') as f:
+            f.write(env_template)
+        
+        print("✅ Generated AI configuration documentation")
+        print("✅ Generated environment template")
+        EOF
+
+        python generate_ai_docs.py
+      env:
+        DEEPSEEK_API_KEY: ${{ env.DEEPSEEK_API_KEY }}
+
+    - name: Upload AI configuration docs
+      uses: actions/upload-artifact@v4
+      with:
+        name: ai-configuration-docs
+        path: |
+          AI_CONFIGURATION_GUIDE.md
+          .env.ai-template
+
+  troubleshoot-ai-issues:
+    name: AI Troubleshooting
+    runs-on: ubuntu-latest
+    if: github.event.inputs.setup_type == 'troubleshoot'
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Install dependencies
+      run: pip install openai requests
+
+    - name: Run comprehensive diagnostics
+      run: |
+        cat > troubleshoot_ai.py << 'EOF'
+        import os
+        import sys
+        import json
+        import subprocess
+        import requests
+        from openai import OpenAI
+
+        def check_api_endpoints():
+            """Test API endpoints directly"""
+            print("🔍 Testing API Endpoints...")
+            
+            endpoints = {
+                'DeepSeek': 'https://api.deepseek.com',
+                'OpenAI': 'https://api.openai.com'
+            }
+            
+            for name, url in endpoints.items():
+                try:
+                    response = requests.get(url, timeout=10)
+                    print(f"✅ {name} ({url}): Reachable (Status: {response.status_code})")
+                except Exception as e:
+                    print(f"❌ {name} ({url}): {str(e)}")
+
+        def test_api_authentication():
+            """Test API authentication with minimal request"""
+            print("\n🔐 Testing API Authentication...")
+            
+            api_key = os.environ.get('DEEPSEEK_API_KEY')
+            if not api_key:
+                print("❌ No API key found")
+                return False
+            
+            try:
+                client = OpenAI(
+                    api_key=api_key,
+                    base_url="https://api.deepseek.com"
+                )
+                
+                # Minimal test request
+                response = client.chat.completions.create(
+                    model="deepseek-chat",
+                    messages=[{"role": "user", "content": "test"}],
+                    max_tokens=5
+                )
+                
+                print("✅ Authentication successful")
+                print(f"   Model: {response.model}")
+                print(f"   Usage: {response.usage}")
+                return True
+                
+            except Exception as e:
+                print(f"❌ Authentication failed: {str(e)}")
+                return False
+
+        def check_github_environment():
+            """Check GitHub Actions environment"""
+            print("\n🐙 GitHub Environment Check...")
+            
+            github_vars = [
+                'GITHUB_REPOSITORY', 'GITHUB_REF', 'GITHUB_SHA',
+                'GITHUB_EVENT_NAME', 'GITHUB_ACTOR'
+            ]
+            
+            for var in github_vars:
+                value = os.environ.get(var, 'Not set')
+                print(f"   {var}: {value}")
+
+        def diagnose_workflow_issues():
+            """Look for common workflow issues"""
+            print("\n🔧 Workflow Diagnostics...")
+            
+            issues = []
+            
+            # Check if running in GitHub Actions
+            if not os.environ.get('GITHUB_ACTIONS'):
+                issues.append("Not running in GitHub Actions environment")
+            
+            # Check API key format
+            api_key = os.environ.get('DEEPSEEK_API_KEY', '')
+            if api_key and not api_key.startswith('sk-'):
+                issues.append("API key format looks incorrect (should start with 'sk-')")
+            
+            # Check token length
+            if api_key and len(api_key) < 20:
+                issues.append("API key seems too short")
+            
+            if issues:
+                print("⚠️  Potential Issues Found:")
+                for issue in issues:
+                    print(f"   - {issue}")
+            else:
+                print("✅ No obvious issues detected")
+
+        def generate_troubleshooting_report():
+            """Generate comprehensive report"""
+            print("\n📋 Generating Troubleshooting Report...")
+            
+            report = {
+                'timestamp': subprocess.run(['date'], capture_output=True, text=True).stdout.strip(),
+                'environment': dict(os.environ),
+                'python_version': sys.version,
+                'api_test_results': {}
+            }
+            
+            # Remove sensitive data
+            if 'DEEPSEEK_API_KEY' in report['environment']:
+                key = report['environment']['DEEPSEEK_API_KEY']
+                report['environment']['DEEPSEEK_API_KEY'] = f"{key[:8]}..." if key else "Not set"
+            
+            # Test API
+            try:
+                auth_success = test_api_authentication()
+                report['api_test_results']['authentication'] = auth_success
+            except Exception as e:
+                report['api_test_results']['error'] = str(e)
+            
+            with open('troubleshooting_report.json', 'w') as f:
+                json.dump(report, f, indent=2, default=str)
+            
+            print("✅ Report saved to troubleshooting_report.json")
+
+        def main():
+            print("=== AI Troubleshooting Diagnostics ===\n")
+            
+            check_api_endpoints()
+            auth_result = test_api_authentication()
+            check_github_environment()
+            diagnose_workflow_issues()
+            generate_troubleshooting_report()
+            
+            print(f"\n=== Summary ===")
+            print(f"Overall Status: {'✅ OK' if auth_result else '❌ Issues Found'}")
+            print("Check troubleshooting_report.json for detailed information")
+
+        if __name__ == "__main__":
+            main()
+        EOF
+
+        python troubleshoot_ai.py
+      env:
+        DEEPSEEK_API_KEY: ${{ env.DEEPSEEK_API_KEY }}
+
+    - name: Upload troubleshooting report
+      uses: actions/upload-artifact@v4
+      with:
+        name: troubleshooting-report
+        path: troubleshooting_report.json
+
+  configuration-summary:
+    name: Configuration Summary
+    runs-on: ubuntu-latest
+    needs: [validate-ai-setup, generate-ai-config-docs, troubleshoot-ai-issues]
+    if: always()
+    steps:
+    - name: Create configuration summary
+      run: |
+        echo "# 🤖 AI Configuration Summary" > CONFIGURATION_SUMMARY.md
+        echo "" >> CONFIGURATION_SUMMARY.md
+        echo "*Generated: $(date)*" >> CONFIGURATION_SUMMARY.md
+        echo "" >> CONFIGURATION_SUMMARY.md
+        
+        echo "## Validation Results" >> CONFIGURATION_SUMMARY.md
+        echo "" >> CONFIGURATION_SUMMARY.md
+        
+        if [ "${{ needs.validate-ai-setup.result }}" = "success" ]; then
+          echo "- ✅ **AI Setup Validation**: Passed" >> CONFIGURATION_SUMMARY.md
+        else
+          echo "- ❌ **AI Setup Validation**: Failed" >> CONFIGURATION_SUMMARY.md
+        fi
+        
+        if [ "${{ needs.generate-ai-config-docs.result }}" = "success" ]; then
+          echo "- ✅ **Documentation Generation**: Completed" >> CONFIGURATION_SUMMARY.md
+        elif [ "${{ needs.generate-ai-config-docs.result }}" = "skipped" ]; then
+          echo "- ⏭️ **Documentation Generation**: Skipped" >> CONFIGURATION_SUMMARY.md
+        fi
+        
+        if [ "${{ needs.troubleshoot-ai-issues.result }}" = "success" ]; then
+          echo "- ✅ **Troubleshooting**: Completed" >> CONFIGURATION_SUMMARY.md
+        elif [ "${{ needs.troubleshoot-ai-issues.result }}" = "skipped" ]; then
+          echo "- ⏭️ **Troubleshooting**: Skipped" >> CONFIGURATION_SUMMARY.md
+        fi
+        
+        echo "" >> CONFIGURATION_SUMMARY.md
+        echo "## Available Artifacts" >> CONFIGURATION_SUMMARY.md
+        echo "" >> CONFIGURATION_SUMMARY.md
+        echo "Check the workflow artifacts for:" >> CONFIGURATION_SUMMARY.md
+        echo "- AI setup status report" >> CONFIGURATION_SUMMARY.md
+        echo "- Configuration documentation" >> CONFIGURATION_SUMMARY.md
+        echo "- Environment templates" >> CONFIGURATION_SUMMARY.md
+        echo "- Troubleshooting reports" >> CONFIGURATION_SUMMARY.md
+        echo "" >> CONFIGURATION_SUMMARY.md
+        echo "## Quick Setup" >> CONFIGURATION_SUMMARY.md
+        echo "" >> CONFIGURATION_SUMMARY.md
+        echo "1. **Get DeepSeek API Key**: Visit https://platform.deepseek.com/" >> CONFIGURATION_SUMMARY.md
+        echo "2. **Add to GitHub Secrets**: Repository Settings → Secrets → Actions" >> CONFIGURATION_SUMMARY.md
+        echo "3. **Test Setup**: Run this workflow with 'deepseek-test' option" >> CONFIGURATION_SUMMARY.md
+        echo "" >> CONFIGURATION_SUMMARY.md
+        echo "---" >> CONFIGURATION_SUMMARY.md
+        echo "*Powered by DeepSeek AI*" >> CONFIGURATION_SUMMARY.md
+
+    - name: Upload configuration summary
+      uses: actions/upload-artifact@v4
+      with:
+        name: configuration-summary
+        path: CONFIGURATION_SUMMARY.md
