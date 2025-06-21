@@ -2,18 +2,14 @@ const fileUtils = require('../../src/lib/file-utils');
 const fs = require('fs');
 const path = require('path');
 
-QUnit.module('file-utils tests', {
-  before() {
-    require('../qunit-throws-async');
-  }
-});
+describe('file-utils tests', () => {
 
-QUnit.test('exists() should return true if a file exists', async assert => {
+  test('exists() should return true if a file exists', async () => {
   const tempFile = path.join(__dirname, 'temp-test-file.txt');
   try {
     await fs.promises.writeFile(tempFile, 'test content');
-    assert.equal(await fileUtils.exists(tempFile), true);
-    assert.equal(await fileUtils.exists(tempFile + '.nonexistent'), false);
+    expect(await fileUtils.exists(tempFile)).toBe(true);
+    expect(await fileUtils.exists(tempFile + '.nonexistent')).toBe(false);
   } finally {
     try {
       await fs.promises.unlink(tempFile);
@@ -22,19 +18,20 @@ QUnit.test('exists() should return true if a file exists', async assert => {
   }
 });
 
-QUnit.test('getTaskPath() should return the correct path', async assert => {
-  assert.equal(
-    fileUtils.getTaskPath('/tasks', 'task-1'),
-    path.join('/tasks', 'task-1.md')
-  );
+test('getTaskPath() should return the correct path', async () => {
+  expect(
+    fileUtils.getTaskPath('/tasks', 'task-1')
+  ).toBe(path.join('/tasks', 'task-1.md'));
 });
 
-QUnit.test('addFileExtension() should add .md extension if needed', async assert => {
-  assert.equal(fileUtils.addFileExtension('task-1'), 'task-1.md');
-  assert.equal(fileUtils.addFileExtension('task-1.md'), 'task-1.md');
+test('addFileExtension() should add .md extension if needed', async () => {
+  expect(fileUtils.addFileExtension('task-1')).toBe('task-1.md');
+  expect(fileUtils.addFileExtension('task-1.md')).toBe('task-1.md');
 });
 
-QUnit.test('removeFileExtension() should remove .md extension if present', async assert => {
-  assert.equal(fileUtils.removeFileExtension('task-1.md'), 'task-1');
-  assert.equal(fileUtils.removeFileExtension('task-1'), 'task-1');
+  test('removeFileExtension() should remove .md extension if present', async () => {
+    expect(fileUtils.removeFileExtension('task-1.md')).toBe('task-1');
+    expect(fileUtils.removeFileExtension('task-1')).toBe('task-1');
+  });
+
 });

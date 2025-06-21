@@ -1,8 +1,8 @@
 const taskUtils = require('../../src/lib/task-utils');
 
-QUnit.module('task-utils tests');
+describe('task-utils tests', () => {
 
-QUnit.test('taskInIndex() should check if a task exists in the index', async assert => {
+  test('taskInIndex() should check if a task exists in the index', async () => {
   const index = {
     columns: {
       'Todo': ['task-1', 'task-2'],
@@ -10,12 +10,12 @@ QUnit.test('taskInIndex() should check if a task exists in the index', async ass
     }
   };
   
-  assert.equal(taskUtils.taskInIndex(index, 'task-1'), true);
-  assert.equal(taskUtils.taskInIndex(index, 'task-3'), true);
-  assert.equal(taskUtils.taskInIndex(index, 'task-4'), false);
+  expect(taskUtils.taskInIndex(index, 'task-1')).toBe(true);
+  expect(taskUtils.taskInIndex(index, 'task-3')).toBe(true);
+  expect(taskUtils.taskInIndex(index, 'task-4')).toBe(false);
 });
 
-QUnit.test('findTaskColumn() should find the column a task is in', async assert => {
+test('findTaskColumn() should find the column a task is in', async () => {
   const index = {
     columns: {
       'Todo': ['task-1', 'task-2'],
@@ -23,12 +23,12 @@ QUnit.test('findTaskColumn() should find the column a task is in', async assert 
     }
   };
   
-  assert.equal(taskUtils.findTaskColumn(index, 'task-1'), 'Todo');
-  assert.equal(taskUtils.findTaskColumn(index, 'task-3'), 'Doing');
-  assert.equal(taskUtils.findTaskColumn(index, 'task-4'), null);
+  expect(taskUtils.findTaskColumn(index, 'task-1')).toBe('Todo');
+  expect(taskUtils.findTaskColumn(index, 'task-3')).toBe('Doing');
+  expect(taskUtils.findTaskColumn(index, 'task-4')).toBe(null);
 });
 
-QUnit.test('addTaskToIndex() should add a task to the index', async assert => {
+test('addTaskToIndex() should add a task to the index', async () => {
   const index = {
     columns: {
       'Todo': ['task-1', 'task-2'],
@@ -37,13 +37,13 @@ QUnit.test('addTaskToIndex() should add a task to the index', async assert => {
   };
   
   const updatedIndex = taskUtils.addTaskToIndex(index, 'task-4', 'Todo');
-  assert.deepEqual(updatedIndex.columns.Todo, ['task-1', 'task-2', 'task-4']);
+  expect(updatedIndex.columns.Todo).toEqual(['task-1', 'task-2', 'task-4']);
   
   const positionedIndex = taskUtils.addTaskToIndex(index, 'task-5', 'Todo', 1);
-  assert.deepEqual(positionedIndex.columns.Todo, ['task-1', 'task-5', 'task-2', 'task-4']);
+  expect(positionedIndex.columns.Todo).toEqual(['task-1', 'task-5', 'task-2', 'task-4']);
 });
 
-QUnit.test('removeTaskFromIndex() should remove a task from the index', async assert => {
+test('removeTaskFromIndex() should remove a task from the index', async () => {
   const index = {
     columns: {
       'Todo': ['task-1', 'task-2'],
@@ -52,11 +52,11 @@ QUnit.test('removeTaskFromIndex() should remove a task from the index', async as
   };
   
   const updatedIndex = taskUtils.removeTaskFromIndex(index, 'task-2');
-  assert.deepEqual(updatedIndex.columns.Todo, ['task-1']);
-  assert.deepEqual(updatedIndex.columns.Doing, ['task-3']);
+  expect(updatedIndex.columns.Todo).toEqual(['task-1']);
+  expect(updatedIndex.columns.Doing).toEqual(['task-3']);
 });
 
-QUnit.test('renameTaskInIndex() should rename a task in the index', async assert => {
+test('renameTaskInIndex() should rename a task in the index', async () => {
   const index = {
     columns: {
       'Todo': ['task-1', 'task-2'],
@@ -65,10 +65,10 @@ QUnit.test('renameTaskInIndex() should rename a task in the index', async assert
   };
   
   const updatedIndex = taskUtils.renameTaskInIndex(index, 'task-2', 'renamed-task');
-  assert.deepEqual(updatedIndex.columns.Todo, ['task-1', 'renamed-task']);
+  expect(updatedIndex.columns.Todo).toEqual(['task-1', 'renamed-task']);
 });
 
-QUnit.test('getTaskMetadata() should get task metadata', async assert => {
+test('getTaskMetadata() should get task metadata', async () => {
   const task = {
     metadata: {
       due: '2021-01-01',
@@ -76,24 +76,24 @@ QUnit.test('getTaskMetadata() should get task metadata', async assert => {
     }
   };
   
-  assert.equal(taskUtils.getTaskMetadata(task, 'due'), '2021-01-01');
-  assert.equal(taskUtils.getTaskMetadata(task, 'assigned'), 'user1');
-  assert.equal(taskUtils.getTaskMetadata(task, 'nonexistent'), null);
-  assert.equal(taskUtils.getTaskMetadata({}, 'due'), null);
+  expect(taskUtils.getTaskMetadata(task, 'due')).toBe('2021-01-01');
+  expect(taskUtils.getTaskMetadata(task, 'assigned')).toBe('user1');
+  expect(taskUtils.getTaskMetadata(task, 'nonexistent')).toBe(null);
+  expect(taskUtils.getTaskMetadata({}, 'due')).toBe(null);
 });
 
-QUnit.test('setTaskMetadata() should set task metadata', async assert => {
+test('setTaskMetadata() should set task metadata', async () => {
   const task = {};
   
   const updatedTask1 = taskUtils.setTaskMetadata(task, 'due', '2021-01-01');
-  assert.equal(updatedTask1.metadata.due, '2021-01-01');
+  expect(updatedTask1.metadata.due).toBe('2021-01-01');
   
   const updatedTask2 = taskUtils.setTaskMetadata(updatedTask1, 'assigned', 'user1');
-  assert.equal(updatedTask2.metadata.assigned, 'user1');
-  assert.equal(updatedTask2.metadata.due, '2021-01-01');
+  expect(updatedTask2.metadata.assigned).toBe('user1');
+  expect(updatedTask2.metadata.due).toBe('2021-01-01');
 });
 
-QUnit.test('taskCompleted() should check if a task is completed', async assert => {
+test('taskCompleted() should check if a task is completed', async () => {
   const index = {
     columns: {
       'Todo': ['task-1', 'task-2'],
@@ -110,8 +110,10 @@ QUnit.test('taskCompleted() should check if a task is completed', async assert =
   const task3 = { id: 'task-3', metadata: {} };
   const task4 = { id: 'task-4', metadata: {} };
   
-  assert.equal(taskUtils.taskCompleted(index, task1), false);
-  assert.equal(taskUtils.taskCompleted(index, task2), true);
-  assert.equal(taskUtils.taskCompleted(index, task3), false);
-  assert.equal(taskUtils.taskCompleted(index, task4), true);
+  expect(taskUtils.taskCompleted(index, task1)).toBe(false);
+  expect(taskUtils.taskCompleted(index, task2)).toBe(true);
+  expect(taskUtils.taskCompleted(index, task3)).toBe(false);
+  expect(taskUtils.taskCompleted(index, task4)).toBe(true);
+});
+
 });

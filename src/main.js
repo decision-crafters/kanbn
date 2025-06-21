@@ -471,7 +471,7 @@ class Kanbn {
    * @return {Promise<task>} The task
    */
   async getTask(taskId) {
-    this.taskExists(taskId);
+    await this.taskExists(taskId);
     return this.loadTask(taskId);
   }
 

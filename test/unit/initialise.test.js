@@ -4,47 +4,49 @@ const realFs = require('../real-fs-fixtures');
 const Kanbn = require('../../src/main');
 const context = require('../context');
 
-QUnit.module('initialise tests', {
-  beforeEach() {
-    this.testDir = realFs.createTestDirectory('initialise-test');
-    
-    this.originalCwd = process.cwd();
-    process.chdir(this.testDir);
-    
-    this.kanbn = Kanbn();
-  },
-  afterEach() {
-    process.chdir(this.originalCwd);
-    
-    realFs.cleanupFixtures(this.testDir);
-  }
-});
+describe('initialise tests', () => {
+  let testDir, originalCwd, kanbn;
 
-QUnit.test('Initialise with default settings should create folders and index', async function(assert) {
-  const BASE_PATH = await this.kanbn.getMainFolder();
+  beforeEach(() => {
+    testDir = realFs.createTestDirectory('initialise-test');
+    
+    originalCwd = process.cwd();
+    process.chdir(testDir);
+    
+    kanbn = Kanbn();
+  });
+
+  afterEach(() => {
+    process.chdir(originalCwd);
+    
+    realFs.cleanupFixtures(testDir);
+  });
+
+test('Initialise with default settings should create folders and index', async () => {
+  const BASE_PATH = await kanbn.getMainFolder();
 
   // Kanbn shouldn't be currently initialised in our test directory
-  assert.equal(await this.kanbn.initialised(), false);
+  expect(await kanbn.initialised()).toBe(false);
 
   // Initialise kanbn and check that the main folder, index, and tasks folder exists
-  await this.kanbn.initialise();
-  context.kanbnFolderExists(assert, BASE_PATH);
-  context.indexExists(assert, BASE_PATH);
-  context.tasksFolderExists(assert, BASE_PATH);
+  await kanbn.initialise();
+  context.kanbnFolderExists(expect, BASE_PATH);
+  context.indexExists(expect, BASE_PATH);
+  context.tasksFolderExists(expect, BASE_PATH);
 
   // Kanbn should now be initialised
-  assert.equal(await this.kanbn.initialised(), true);
+  expect(await kanbn.initialised()).toBe(true);
 
   // Check for default name & columns
-  context.indexHasName(assert, BASE_PATH, 'Kanbn Board');
-  context.indexHasColumns(assert, BASE_PATH, ['Backlog', 'In Progress', 'Completed']);
+  context.indexHasName(expect, BASE_PATH, 'Kanbn Board');
+  context.indexHasColumns(expect, BASE_PATH, ['Backlog', 'In Progress', 'Completed']);
 });
 
-QUnit.test('Initialise with custom settings should create folders and index with custom settings', async function(assert) {
-  const BASE_PATH = await this.kanbn.getMainFolder();
+test('Initialise with custom settings should create folders and index with custom settings', async () => {
+  const BASE_PATH = await kanbn.getMainFolder();
 
   // Kanbn shouldn't be currently initialised in our test directory
-  assert.equal(await this.kanbn.initialised(), false);
+  expect(await kanbn.initialised()).toBe(false);
 
   // Initialise kanbn and check that the main folder, index, and tasks folder exists
   const CUSTOM_NAME = 'Custom Project Name';
@@ -54,38 +56,38 @@ QUnit.test('Initialise with custom settings should create folders and index with
     'Column 2',
     'Column 3'
   ];
-  await this.kanbn.initialise({
+  await kanbn.initialise({
     name: CUSTOM_NAME,
     description: CUSTOM_DESCRIPTION,
     columns: CUSTOM_COLUMNS
   });
-  context.kanbnFolderExists(assert, BASE_PATH);
-  context.indexExists(assert, BASE_PATH);
-  context.tasksFolderExists(assert, BASE_PATH);
+  context.kanbnFolderExists(expect, BASE_PATH);
+  context.indexExists(expect, BASE_PATH);
+  context.tasksFolderExists(expect, BASE_PATH);
 
   // Kanbn should now be initialised
-  assert.equal(await this.kanbn.initialised(), true);
+  expect(await kanbn.initialised()).toBe(true);
 
   // Check for custom name, description & columns
-  context.indexHasName(assert, BASE_PATH, CUSTOM_NAME);
-  context.indexHasDescription(assert, BASE_PATH, CUSTOM_DESCRIPTION);
-  context.indexHasColumns(assert, BASE_PATH, CUSTOM_COLUMNS);
+  context.indexHasName(expect, BASE_PATH, CUSTOM_NAME);
+  context.indexHasDescription(expect, BASE_PATH, CUSTOM_DESCRIPTION);
+  context.indexHasColumns(expect, BASE_PATH, CUSTOM_COLUMNS);
 });
 
-QUnit.test('Reinitialise with additional settings should add settings to index', async function(assert) {
-  const BASE_PATH = await this.kanbn.getMainFolder();
+test('Reinitialise with additional settings should add settings to index', async () => {
+  const BASE_PATH = await kanbn.getMainFolder();
 
   // Kanbn shouldn't be currently initialised in our test directory
-  assert.equal(await this.kanbn.initialised(), false);
+  expect(await kanbn.initialised()).toBe(false);
 
   // Initialise kanbn and check that the main folder, index, and tasks folder exists
-  await this.kanbn.initialise();
-  context.kanbnFolderExists(assert, BASE_PATH);
-  context.indexExists(assert, BASE_PATH);
-  context.tasksFolderExists(assert, BASE_PATH);
+  await kanbn.initialise();
+  context.kanbnFolderExists(expect, BASE_PATH);
+  context.indexExists(expect, BASE_PATH);
+  context.tasksFolderExists(expect, BASE_PATH);
 
   // Kanbn should now be initialised
-  assert.equal(await this.kanbn.initialised(), true);
+  expect(await kanbn.initialised()).toBe(true);
 
   // Reinitialise kanbn with additional settings
   const CUSTOM_NAME = 'Custom Project Name';
@@ -95,22 +97,24 @@ QUnit.test('Reinitialise with additional settings should add settings to index',
     'Column 2',
     'Column 3'
   ];
-  await this.kanbn.initialise({
+  await kanbn.initialise({
     name: CUSTOM_NAME,
     description: CUSTOM_DESCRIPTION,
     columns: CUSTOM_COLUMNS
   });
 
   // Kanbn should still be initialised
-  assert.equal(await this.kanbn.initialised(), true);
+  expect(await kanbn.initialised()).toBe(true);
 
   // Check for custom name, description & columns
-  context.indexHasName(assert, BASE_PATH, CUSTOM_NAME);
-  context.indexHasDescription(assert, BASE_PATH, CUSTOM_DESCRIPTION);
-  context.indexHasColumns(assert, BASE_PATH, [
+  context.indexHasName(expect, BASE_PATH, CUSTOM_NAME);
+  context.indexHasDescription(expect, BASE_PATH, CUSTOM_DESCRIPTION);
+  context.indexHasColumns(expect, BASE_PATH, [
     'Backlog',
     'In Progress',
     'Completed',
     ...CUSTOM_COLUMNS
   ]);
+});
+
 });

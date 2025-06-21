@@ -83,6 +83,9 @@ const jestContext = {
 
   indexHasTask(basePath, taskId, columnName = null, expected = true) {
     const indexPath = path.join(basePath, 'index.md');
+    console.log(`[DEBUG] indexHasTask - basePath: ${basePath}`);
+    console.log(`[DEBUG] indexHasTask - indexPath: ${indexPath}`);
+    console.log(`[DEBUG] indexHasTask - index file exists: ${fs.existsSync(indexPath)}`);
     if (!fs.existsSync(indexPath)) {
       if (!expected) {
         return;
