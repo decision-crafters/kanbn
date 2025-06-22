@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
 
 env:
-  NODE_VERSION: '20'
+  NODE_VERSION: '22'
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
 
@@ -84,7 +84,7 @@ jobs:
     if: needs.detect-changes.outputs.source == 'true' || needs.detect-changes.outputs.tests == 'true'
     strategy:
       matrix:
-        node-version: [16, 18, 20]
+        node-version: [20, 22, 24]
         test-type: [unit, integration]
     steps:
     - name: Checkout code
