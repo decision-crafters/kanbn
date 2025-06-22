@@ -323,8 +323,9 @@ module.exports = {
    * @return {string}
    */
   json2md(data, ignoreOptions = false) {
-    const result = [];
     try {
+      console.log('json2md called with data:', JSON.stringify(data, null, 2));
+      const result = [];
 
       // Check data type
       if (!data) {
@@ -362,23 +363,43 @@ module.exports = {
       validateColumns(data.columns);
 
       // Add columns
-      for (let column in data.columns) {
-        result.push(
-          `## ${column}`,
-          data.columns[column].length > 0 ?
-            data.columns[column].map(task => {
-              // Ensure task is a simple string without markdown formatting
-              const taskId = task.replace(/[\[\]\(\)]/g, '').split('/').pop().replace(/\.md$/, '');
-              return `- ${taskId}`;
-            }).join('\n') :
-            ''
-        );
+      if (data.columns && typeof data.columns === 'object') {
+        for (let column in data.columns) {
+          // Ensure column data is an array before processing
+          const columnData = data.columns[column];
+          if (!Array.isArray(columnData)) {
+            console.warn(`Column '${column}' data is not an array:`, typeof columnData, columnData);
+            result.push(`## ${column}`, '');
+          } else {
+            result.push(
+              `## ${column}`,
+              columnData.length > 0 ?
+                columnData.map(task => {
+                  // Ensure task is a simple string without markdown formatting
+                  const taskId = task.replace(/[\[\]\(\)]/g, '').split('/').pop().replace(/\.md$/, '');
+                  return `- ${taskId}`;
+                }).join('\n') :
+                ''
+            );
+          }
+        }
       }
+
+      // Filter empty lines and join into a string
+      // Add defensive checks to ensure all items are strings
+      const filteredResult = result.filter(l => {
+        if (l === null || l === undefined) return false;
+        if (typeof l !== 'string') {
+          console.warn(`Non-string item in result array: ${typeof l}`, l);
+          return false;
+        }
+        return !!l;
+      });
+      return `${filteredResult.join('\n\n')}\n`;
     } catch (error) {
+      console.error('Error in json2md:', error);
+      console.error('Stack trace:', error.stack);
       throw new Error(`Unable to build index: ${error.message}`);
     }
-
-    // Filter empty lines and join into a string
-    return `${result.filter(l => !!l).join('\n\n')}\n`;
   }
 };

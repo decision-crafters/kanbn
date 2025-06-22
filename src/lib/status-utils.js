@@ -240,9 +240,9 @@ function calculatePeriodStats(index, tasks, dates) {
   
   if (dates.length === 1) {
     periodStart = new Date(+dates[0]);
-    periodStart.setHours(0, 0, 0, 0);
+    periodStart.setUTCHours(0, 0, 0, 0);
     periodEnd = new Date(+dates[0]);
-    periodEnd.setHours(23, 59, 59, 999);
+    periodEnd.setUTCHours(23, 59, 59, 999);
     result.start = periodStart;
     result.end = periodEnd;
   } else {

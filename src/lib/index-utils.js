@@ -539,23 +539,65 @@ async function saveIndex(indexData, loadAllTrackedTasks, configExists, saveConfi
   const parseIndex = require('../parse-index');
   const fs = require('fs');
 
-  if ("columnSorting" in indexData.options && Object.keys(indexData.options.columnSorting).length) {
-    for (let columnName in indexData.options.columnSorting) {
-      indexData = sortColumnInIndex(
-        indexData,
-        await loadAllTrackedTasks(indexData, columnName),
-        columnName,
-        indexData.options.columnSorting[columnName]
-      );
+  try {
+    // Validate indexData is not null or undefined
+    if (!indexData) {
+      throw new Error('indexData is null or undefined');
     }
-  }
+    
+    // Validate columnSorting configuration before processing
+    if (indexData && indexData.options && "columnSorting" in indexData.options) {
+      const columnSorting = indexData.options.columnSorting;
+      
+      // Check if columnSorting is valid
+      if (!columnSorting || typeof columnSorting !== 'object') {
+        console.warn('Invalid columnSorting configuration: not an object');
+      } else if (Object.keys(columnSorting).length > 0) {
+        // Validate that indexData has columns structure
+        if (!indexData.columns || typeof indexData.columns !== 'object') {
+          console.warn('Cannot process columnSorting: index missing columns structure');
+        } else {
+          for (let columnName in columnSorting) {
+            try {
+              // Validate column exists in index
+              if (!(columnName in indexData.columns)) {
+                console.warn(`Skipping sort for non-existent column: ${columnName}`);
+                continue;
+              }
+              
+              // Validate sorting configuration for this column
+              const sortingOptions = columnSorting[columnName];
+              if (!Array.isArray(sortingOptions)) {
+                console.warn(`Invalid sorting options for column ${columnName}: expected array`);
+                continue;
+              }
+              
+              const tasks = await loadAllTrackedTasks(indexData, columnName);
+              indexData = sortColumnInIndex(
+                indexData,
+                tasks,
+                columnName,
+                sortingOptions
+              );
+            } catch (error) {
+              console.error(`Error sorting column ${columnName}: ${error.message}`);
+              // Continue with next column
+            }
+          }
+        }
+      }
+    }
 
-  if (!ignoreOptions && await configExists()) {
-    await saveConfig(indexData.options);
-    ignoreOptions = true;
-  }
+    if (!ignoreOptions && await configExists()) {
+      await saveConfig(indexData.options);
+      ignoreOptions = true;
+    }
 
-  await fs.promises.writeFile(await getIndexPath(), parseIndex.json2md(indexData, ignoreOptions));
+    await fs.promises.writeFile(await getIndexPath(), parseIndex.json2md(indexData, ignoreOptions));
+  } catch (error) {
+    console.error(`Error saving index: ${error.message}`);
+    throw error; // Re-throw to maintain existing error handling behavior
+  }
 }
 
 /**

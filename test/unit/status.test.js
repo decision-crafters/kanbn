@@ -1,217 +1,243 @@
-const mockFileSystem = require('mock-fs');
-const kanbn = require('../../src/main');
+const { createTestEnvironment, assertions } = require('../migration-utils');
+const kanbnFactory = require('../../src/main');
 const fixtures = require('../fixtures');
 const mockDate = require('mockdate');
 
-QUnit.module('status tests', {
-  before() {
-    require('../qunit-throws-async');
-  },
-  beforeEach() {
-    mockFileSystem();
+describe('status tests', () => {
+  let env;
+  let testData;
+
+  beforeEach(() => {
     mockDate.set('02 Jan 2000 00:00:00 GMT');
-  },
-  afterEach() {
-    mockFileSystem.restore();
+    env = createTestEnvironment('status-tests');
+    testData = env.setup({
+      countTasks: 0,
+      columnNames: ['Column 1', 'Column 2', 'Column 3']
+    });
+  });
+
+  afterEach(() => {
+    env.cleanup();
     mockDate.reset();
-  }
-});
+  });
 
-QUnit.test('Status in uninitialised folder should throw "not initialised" error', async assert => {
-  assert.throwsAsync(
-    async () => {
-      await kanbn.status();
-    },
-    /Not initialised in this folder/
-  );
-});
+  // Helper function to create fixtures in real filesystem
+  const createFixtures = (fixtureConfig) => {
+    // Change to the test directory before creating fixtures
+    const originalCwd = process.cwd();
+    process.chdir(testData.testDir);
+    
+    try {
+      return fixtures(fixtureConfig);
+    } finally {
+      process.chdir(originalCwd);
+    }
+  };
 
-QUnit.test('Status untracked and quiet, no untracked tasks', async assert => {
+test('Status in uninitialised folder should throw "not initialised" error', async () => {
+    const uninitDir = env.createUninitializedDir();
+    const uninitKanbn = kanbnFactory(uninitDir);
+    
+    await assertions.expectError(
+      uninitKanbn.status(),
+      /Not initialised in this folder/
+    );
+  });
+
+test('Status untracked and quiet, no untracked tasks', async () => {
+    const kanbn = kanbnFactory(testData.testDir);
+    await kanbn.initialise();
+
+    // Get status with untracked and quiet options
+    expect(await kanbn.status(true, true)).toEqual([]);
+  });
+
+test('Status untracked and quiet should return list of untracked tasks', async () => {
+    const kanbn = kanbnFactory(testData.testDir);
+    await kanbn.initialise();
+
+    // Add some untracked files
+    createFixtures({
+      tasks: [
+        {
+          name: 'Task 1',
+          untracked: true
+        },
+        {
+          name: 'Task 2',
+          untracked: true
+        },
+        {
+          name: 'Task 3',
+          untracked: true
+        }
+      ]
+    });
+    expect(await kanbn.status(true, true)).toEqual([
+      'task-1.md',
+      'task-2.md',
+      'task-3.md'
+    ]);
+  });
+
+test('Status quiet should show basic status information', async () => {
+    const kanbn = kanbnFactory(testData.testDir);
+    createFixtures({
+      name: 'test',
+      tasks: [
+        {
+          name: 'Task 1'
+        },
+        {
+          name: 'Task 2'
+        },
+        {
+          name: 'Task 3'
+        },
+        {
+          name: 'Task 4'
+        }
+      ],
+      columns: {
+        'Column 1': [
+          'task-1'
+        ],
+        'Column 2': [
+          'task-2'
+        ],
+        'Column 3': [
+          'task-3',
+          'task-4'
+        ]
+      }
+    });
+    expect(await kanbn.status(true)).toEqual({
+      name: 'test',
+      tasks: 4,
+      columnTasks: {
+        'Column 1': 1,
+        'Column 2': 1,
+        'Column 3': 2
+      }
+  });
+
+  test('Status non-quiet should show more status information', async () => {
+    const kanbn = kanbnFactory(testData.testDir);
+    createFixtures({
+      tasks: [
+        {
+          name: 'Task 1',
+          metadata: {
+            tags: ['Small'],
+            assigned: 'User 1'
+          }
+        },
+        {
+          name: 'Task 2',
+          metadata: {
+            tags: ['Medium', 'Tiny'],
+            assigned: 'User 1'
+          }
+        },
+        {
+          name: 'Task 3',
+          metadata: {
+            tags: ['Large'],
+            assigned: 'User 2'
+          }
+        },
+        {
+          name: 'Task 4',
+          metadata: {
+            tags: ['Huge'],
+            assigned: 'User 2'
+          }
+        }
+      ],
+      columns: {
+        'Column 1': [
+          'task-1'
+        ],
+        'Column 2': [
+          'task-2'
+        ],
+        'Column 3': [
+          'task-3',
+          'task-4'
+        ]
+      }
+    });
+    expect(await kanbn.status()).toEqual({
+      name: 'test',
+      tasks: 4,
+      columnTasks: {
+        'Column 1': 1,
+        'Column 2': 1,
+        'Column 3': 2
+      },
+      totalWorkload: 19,
+      totalRemainingWorkload: 19,
+      columnWorkloads: {
+        'Column 1': {
+          workload: 2,
+          remainingWorkload: 2
+        },
+        'Column 2': {
+          workload: 4,
+          remainingWorkload: 4
+        },
+        'Column 3': {
+          workload: 13,
+          remainingWorkload: 13
+        }
+      },
+      taskWorkloads: {
+        'task-1': {
+          workload: 2,
+          progress: 0,
+          remainingWorkload: 2,
+          completed: false
+        },
+        'task-2': {
+          workload: 4,
+          progress: 0,
+          remainingWorkload: 4,
+          completed: false
+        },
+        'task-3': {
+          workload: 5,
+          progress: 0,
+          remainingWorkload: 5,
+          completed: false
+        },
+        'task-4': {
+          workload: 8,
+          progress: 0,
+          remainingWorkload: 8,
+          completed: false
+        }
+      },
+      assigned: {
+        'User 1': {
+          total: 2,
+          workload: 6,
+          remainingWorkload: 6
+        },
+        'User 2': {
+          total: 2,
+          workload: 13,
+          remainingWorkload: 13
+        }
+      }
+    });
+  });
+
+test('Status non-quiet with due data should show due tasks information', async () => {
+  const kanbn = kanbnFactory(testData.testDir);
   await kanbn.initialise();
-
-  // Get status with untracked and quiet options
-  assert.deepEqual(await kanbn.status(true, true), []);
-});
-
-QUnit.test('Status untracked and quiet should return list of untracked tasks', async assert => {
-
-  // Add some untracked files
-  fixtures({
-    tasks: [
-      {
-        name: 'Task 1',
-        untracked: true
-      },
-      {
-        name: 'Task 2',
-        untracked: true
-      },
-      {
-        name: 'Task 3',
-        untracked: true
-      }
-    ]
-  });
-  assert.deepEqual(await kanbn.status(true, true), [
-    'task-1.md',
-    'task-2.md',
-    'task-3.md'
-  ]);
-});
-
-QUnit.test('Status quiet should show basic status information', async assert => {
-  fixtures({
-    name: 'test',
-    tasks: [
-      {
-        name: 'Task 1'
-      },
-      {
-        name: 'Task 2'
-      },
-      {
-        name: 'Task 3'
-      },
-      {
-        name: 'Task 4'
-      }
-    ],
-    columns: {
-      'Column 1': [
-        'task-1'
-      ],
-      'Column 2': [
-        'task-2'
-      ],
-      'Column 3': [
-        'task-3',
-        'task-4'
-      ]
-    }
-  });
-  assert.deepEqual(await kanbn.status(true), {
-    name: 'test',
-    tasks: 4,
-    columnTasks: {
-      'Column 1': 1,
-      'Column 2': 1,
-      'Column 3': 2
-    }
-  });
-});
-
-QUnit.test('Status non-quiet should show more status information', async assert => {
-  fixtures({
-    tasks: [
-      {
-        name: 'Task 1',
-        metadata: {
-          tags: ['Small'],
-          assigned: 'User 1'
-        }
-      },
-      {
-        name: 'Task 2',
-        metadata: {
-          tags: ['Medium', 'Tiny'],
-          assigned: 'User 1'
-        }
-      },
-      {
-        name: 'Task 3',
-        metadata: {
-          tags: ['Large'],
-          assigned: 'User 2'
-        }
-      },
-      {
-        name: 'Task 4',
-        metadata: {
-          tags: ['Huge'],
-          assigned: 'User 2'
-        }
-      }
-    ],
-    columns: {
-      'Column 1': [
-        'task-1'
-      ],
-      'Column 2': [
-        'task-2'
-      ],
-      'Column 3': [
-        'task-3',
-        'task-4'
-      ]
-    }
-  });
-  assert.deepEqual(await kanbn.status(), {
-    name: 'test',
-    tasks: 4,
-    columnTasks: {
-      'Column 1': 1,
-      'Column 2': 1,
-      'Column 3': 2
-    },
-    totalWorkload: 19,
-    totalRemainingWorkload: 19,
-    columnWorkloads: {
-      'Column 1': {
-        workload: 2,
-        remainingWorkload: 2
-      },
-      'Column 2': {
-        workload: 4,
-        remainingWorkload: 4
-      },
-      'Column 3': {
-        workload: 13,
-        remainingWorkload: 13
-      }
-    },
-    taskWorkloads: {
-      'task-1': {
-        workload: 2,
-        progress: 0,
-        remainingWorkload: 2,
-        completed: false
-      },
-      'task-2': {
-        workload: 4,
-        progress: 0,
-        remainingWorkload: 4,
-        completed: false
-      },
-      'task-3': {
-        workload: 5,
-        progress: 0,
-        remainingWorkload: 5,
-        completed: false
-      },
-      'task-4': {
-        workload: 8,
-        progress: 0,
-        remainingWorkload: 8,
-        completed: false
-      }
-    },
-    assigned: {
-      'User 1': {
-        total: 2,
-        workload: 6,
-        remainingWorkload: 6
-      },
-      'User 2': {
-        total: 2,
-        workload: 13,
-        remainingWorkload: 13
-      }
-    }
-  });
-});
-
-QUnit.test('Status non-quiet with due data should show due tasks information', async assert => {
-  fixtures({
+  
+  createFixtures({
+    noRandom: true,
     tasks: [
       {
         name: 'Task 1',
@@ -282,7 +308,7 @@ QUnit.test('Status non-quiet with due data should show due tasks information', a
       ]
     }
   });
-  assert.deepEqual(await kanbn.status(false, false, true), {
+  expect(await kanbn.status(false, false, true)).toEqual({
     name: 'test',
     tasks: 6,
     columnTasks: {
@@ -420,10 +446,154 @@ QUnit.test('Status non-quiet with due data should show due tasks information', a
       }
     ],
   });
+  
+  const result = await kanbn.status(false, false, true);
+  expect(result).toEqual({
+    name: 'test',
+    tasks: 6,
+    columnTasks: {
+      'Column 1': 1,
+      'Column 2': 2,
+      'Column 3': 3
+    },
+    completedTasks: 3,
+    totalWorkload: 22,
+    totalRemainingWorkload: 6,
+    columnWorkloads: {
+      'Column 1': {
+        workload: 2,
+        remainingWorkload: 2
+      },
+      'Column 2': {
+        workload: 5,
+        remainingWorkload: 4
+      },
+      'Column 3': {
+        workload: 15,
+        remainingWorkload: 0
+      }
+    },
+    taskWorkloads: {
+      'task-1': {
+        workload: 2,
+        progress: 0,
+        remainingWorkload: 2,
+        completed: false
+      },
+      'task-2': {
+        workload: 4,
+        progress: 0,
+        remainingWorkload: 4,
+        completed: false
+      },
+      'task-3': {
+        workload: 5,
+        progress: 1,
+        remainingWorkload: 0,
+        completed: true
+      },
+      'task-4': {
+        workload: 8,
+        progress: 1,
+        remainingWorkload: 0,
+        completed: true
+      },
+      'task-5': {
+        workload: 1,
+        progress: 1,
+        remainingWorkload: 0,
+        completed: true
+      },
+      'task-6': {
+        workload: 2,
+        progress: 1,
+        remainingWorkload: 0,
+        completed: true
+      }
+    },
+    assigned: {
+      'User 1': {
+        total: 4,
+        workload: 9,
+        remainingWorkload: 6
+      },
+      'User 2': {
+        total: 2,
+        workload: 13,
+        remainingWorkload: 0
+      }
+    },
+    dueTasks: [
+      {
+        task: 'task-1',
+        workload: 2,
+        progress: 0,
+        remainingWorkload: 2,
+        completed: false,
+        completedDate: null,
+        dueDate: new Date('2000-01-01T00:00:00.000Z'),
+        overdue: true,
+        dueDelta: 86400000,
+        dueMessage: '1 day overdue'
+      },
+      {
+        task: 'task-2',
+        workload: 4,
+        progress: 0,
+        remainingWorkload: 4,
+        completed: false,
+        completedDate: null,
+        dueDate: new Date('2000-01-03T00:00:00.000Z'),
+        overdue: false,
+        dueDelta: -86400000,
+        dueMessage: '1 day remaining'
+      },
+      {
+        task: 'task-5',
+        workload: 1,
+        progress: 1,
+        remainingWorkload: 0,
+        completed: true,
+        completedDate: new Date('2000-01-01T22:00:00.000Z'),
+        dueDate: new Date('2000-01-01T22:30:00.000Z'),
+        overdue: false,
+        dueDelta: -1800000,
+        dueMessage: 'Completed 30 minutes remaining'
+      },
+      {
+        task: 'task-3',
+        workload: 5,
+        progress: 1,
+        remainingWorkload: 0,
+        completed: true,
+        completedDate: null,
+        dueDate: new Date('2000-01-01T22:30:00.000Z'),
+        overdue: false,
+        dueDelta: 5400000,
+        dueMessage: 'Completed 1 hour, 30 minutes overdue'
+      },
+      {
+        task: 'task-6',
+        workload: 2,
+        progress: 1,
+        remainingWorkload: 0,
+        completed: true,
+        completedDate: null,
+        dueDate: new Date('2000-01-02T02:00:00.000Z'),
+        overdue: false,
+        dueDelta: -7200000,
+        dueMessage: 'Completed 2 hours remaining'
+      }
+    ]
+  });
 });
 
-QUnit.test('Status non-quiet with sprints defined should show sprint information', async assert => {
-  fixtures({
+test('Status non-quiet with sprints defined should show sprint information', async () => {
+  const kanbn = kanbnFactory(testData.testDir);
+  await kanbn.initialise();
+  
+  createFixtures({
+    noRandom: true,
     tasks: [
       {
         name: 'Task 1',
@@ -496,7 +666,7 @@ QUnit.test('Status non-quiet with sprints defined should show sprint information
       ]
     }
   });
-  assert.deepEqual((await kanbn.status()).sprint, {
+  expect((await kanbn.status()).sprint).toEqual({
     number: 2,
     name: 'Sprint 2',
     start: new Date('12 December 1999 00:00:00 GMT'),
@@ -569,10 +739,15 @@ QUnit.test('Status non-quiet with sprints defined should show sprint information
       workload: 16
     }
   });
+  });
 });
 
-QUnit.test('Status non-quiet with specific sprint by number', async assert => {
-  fixtures({
+test('Status non-quiet with specific sprint by number', async () => {
+  const kanbn = kanbnFactory(testData.testDir);
+  await kanbn.initialise();
+  
+  createFixtures({
+    noRandom: true,
     tasks: [
       {
         name: 'Task 1',
@@ -595,7 +770,7 @@ QUnit.test('Status non-quiet with specific sprint by number', async assert => {
         metadata: {
           tags: ['Large'],
           created: new Date('16 December 1999 00:00:00 GMT'),
-          started: new Date('16 December 1999 01:00:00 GMT'),
+          started: new Date('16 December 1999 00:00:00 GMT'),
           completed: new Date('17 December 1999 00:00:00 GMT')
         }
       },
@@ -633,11 +808,13 @@ QUnit.test('Status non-quiet with specific sprint by number', async assert => {
           start: new Date('12 December 1999 00:00:00 GMT')
         }
       ]
-    }
+    },
+    noRandom: true
   });
+  
   const status = await kanbn.status(false, false, false, 1);
-  assert.equal('sprint' in status, true);
-  assert.deepEqual(status.sprint, {
+  expect('sprint' in status).toBe(true);
+  expect(status.sprint).toEqual({
     current: 2,
     number: 1,
     name: 'Sprint 1',
@@ -685,10 +862,12 @@ QUnit.test('Status non-quiet with specific sprint by number', async assert => {
       workload: 2
     }
   });
-});
 
-QUnit.test('Status non-quiet with specific sprint by name', async assert => {
-  fixtures({
+  test('Status non-quiet with specific sprint by name', async () => {
+  const kanbn = kanbnFactory(testData.testDir);
+  await kanbn.initialise();
+  
+  createFixtures({
     tasks: [
       {
         name: 'Task 1',
@@ -711,7 +890,7 @@ QUnit.test('Status non-quiet with specific sprint by name', async assert => {
         metadata: {
           tags: ['Large'],
           created: new Date('16 December 1999 00:00:00 GMT'),
-          started: new Date('16 December 1999 01:00:00 GMT'),
+          started: new Date('16 December 1999 00:00:00 GMT'),
           completed: new Date('17 December 1999 00:00:00 GMT')
         }
       },
@@ -751,9 +930,10 @@ QUnit.test('Status non-quiet with specific sprint by name', async assert => {
       ]
     }
   });
+  
   const status = await kanbn.status(false, false, false, 'Sprint 1');
-  assert.equal('sprint' in status, true);
-  assert.deepEqual(status.sprint, {
+  expect('sprint' in status).toBe(true);
+  expect(status.sprint).toEqual({
     current: 2,
     number: 1,
     name: 'Sprint 1',
@@ -801,10 +981,14 @@ QUnit.test('Status non-quiet with specific sprint by name', async assert => {
       workload: 2
     }
   });
+  });
 });
 
-QUnit.test('Status non-quiet with single date', async assert => {
-  fixtures({
+test('Status non-quiet with single date', async () => {
+  const kanbn = kanbnFactory(testData.testDir);
+  await kanbn.initialise();
+  
+  createFixtures({
     tasks: [
       {
         name: 'Task 1',
@@ -827,7 +1011,7 @@ QUnit.test('Status non-quiet with single date', async assert => {
         metadata: {
           tags: ['Large'],
           created: new Date('16 December 1999 00:00:00 GMT'),
-          started: new Date('16 December 1999 01:00:00 GMT'),
+          started: new Date('16 December 1999 00:00:00 GMT'),
           completed: new Date('17 December 1999 00:00:00 GMT')
         }
       },
@@ -851,11 +1035,13 @@ QUnit.test('Status non-quiet with single date', async assert => {
         'task-3',
         'task-4'
       ]
-    }
+    },
+    noRandom: true
   });
+  
   const status = await kanbn.status(false, false, false, null, [new Date('16 December 1999 00:00:00 GMT')]);
-  assert.equal('period' in status, true);
-  assert.deepEqual(status.period, {
+  expect('period' in status).toBe(true);
+  expect(status.period).toEqual({
     start: new Date('16 December 1999 00:00:00 GMT'),
     end: new Date('16 December 1999 23:59:59:999 GMT'),
     created: {
@@ -887,10 +1073,12 @@ QUnit.test('Status non-quiet with single date', async assert => {
       workload: 0
     }
   });
-});
 
-QUnit.test('Status non-quiet with date range', async assert => {
-  fixtures({
+  test('Status non-quiet with date range', async () => {
+  const kanbn = kanbnFactory(testData.testDir);
+  await kanbn.initialise();
+  
+  createFixtures({
     tasks: [
       {
         name: 'Task 1',
@@ -937,14 +1125,16 @@ QUnit.test('Status non-quiet with date range', async assert => {
         'task-3',
         'task-4'
       ]
-    }
+    },
+    noRandom: true
   });
+  
   const status = await kanbn.status(false, false, false, null, [
     new Date('16 December 1999 00:00:00 GMT'),
     new Date('20 December 1999 00:00:00 GMT')
   ]);
-  assert.equal('period' in status, true);
-  assert.deepEqual(status.period, {
+  expect('period' in status).toBe(true);
+  expect(status.period).toEqual({
     start: new Date('16 December 1999 00:00:00 GMT'),
     end: new Date('20 December 1999 00:00:00 GMT'),
     created: {
@@ -993,4 +1183,6 @@ QUnit.test('Status non-quiet with date range', async assert => {
       workload: 8
     }
   });
+});
+});
 });

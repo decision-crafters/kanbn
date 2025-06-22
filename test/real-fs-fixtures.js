@@ -4,7 +4,7 @@ const faker = require('faker');
 const parseIndex = require('../src/parse-index');
 const parseTask = require('../src/parse-task');
 const utility = require('../src/utility');
-const rimraf = require('rimraf');
+// const rimraf = require('rimraf'); // Replaced with native fs.rmSync
 
 const FIXTURES_DIR = path.join(__dirname, 'real-fs-fixtures');
 
@@ -67,7 +67,7 @@ function createTestDirectory(testName) {
   const testDir = path.join(FIXTURES_DIR, testName);
   
   if (fs.existsSync(testDir)) {
-    rimraf.sync(testDir);
+    fs.rmSync(testDir, { recursive: true, force: true });
   }
   
   fs.mkdirSync(testDir, { recursive: true });
@@ -163,7 +163,7 @@ function createFixtures(testName, options = {}) {
  */
 function cleanupFixtures(testDir) {
   if (fs.existsSync(testDir)) {
-    rimraf.sync(testDir);
+    fs.rmSync(testDir, { recursive: true, force: true });
   }
 }
 
@@ -172,7 +172,7 @@ function cleanupFixtures(testDir) {
  */
 function cleanupAllFixtures() {
   if (fs.existsSync(FIXTURES_DIR)) {
-    rimraf.sync(FIXTURES_DIR);
+    fs.rmSync(FIXTURES_DIR, { recursive: true, force: true });
   }
 }
 

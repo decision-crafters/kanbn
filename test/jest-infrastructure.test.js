@@ -1,29 +1,24 @@
-const mockFs = require('mock-fs');
 const ctx = require('./jest-helpers');
+const { createTestEnvironment } = require('./migration-utils');
 const path = require('path');
 let basePath;
+let testEnv;
 
 describe('Jest Infrastructure Proof of Concept', () => {
   beforeEach(() => {
-    basePath = path.join(process.cwd(), 'test-project');
-    mockFs({
-      [basePath]: {
-        'index.md': `# Test Project\n\n## Todo\n- task-1\n- task-2\n\n## Doing\n- task-3\n\n## Done\n- task-4`,
-        'tasks': {
-          'task-1.md': `# Task 1\n\nStatus: todo\nAssigned: user1\n\nThis is task 1 content.`,
-          'task-2.md': `# Task 2\n\nStatus: todo\n\nThis is task 2 content.`,
-          'task-3.md': `# Task 3\n\nStatus: doing\nAssigned: user2\n\nThis is task 3 in progress.`,
-          'task-4.md': `# Task 4\n\nStatus: done\nAssigned: user1\n\nThis is completed task 4.`
-        },
-        'config.json': '{"name": "test-project"}'
-      },
-      'src': mockFs.load('src'),
-      'node_modules': mockFs.load('node_modules')
+    testEnv = createTestEnvironment('jest-infrastructure');
+    const setupData = testEnv.setup({
+      columnNames: ['Todo', 'Doing', 'Done'],
+      countTasks: 4,
+      tasksPerColumn: 2
     });
+    basePath = setupData.basePath;
   });
 
   afterEach(() => {
-    mockFs.restore();
+    if (testEnv) {
+      testEnv.cleanup();
+    }
   });
 
   describe('File System Helpers', () => {
@@ -33,8 +28,8 @@ describe('Jest Infrastructure Proof of Concept', () => {
     });
 
     test('should verify project files exist', () => {
-      ctx.projectHasFile(basePath, 'index.md');
-      ctx.projectHasFile(basePath, 'config.json');
+      ctx.projectHasFile(basePath, '.kanbn/index.md');
+      ctx.projectHasFile(basePath, '.kanbn/tasks');
       ctx.projectHasFile(basePath, 'missing.md', false);
     });
 
@@ -75,7 +70,7 @@ describe('Jest Infrastructure Proof of Concept', () => {
   describe('Integration Test', () => {
     test('should verify complete workflow', () => {
       ctx.indexExists(basePath);
-      ctx.projectHasFile(basePath, 'config.json');
+      ctx.projectHasFile(basePath, '.kanbn/index.md');
       ctx.taskFileExists(basePath, 'task-1');
       const output = ['Created task-1', 'Updated index', 'Operation complete'];
       expect(output).toContainMatch(/Created/);

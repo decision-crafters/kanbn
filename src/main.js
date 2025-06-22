@@ -693,10 +693,11 @@ class Kanbn {
   async loadAllTrackedTasks(index, columnName = null, includeSystemTasks = false) {
     try {
       const { projectTasks, systemTasks, allTasks } = await this.loadAllTasksWithSeparation(index, columnName);
-      return includeSystemTasks ? allTasks : projectTasks;
+      const tasks = includeSystemTasks ? allTasks : projectTasks;
+      return Object.values(tasks); // Return array of tasks instead of object
     } catch (error) {
       console.error(`Error loading tasks: ${error.message}`);
-      return {}; // Return empty object instead of failing
+      return []; // Return empty array instead of empty object
     }
   }
 
@@ -793,6 +794,9 @@ class Kanbn {
             ])
           )
         ));
+    } else {
+      // Index exists but no options provided, just load the existing index
+      index = await this.loadIndex();
     }
     
     // Ensure all columns have proper array representation
@@ -1113,7 +1117,8 @@ class Kanbn {
     // If required, load more detailed task information
     if (!quiet) {
       // Load all tracked tasks and hydrate them
-      const tasks = [...(await this.loadAllTrackedTasks(index))].map((task) => this.hydrateTask(index, task));
+      const rawTasks = await this.loadAllTrackedTasks(index);
+      const tasks = [...rawTasks].map((task) => this.hydrateTask(index, task));
 
       // If showing due information, calculate time remaining or overdue time for each task
       if (due) {

@@ -1,7 +1,7 @@
-const mockFileSystem = require('mock-fs');
 const faker = require('faker');
 const path = require('path');
 const fs = require('fs');
+const os = require('os');
 const parseIndex = require('../src/parse-index');
 const parseTask = require('../src/parse-task');
 const utility = require('../src/utility');
@@ -49,33 +49,27 @@ function generateSubTasks() {
 function addRelations(taskIds) {
   const COUNT_RELATIONS = faker.datatype.number(4);
 
-  const relationTypes = ['', 'blocks ', 'duplicates ', 'requires ', 'obsoletes '];
-  return new Array(COUNT_RELATIONS).fill(null).map(i => ({
-    task: taskIds[Math.floor(Math.random() * taskIds.length)],
-    type: relationTypes[Math.floor(Math.random() * relationTypes.length)]
-  }));
+  return new Array(COUNT_RELATIONS).fill(null).map(i => {
+    const randomTaskId = taskIds[faker.datatype.number(taskIds.length - 1)];
+    return {
+      task: randomTaskId,
+      type: faker.random.arrayElement(['blocks', 'blocked by'])
+    };
+  });
 }
 
 /**
- * @typedef {object} fixtureOptions
- * @property {object[]} tasks A list of tasks to use
- * @property {object} columns A columns object to use
- * @property {object} options Options to put in the index
- * @property {object} countColumns The number of columns to generate (will be called 'Column 1', 'Column 2' etc.)
- * @property {number} countTasks The number of tasks to generate (will be called 'Task 1', 'Task 2' etc.)
- * @property {number} columnNames An array of column names to use (use with countColumns)
- * @property {number} tasksPerColumn The number of tasks to put in each column, -1 to put all tasks in the first
- * column
+ * Setup a real temporary filesystem for testing
+ * @param {object} options Configuration options
+ * @return {object} Test fixtures including tasks, index, and testPath
  */
-
-/**
- * Generate an index and tasks
- * @param {fixtureOptions} [options={}]
- */
-const createFixtures = (options = {}) => {
-  let tasks, taskIds, columns;
+const setupRealFileSystem = function(options = {}) {
+  const COUNT_COLUMNS = options.countColumns || 3;
+  const COUNT_TASKS = options.countTasks || 10;
+  const TASKS_PER_COLUMN = options.tasksPerColumn || -1;
 
   // Generate tasks
+  let tasks, taskIds;
   if ('tasks' in options) {
     tasks = new Array(options.tasks.length).fill(null).map((v, i) => Object.assign(
       options.noRandom ? {} : generateTask(i),
@@ -83,20 +77,30 @@ const createFixtures = (options = {}) => {
     ));
     taskIds = tasks.filter(i => !i.untracked).map(i => utility.getTaskId(i.name));
   } else {
-    const COUNT_TASKS = options.countTasks || faker.datatype.number(9) + 1;
-    tasks = new Array(COUNT_TASKS).fill(null).map((v, i) => generateTask(i));
-    taskIds = tasks.filter(i => !i.untracked).map(i => utility.getTaskId(i.name));
-    tasks.forEach(i => addRelations(taskIds));
+    tasks = new Array(COUNT_TASKS).fill(null).map((task, i) => generateTask(i));
+    taskIds = tasks.map(task => utility.getTaskId(task.name));
   }
 
-  // Generate and populate columns
+  // Add relations
+  tasks.forEach(task => {
+    task.relations = addRelations(taskIds);
+  });
+
+  // Generate columns
+  let columns;
   if ('columns' in options) {
     columns = options.columns;
   } else {
-    const COUNT_COLUMNS = options.countColumns || faker.datatype.number(4) + 1;
-    const TASKS_PER_COLUMN = options.tasksPerColumn || -1;
-    const columnNames = options.columnNames || new Array(COUNT_COLUMNS).fill(null).map((v, i) => `Column ${i + 1}`);
-    columns = Object.fromEntries(columnNames.map(i => [i, []]));
+    const columnNames = options.columnNames || new Array(COUNT_COLUMNS).fill(null).map((column, i) => `Column ${i + 1}`);
+    columns = {};
+    columnNames.forEach(columnName => {
+      columns[columnName] = [];
+    });
+  }
+
+  // Distribute tasks across columns (only if not using custom columns)
+  if (!('columns' in options) && taskIds.length > 0) {
+    const columnNames = Object.keys(columns);
     let currentColumn = 0;
     for (let taskId of taskIds) {
       if (TASKS_PER_COLUMN === -1) {
@@ -120,83 +124,46 @@ const createFixtures = (options = {}) => {
     index.options = options.options;
   }
 
-  // Get absolute paths
-  const projectRoot = path.resolve(__dirname, '..');
-  const testRoot = path.resolve(__dirname, '.');
-  // Define burndownTestPath at function scope so it's available for the return statement
-  let burndownTestPath;
-
-  console.log('Debug - Paths:');
-  console.log('Project root:', projectRoot);
-  console.log('Test root:', testRoot);
-  console.log('Burndown test dir:', path.join(testRoot, 'burndown-test'));
-
-  // First, restore any existing mock filesystem
+  // Create a real temporary directory
+  const timestamp = Date.now();
+  const tempDir = os.tmpdir();
+  const testPath = path.join(tempDir, `kanbn-test-${timestamp}`);
+  
   try {
-    // Ensure we fully restore the mock filesystem before setting up a new one
-    mockFileSystem.restore();
+    // Create the test directory structure
+    const kanbnDir = path.join(testPath, '.kanbn');
+    const tasksDir = path.join(kanbnDir, 'tasks');
     
-    // Small delay to ensure filesystem is fully restored
-    // This helps prevent race conditions in the mock-fs library
-    const start = Date.now();
-    while (Date.now() - start < 50) {
-      // Busy wait to ensure synchronous completion
+    // Create directories
+    fs.mkdirSync(testPath, { recursive: true });
+    fs.mkdirSync(kanbnDir, { recursive: true });
+    fs.mkdirSync(tasksDir, { recursive: true });
+    
+    // Generate and write index.md
+    const indexContent = parseIndex.json2md(index);
+    const indexPath = path.join(kanbnDir, 'index.md');
+    fs.writeFileSync(indexPath, indexContent, 'utf8');
+    
+    // Generate and write task files
+    tasks.forEach(task => {
+      const taskId = utility.getTaskId(task.name);
+      const taskContent = parseTask.json2md(task);
+      const taskPath = path.join(tasksDir, `${taskId}.md`);
+      fs.writeFileSync(taskPath, taskContent, 'utf8');
+    });
+    
+    // Verify files were created
+    
+    if (fs.existsSync(indexPath)) {
+      const indexFileContent = fs.readFileSync(indexPath, 'utf8');
     }
-  } catch (e) {
-    // Ignore errors if no mock filesystem exists
-    console.error('Info: Mock filesystem not restored, may not exist yet:', e.message);
-  }
-
-  try {
-    // Generate in-memory files with a more defensive approach
-    // First build the base configuration without test directories
-    const mockConfig = {};
     
-    // Load real directories that need to be preserved
-    try {
-      mockConfig[path.join(projectRoot, 'src')] = mockFileSystem.load(path.join(projectRoot, 'src'));
-      mockConfig[path.join(projectRoot, 'routes')] = mockFileSystem.load(path.join(projectRoot, 'routes'));
-      mockConfig[path.join(projectRoot, 'node_modules')] = mockFileSystem.load(path.join(projectRoot, 'node_modules'));
-    } catch (loadError) {
-      console.error('Warning: Error loading real directories:', loadError.message);
-    }
-
-    // Add test directory structure with unique name based on timestamp to avoid conflicts
-    const timestamp = Date.now();
-    burndownTestPath = path.join(testRoot, `burndown-test-${timestamp}`);
-    
-    // Setup test directory with .kanbn folder
-    mockConfig[burndownTestPath] = {
-      '.kanbn': {
-        'index.md': parseIndex.json2md(index),
-        'tasks': Object.fromEntries(tasks.map(i => [`${utility.getTaskId(i.name)}.md`, parseTask.json2md(i)]))
-      }
-    };
-
-    // Log mock filesystem structure and paths
-    console.error('Debug - Paths:');
-    console.error('Project root:', projectRoot);
-    console.error('Test root:', testRoot);
-    console.error('Mock filesystem structure:', JSON.stringify({
-      'src': 'loaded',
-      'routes': 'loaded',
-      'node_modules': 'loaded',
-      [`test/burndown-test-${timestamp}`]: 'created with test data'
-    }, null, 2));
-
-    mockFileSystem(mockConfig);
-
-    // Verify files exist
-    console.error('Verifying files exist:');
-    console.error('src exists:', fs.existsSync(path.join(projectRoot, 'src')));
-    console.error('routes exists:', fs.existsSync(path.join(projectRoot, 'routes')));
-    console.error('node_modules exists:', fs.existsSync(path.join(projectRoot, 'node_modules')));
-    console.error(`Test directory exists: ${burndownTestPath}`, fs.existsSync(burndownTestPath));
   } catch (error) {
-    console.error('Error in fixtures.js:', error);
+    console.error('Error creating real test directory:', error);
+    throw error;
   }
 
-  return { tasks, index, testPath: burndownTestPath };
+  return { tasks, index, testPath };
 };
 
 // Create a mock kanbn instance
@@ -230,7 +197,8 @@ const mockKanbn = {
     // Write updated index
     fs.writeFileSync(
       path.join(process.cwd(), '.kanbn', 'index.md'),
-      require('../src/parse-index').json2md(index)
+      require('../src/parse-index').json2md(index),
+      'utf8'
     );
 
     // Remove task file if requested
@@ -240,44 +208,21 @@ const mockKanbn = {
         fs.unlinkSync(taskPath);
       }
     }
-
-    return taskId;
-  },
-  taskExists: async function(taskId) {
-    const index = await this.getIndex();
-    for (const column in index.columns) {
-      if (index.columns[column].includes(taskId)) {
-        return true;
-      }
-    }
-    throw new Error(`Task "${taskId}" not found in index`);
-  },
-  initialised: async function() {
-    return fs.existsSync(path.join(process.cwd(), '.kanbn'));
   }
 };
 
-// Export the main function
-module.exports = createFixtures;
-
-// Add the mock kanbn instance
-module.exports.kanbn = mockKanbn;
-
-// Export the cleanup function with improved handling
-module.exports.cleanup = () => {
-  try {
-    // Restore the real filesystem
-    mockFileSystem.restore();
-    
-    // More aggressive cleanup - wait to ensure it's complete
-    const start = Date.now();
-    while (Date.now() - start < 100) {
-      // Busy wait to ensure synchronous completion
+// Cleanup function to remove temporary directories
+const cleanup = function(testPath) {
+  if (testPath && fs.existsSync(testPath)) {
+    try {
+      fs.rmSync(testPath, { recursive: true, force: true });
+      console.error('Cleaned up test directory:', testPath);
+    } catch (error) {
+      console.error('Error cleaning up test directory:', error);
     }
-    
-    return true;
-  } catch (e) {
-    console.error('Error cleaning up mock filesystem:', e);
-    return false;
   }
 };
+
+module.exports = setupRealFileSystem;
+module.exports.mockKanbn = mockKanbn;
+module.exports.cleanup = cleanup;

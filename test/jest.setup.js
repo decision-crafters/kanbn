@@ -1,6 +1,5 @@
-const mockFs = require('mock-fs');
 require('./jest.matchers');
 
-afterEach(() => {
-  mockFs.restore();
-});
+// Jest setup for real filesystem testing
+// Individual tests handle their own fixture cleanup
+// No global mock-fs restoration needed
