@@ -5,7 +5,7 @@
  */
 
 const eventBus = require('./event-bus');
-const getGitUsername = require('git-user-name');
+const { getGitUsername } = require('./git-utils');
 
 class AILogging {
   /**
