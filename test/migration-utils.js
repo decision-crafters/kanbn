@@ -271,7 +271,7 @@ function createTestEnvironment(testName, options = {}) {
  * Quick setup function for simple test migrations
  * @param {string} testName - Test name
  * @param {object} fixtureOptions - Fixture options
- * * @returns {object} - Setup data with cleanup function
+ * @returns {object} - Setup data with cleanup function
  */
 function quickSetup(testName, fixtureOptions = {}) {
   const env = createTestEnvironment(testName);
@@ -284,6 +284,111 @@ function quickSetup(testName, fixtureOptions = {}) {
   };
 }
 
+/**
+ * Convert QUnit assertion calls to Jest equivalents in code
+ * @param {string} code - Code containing QUnit assertions
+ * @returns {string} Code with Jest assertions
+ */
+function convertQUnitAssertions(code) {
+  let convertedCode = code;
+  
+  // Convert assert.throwsAsync calls
+  convertedCode = convertedCode.replace(
+    /assert\.throwsAsync\(([^,]+)(?:,\s*([^,)]+))?(?:,\s*['"][^'"]*['"])?\);?/g,
+    (match, fn, expected) => {
+      if (expected) {
+        return `await expect(${fn}).toThrowAsync(${expected});`;
+      }
+      return `await expect(${fn}).toThrowAsync();`;
+    }
+  );
+  
+  // Convert assert.contains calls
+  convertedCode = convertedCode.replace(
+    /assert\.contains\(([^,]+),\s*([^,)]+)(?:,\s*['"][^'"]*['"])?\);?/g,
+    'expect($1).toContain($2);'
+  );
+  
+  // Convert basic assertions
+  convertedCode = convertedCode.replace(/assert\.ok\(([^,)]+)(?:,\s*['"][^'"]*['"])?\);?/g, 'expect($1).toBeTruthy();');
+  convertedCode = convertedCode.replace(/assert\.notOk\(([^,)]+)(?:,\s*['"][^'"]*['"])?\);?/g, 'expect($1).toBeFalsy();');
+  convertedCode = convertedCode.replace(/assert\.equal\(([^,]+),\s*([^,)]+)(?:,\s*['"][^'"]*['"])?\);?/g, 'expect($1).toBe($2);');
+  convertedCode = convertedCode.replace(/assert\.strictEqual\(([^,]+),\s*([^,)]+)(?:,\s*['"][^'"]*['"])?\);?/g, 'expect($1).toBe($2);');
+  convertedCode = convertedCode.replace(/assert\.deepEqual\(([^,]+),\s*([^,)]+)(?:,\s*['"][^'"]*['"])?\);?/g, 'expect($1).toEqual($2);');
+  convertedCode = convertedCode.replace(/assert\.throws\(([^,)]+)(?:,\s*([^,)]+))?(?:,\s*['"][^'"]*['"])?\);?/g, (match, fn, expected) => {
+    if (expected) {
+      return `expect(${fn}).toThrow(${expected});`;
+    }
+    return `expect(${fn}).toThrow();`;
+  });
+  
+  return convertedCode;
+}
+
+/**
+ * Convert QUnit test structure to Jest
+ * @param {string} code - QUnit test code
+ * @returns {string} Jest test code
+ */
+function convertQUnitStructure(code) {
+  let convertedCode = code;
+  
+  // Convert QUnit.module to describe
+  convertedCode = convertedCode.replace(
+    /QUnit\.module\(['"]([^'"]*)['"]\s*,\s*\{([\s\S]*?)^\}/gm,
+    (match, moduleName, moduleBody) => {
+      // Convert hooks within the module
+      let convertedBody = moduleBody;
+      convertedBody = convertedBody.replace(/before\s*:\s*function\s*\(\s*\)\s*{/g, 'beforeAll(() => {');
+      convertedBody = convertedBody.replace(/beforeEach\s*:\s*function\s*\(\s*\)\s*{/g, 'beforeEach(() => {');
+      convertedBody = convertedBody.replace(/afterEach\s*:\s*function\s*\(\s*\)\s*{/g, 'afterEach(() => {');
+      convertedBody = convertedBody.replace(/after\s*:\s*function\s*\(\s*\)\s*{/g, 'afterAll(() => {');
+      
+      return `describe('${moduleName}', () => {${convertedBody}});`;
+    }
+  );
+  
+  // Convert QUnit.test to test
+  convertedCode = convertedCode.replace(
+    /QUnit\.test\(['"]([^'"]*)['"]\s*,\s*async\s+function\s*\(\s*assert\s*\)\s*\{/g,
+    "test('$1', async () => {"
+  );
+  convertedCode = convertedCode.replace(
+    /QUnit\.test\(['"]([^'"]*)['"]\s*,\s*function\s*\(\s*assert\s*\)\s*\{/g,
+    "test('$1', () => {"
+  );
+  
+  return convertedCode;
+}
+
+/**
+ * Remove QUnit imports and add Jest imports
+ * @param {string} code - Code with QUnit imports
+ * @returns {string} Code with Jest imports
+ */
+function convertImports(code) {
+  let convertedCode = code;
+  
+  // Remove QUnit custom assertion imports
+  convertedCode = convertedCode.replace(/require\(['"]\.\.\/qunit-throws-async['"]\);?\s*/g, '');
+  convertedCode = convertedCode.replace(/require\(['"]\.\.\/qunit-contains['"]\);?\s*/g, '');
+  
+  // Add Jest helpers import if not present and if custom assertions are used
+  if ((convertedCode.includes('toThrowAsync') || convertedCode.includes('toContain')) && 
+      !convertedCode.includes('./jest-helpers')) {
+    // Find the first require statement and add jest-helpers before it
+    const firstRequire = convertedCode.match(/^.*require\(/m);
+    if (firstRequire) {
+      convertedCode = convertedCode.replace(firstRequire[0], `require('./jest-helpers');\n${firstRequire[0]}`);
+    } else {
+      // If no requires found, add at the top
+      convertedCode = `require('./jest-helpers');\n${convertedCode}`;
+    }
+  }
+  
+  return convertedCode;
+}
+
 module.exports = {
   TestEnvironment,
   createTestEnvironment,
@@ -292,5 +397,8 @@ module.exports = {
   mapColumnNames,
   assertions,
   migration,
-  COLUMN_MAPPINGS
+  COLUMN_MAPPINGS,
+  convertQUnitAssertions,
+  convertQUnitStructure,
+  convertImports
 };
