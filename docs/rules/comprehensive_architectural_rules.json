@@ -1,0 +1,59 @@
+{
+  "metadata": {
+    "version": "1.0.0",
+    "name": "comprehensive_architectural_rules",
+    "description": "Unified ADR-derived architectural rules for Kanbn project",
+    "created": "2025-07-11T19:43:05Z",
+    "author": "Kanbn AI"
+  },
+  "rules": [
+    {
+      "id": "R001",
+      "name": "no_ui_imports_in_domain",
+      "description": "Domain layer files must not import from UI layer",
+      "pattern": "src/ui/",
+      "severity": "error",
+      "message": "Domain layer should not import UI layer"
+    },
+    {
+      "id": "R002",
+      "name": "ai_provider_abstraction",
+      "description": "No direct AI provider imports outside ai layer",
+      "pattern": "^(?!src/ai/).*\\b(openrouter-client|ollama-client)",
+      "severity": "error",
+      "message": "AI providers must be accessed via ai abstraction layer"
+    },
+    {
+      "id": "R003",
+      "name": "error_hierarchy",
+      "description": "All thrown errors must extend KanbnError base class",
+      "pattern": "throw new (?![A-Za-z]*KanbnError)[A-Za-z]*Error\\(",
+      "severity": "warning",
+      "message": "Errors should extend KanbnError hierarchy"
+    },
+    {
+      "id": "R004",
+      "name": "test_directory_structure",
+      "description": "Tests must reside within test/unit or test/integration directories",
+      "pattern": "test/(?!unit|integration)",
+      "severity": "error",
+      "message": "Tests should be placed in unit or integration folders"
+    },
+    {
+      "id": "R005",
+      "name": "data_validation_service_usage",
+      "description": "Board/task persistence must use ValidationService",
+      "pattern": "fs\\.writeFile|fs\\.writeFileSync",
+      "severity": "warning",
+      "message": "Use ValidationService for data persistence"
+    },
+    {
+      "id": "R006",
+      "name": "mcp_server_no_cli_import",
+      "description": "MCP server files must not import from CLI UI modules",
+      "pattern": "src/ui/cli/",
+      "severity": "error",
+      "message": "MCP server should not depend on CLI UI layer"
+    }
+  ]
+}

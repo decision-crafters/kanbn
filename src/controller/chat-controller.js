@@ -16,6 +16,7 @@ if (!process.env.NODE_OPTIONS.includes('--no-deprecation')) {
 const kanbnModule = require('../main');
 const utility = require('../utility');
 const AIService = require('../lib/ai-service');
+const { OpenRouterClient, OllamaClient, getDefaultClient } = require('../ai');
 const ProjectContext = require('../lib/project-context');
 const ChatHandler = require('../lib/chat-handler');
 const InteractiveChat = require('../lib/interactive-chat');

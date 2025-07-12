@@ -1,50 +1,153 @@
 const fs = require('fs');
 const path = require('path');
 
-// Custom matcher to verify that an array contains a value matching a regex or string
-expect.extend({
+// Custom Jest matchers for migration from QUnit
+const customMatchers = {
   toContainMatch(received, expected) {
-    if (!Array.isArray(received)) {
-      throw new Error('toContainMatch can only be used on arrays');
+    const pass = received.some(item => {
+      if (expected instanceof RegExp) {
+        return expected.test(item);
+      }
+      return item.includes(expected);
+    });
+
+    if (pass) {
+      return {
+        message: () => `expected ${received} not to contain match for ${expected}`,
+        pass: true,
+      };
+    } else {
+      return {
+        message: () => `expected ${received} to contain match for ${expected}`,
+        pass: false,
+      };
     }
-    const regex = typeof expected === 'string' ? new RegExp(expected.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')) : expected;
-    const stripAnsi = str => str.replace(/\u001b\[[0-9;]*m/g, '');
-    const pass = received.some(item => regex.test(stripAnsi(String(item))));
+  },
+
+  toRejectWith(received, expected) {
+    return received.then(
+      () => {
+        return {
+          message: () => `expected promise to reject with ${expected}`,
+          pass: false,
+        };
+      },
+      (error) => {
+        const pass = expected instanceof RegExp 
+          ? expected.test(error.message)
+          : error.message.includes(expected);
+        
+        if (pass) {
+          return {
+            message: () => `expected promise not to reject with ${expected}`,
+            pass: true,
+          };
+        } else {
+          return {
+            message: () => `expected promise to reject with ${expected}, but got ${error.message}`,
+            pass: false,
+          };
+        }
+      }
+    );
+  },
+
+  // QUnit assert.throwsAsync equivalent
+  async toThrowAsync(received, expected) {
+    let error;
+    try {
+      await received();
+    } catch (e) {
+      error = e;
+    }
+
+    if (!error) {
+      return {
+        message: () => `expected function to throw an error`,
+        pass: false,
+      };
+    }
+
+    if (expected) {
+      const pass = expected instanceof RegExp 
+        ? expected.test(error.message)
+        : error.message.includes(expected);
+      
+      if (pass) {
+        return {
+          message: () => `expected function not to throw error matching ${expected}`,
+          pass: true,
+        };
+      } else {
+        return {
+          message: () => `expected function to throw error matching ${expected}, but got ${error.message}`,
+          pass: false,
+        };
+      }
+    }
+
     return {
-      pass,
-      message: () => pass
-        ? `Expected array not to contain match for ${regex}`
-        : `Expected array to contain match for ${regex}`
+      message: () => `expected function not to throw an error`,
+      pass: true,
     };
   },
 
-  async toRejectWith(received, expected) {
-    if (typeof received !== 'object' || typeof received.then !== 'function') {
-      throw new Error('toRejectWith must be used with a Promise');
-    }
-    try {
-      await received;
-      return { pass: false, message: () => 'Expected promise to reject but it resolved' };
-    } catch (error) {
-      let pass = false;
-      if (expected instanceof RegExp) {
-        pass = expected.test(error.message);
-      } else if (typeof expected === 'string') {
-        pass = error.message.includes(expected);
-      } else if (typeof expected === 'function') {
-        pass = error instanceof expected;
+  // QUnit assert.contains equivalent
+  toContain(received, expected) {
+    if (Array.isArray(received)) {
+      const pass = received.some(item => {
+        if (expected instanceof RegExp) {
+          return expected.test(item);
+        }
+        return item === expected || (typeof item === 'string' && item.includes(expected));
+      });
+
+      if (pass) {
+        return {
+          message: () => `expected ${received} not to contain ${expected}`,
+          pass: true,
+        };
       } else {
-        pass = error.message === String(expected);
+        return {
+          message: () => `expected ${received} to contain ${expected}`,
+          pass: false,
+        };
       }
-      return {
-        pass,
-        message: () => pass
-          ? `Expected promise not to reject with "${error.message}"`
-          : `Expected promise to reject with ${expected} but got "${error.message}"`
-      };
+    } else if (typeof received === 'string') {
+      const pass = expected instanceof RegExp 
+        ? expected.test(received)
+        : received.includes(expected);
+      
+      if (pass) {
+        return {
+          message: () => `expected "${received}" not to contain "${expected}"`,
+          pass: true,
+        };
+      } else {
+        return {
+          message: () => `expected "${received}" to contain "${expected}"`,
+          pass: false,
+        };
+      }
     }
-  }
-});
+
+    return {
+      message: () => `toContain matcher only supports arrays and strings`,
+      pass: false,
+    };
+  },
+};
+
+// Extend expect with custom matchers
+expect.extend(customMatchers);
+
+// Export individual matchers for selective import
+module.exports = {
+  toThrowAsync: customMatchers.toThrowAsync,
+  toContain: customMatchers.toContain,
+  toContainMatch: customMatchers.toContainMatch,
+  toRejectWith: customMatchers.toRejectWith,
+};
 
 // Helper functions ported from context.js using Jest assertions
 const jestContext = {
@@ -265,4 +368,72 @@ const migrationHelpers = {
   }
 };
 
-module.exports = { ...jestContext, ...migrationHelpers };
+/**
+ * Create a test environment with a real filesystem
+ * @param {string} testName - Name of the test (used for directory naming)
+ * @returns {object} - Test environment object with setup and cleanup methods
+ */
+function createTestEnvironment(testName) {
+  const os = require('os');
+  const fs = require('fs-extra');
+  const path = require('path');
+  const kanbnFactory = require('../src/main');
+  
+  // Create a unique test directory path
+  const testDir = path.join(
+    global.__KANBN_TEST_DIR__ || os.tmpdir(), 
+    'kanbn-test-' + testName + '-' + Date.now().toString(36)
+  );
+  
+  // Return environment object with setup and cleanup functions
+  return {
+    testDir,
+    
+    /**
+     * Set up the test environment
+     * @param {object} options - Setup options
+     * @param {string[]} options.columnNames - Column names to create
+     * @param {string} options.taskFolderName - Custom task folder name
+     * @returns {object} - Test data including paths and configuration
+     */
+    setup(options = {}) {
+      // Ensure the test directory exists
+      fs.ensureDirSync(testDir);
+      
+      // Get a Kanbn instance for the test directory
+      const kanbn = kanbnFactory(testDir);
+      const columnNames = options.columnNames || ['To Do', 'In Progress', 'Done'];
+      
+      // Initialize Kanbn with columns
+      return kanbn.initialise({
+        taskFolderName: options.taskFolderName || '.kanbn/tasks',
+        columnNames
+      }).then(() => {
+        // Return test data
+        return {
+          testDir,
+          kanbn,
+          columnNames,
+          taskFolder: path.join(testDir, options.taskFolderName || '.kanbn/tasks'),
+          indexPath: path.join(testDir, '.kanbn/index.md')
+        };
+      });
+    },
+    
+    /**
+     * Clean up the test environment
+     */
+    cleanup() {
+      try {
+        // Remove the test directory recursively
+        if (fs.existsSync(testDir)) {
+          fs.removeSync(testDir);
+        }
+      } catch (error) {
+        console.error(`Error cleaning up test directory: ${error.message}`);
+      }
+    }
+  };
+}
+
+module.exports = { ...jestContext, ...migrationHelpers, createTestEnvironment };

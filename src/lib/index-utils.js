@@ -4,6 +4,7 @@ const utility = require('../utility');
 const fileUtils = require('./file-utils');
 const taskUtils = require('./task-utils');
 const filterUtils = require('./filter-utils');
+const KanbnError = require('../errors/KanbnError');
 
 /**
  * Get a list of all tracked task ids
@@ -542,7 +543,7 @@ async function saveIndex(indexData, loadAllTrackedTasks, configExists, saveConfi
   try {
     // Validate indexData is not null or undefined
     if (!indexData) {
-      throw new Error('indexData is null or undefined');
+      throw new KanbnError('indexData is null or undefined');
     }
     
     // Validate columnSorting configuration before processing
@@ -614,7 +615,7 @@ async function loadIndex(getIndexPath, getConfig) {
   try {
     indexData = await fs.promises.readFile(await getIndexPath(), { encoding: "utf-8" });
   } catch (error) {
-    throw new Error(`Couldn't access index file: ${error.message}`);
+    throw new KanbnError(`Couldn't access index file: ${error.message}`);
   }
 
   try {
@@ -626,7 +627,7 @@ async function loadIndex(getIndexPath, getConfig) {
     }
     return index;
   } catch (error) {
-    throw new Error(`Unable to parse index: ${error.message}`);
+    throw new KanbnError(`Unable to parse index: ${error.message}`);
   }
 }
 
@@ -655,20 +656,20 @@ async function addUntrackedTaskToIndex(
   const fs = require('fs');
 
   if (!(await initialised())) {
-    throw new Error("Not initialised in this folder");
+    throw new KanbnError("Not initialised in this folder");
   }
   taskId = fileUtils.removeFileExtension(taskId);
 
   if (!(await fileUtils.exists(fileUtils.getTaskPath(await getTaskFolderPath(), taskId)))) {
-    throw new Error(`No task file found with id "${taskId}"`);
+    throw new KanbnError(`No task file found with id "${taskId}"`);
   }
 
   if (!(columnName in index.columns)) {
-    throw new Error(`Column "${columnName}" doesn't exist`);
+    throw new KanbnError(`Column "${columnName}" doesn't exist`);
   }
 
   if (taskUtils.taskInIndex(index, taskId)) {
-    throw new Error(`Task "${taskId}" is already in the index`);
+    throw new KanbnError(`Task "${taskId}" is already in the index`);
   }
 
   // Load task data
@@ -694,7 +695,7 @@ async function addUntrackedTaskToIndex(
 async function findTrackedTasks(index, initialised, columnName = null) {
   // Check if this folder has been initialised
   if (!(await initialised())) {
-    throw new Error("Not initialised in this folder");
+    throw new KanbnError("Not initialised in this folder");
   }
 
   return getTrackedTaskIds(index, columnName);
@@ -713,7 +714,7 @@ async function findUntrackedTasks(index, initialised, getTaskFolderPath) {
 
   // Check if this folder has been initialised
   if (!(await initialised())) {
-    throw new Error("Not initialised in this folder");
+    throw new KanbnError("Not initialised in this folder");
   }
 
   const trackedTasks = getTrackedTaskIds(index);
@@ -769,20 +770,20 @@ async function updateTask(
 
   // Check if this folder has been initialised
   if (!(await initialised())) {
-    throw new Error("Not initialised in this folder");
+    throw new KanbnError("Not initialised in this folder");
   }
   taskId = fileUtils.removeFileExtension(taskId);
 
   if (!(await fileUtils.exists(fileUtils.getTaskPath(await getTaskFolderPath(), taskId)))) {
-    throw new Error(`No task file found with id "${taskId}"`);
+    throw new KanbnError(`No task file found with id "${taskId}"`);
   }
 
   if (!taskUtils.taskInIndex(index, taskId)) {
-    throw new Error(`Task "${taskId}" is not in the index`);
+    throw new KanbnError(`Task "${taskId}" is not in the index`);
   }
 
   if (!taskData.name) {
-    throw new Error("Task name cannot be blank");
+    throw new KanbnError("Task name cannot be blank");
   }
 
   const originalTaskData = await loadTask(taskId);
@@ -793,7 +794,7 @@ async function updateTask(
   }
 
   if (columnName && !(columnName in index.columns)) {
-    throw new Error(`Column "${columnName}" doesn't exist`);
+    throw new KanbnError(`Column "${columnName}" doesn't exist`);
   }
 
   taskData = taskUtils.setTaskMetadata(taskData, "updated", new Date());
@@ -839,26 +840,26 @@ async function renameTask(
 
   // Check if this folder has been initialised
   if (!(await initialised())) {
-    throw new Error("Not initialised in this folder");
+    throw new KanbnError("Not initialised in this folder");
   }
   taskId = fileUtils.removeFileExtension(taskId);
 
   if (!(await fileUtils.exists(fileUtils.getTaskPath(await getTaskFolderPath(), taskId)))) {
-    throw new Error(`No task file found with id "${taskId}"`);
+    throw new KanbnError(`No task file found with id "${taskId}"`);
   }
 
   if (!taskUtils.taskInIndex(index, taskId)) {
-    throw new Error(`Task "${taskId}" is not in the index`);
+    throw new KanbnError(`Task "${taskId}" is not in the index`);
   }
 
   const newTaskId = utility.getTaskId(newTaskName);
   const newTaskPath = fileUtils.getTaskPath(await getTaskFolderPath(), newTaskId);
   if (await fileUtils.exists(newTaskPath)) {
-    throw new Error(`A task with id "${newTaskId}" already exists`);
+    throw new KanbnError(`A task with id "${newTaskId}" already exists`);
   }
 
   if (taskUtils.taskInIndex(index, newTaskId)) {
-    throw new Error(`A task with id "${newTaskId}" is already in the index`);
+    throw new KanbnError(`A task with id "${newTaskId}" is already in the index`);
   }
 
   let taskData = await loadTask(taskId);
@@ -908,20 +909,20 @@ async function moveTask(
 
   // Check if this folder has been initialised
   if (!(await initialised())) {
-    throw new Error("Not initialised in this folder");
+    throw new KanbnError("Not initialised in this folder");
   }
   taskId = fileUtils.removeFileExtension(taskId);
 
   if (!(await fileUtils.exists(fileUtils.getTaskPath(await getTaskFolderPath(), taskId)))) {
-    throw new Error(`No task file found with id "${taskId}"`);
+    throw new KanbnError(`No task file found with id "${taskId}"`);
   }
 
   if (!taskUtils.taskInIndex(index, taskId)) {
-    throw new Error(`Task "${taskId}" is not in the index`);
+    throw new KanbnError(`Task "${taskId}" is not in the index`);
   }
 
   if (!(columnName in index.columns)) {
-    throw new Error(`Column "${columnName}" doesn't exist`);
+    throw new KanbnError(`Column "${columnName}" doesn't exist`);
   }
 
   // Update the task's updated date
@@ -973,12 +974,12 @@ async function deleteTask(
 
   // Check if this folder has been initialised
   if (!(await initialised())) {
-    throw new Error("Not initialised in this folder");
+    throw new KanbnError("Not initialised in this folder");
   }
   taskId = fileUtils.removeFileExtension(taskId);
 
   if (!taskUtils.taskInIndex(index, taskId)) {
-    throw new Error(`Task "${taskId}" is not in the index`);
+    throw new KanbnError(`Task "${taskId}" is not in the index`);
   }
 
   index = taskUtils.removeTaskFromIndex(index, taskId);
@@ -1013,7 +1014,7 @@ async function search(
 
   // Check if this folder has been initialised
   if (!(await initialised())) {
-    throw new Error("Not initialised in this folder");
+    throw new KanbnError("Not initialised in this folder");
   }
 
   let tasks = filterTasks(index, await loadAllTrackedTasks(index), filters);

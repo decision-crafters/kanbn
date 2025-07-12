@@ -1,4 +1,5 @@
 const humanizeDuration = require('humanize-duration');
+const KanbnError = require('../errors/KanbnError');
 const taskUtils = require('./task-utils');
 const indexUtils = require('./index-utils');
 
@@ -163,14 +164,14 @@ function calculateSprintStats(index, tasks, sprint = null) {
   if (sprint !== null) {
     if (typeof sprint === "number") {
       if (sprint < 1 || sprint > sprints.length) {
-        throw new Error(`Sprint ${sprint} does not exist`);
+        throw new KanbnError(`Sprint ${sprint} does not exist`);
       } else {
         sprintIndex = sprint - 1;
       }
     } else if (typeof sprint === "string") {
       sprintIndex = sprints.findIndex((s) => s.name === sprint);
       if (sprintIndex === -1) {
-        throw new Error(`No sprint found with name "${sprint}"`);
+        throw new KanbnError(`No sprint found with name "${sprint}"`);
       }
     }
   }

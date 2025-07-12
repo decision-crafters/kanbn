@@ -1,94 +1,91 @@
-const mockFileSystem = require('mock-fs');
-const kanbn = require('../../src/main');
-const context = require('../context');
+const fs = require('fs');
+const path = require('path');
+const realFs = require('../real-fs-fixtures');
+const kanbnFactory = require('../../src/main');
+const context = require('../jest-helpers');
+require('../jest-helpers');
 
-QUnit.module('archive tests', {
-  before() {
-    require('../qunit-throws-async');
-  },
-  beforeEach() {
-    require('../fixtures')({
+if (!fs.existsSync(path.join(__dirname, '../real-fs-fixtures'))) {
+  fs.mkdirSync(path.join(__dirname, '../real-fs-fixtures'), { recursive: true });
+}
+
+describe('archive tests', () => {
+  let testDir, originalCwd, kanbn;
+
+  beforeEach(() => {
+    const timestamp = Date.now();
+    testDir = realFs.createFixtures(`archive-test-${timestamp}`, {
       countColumns: 1,
       countTasks: 1
-    });
-  },
-  afterEach() {
-    mockFileSystem.restore();
-  }
-});
-
-QUnit.test('Archive task in uninitialised folder should throw "not initialised" error', async assert => {
-  mockFileSystem();
-  assert.throwsAsync(
-    async () => {
-      await kanbn.archiveTask('task-1');
-    },
-    /Not initialised in this folder/
-  );
-});
-
-QUnit.test('Archive non-existent task should throw "task file not found" error', async assert => {
-  assert.throwsAsync(
-    async () => {
-      await kanbn.archiveTask('task-2');
-    },
-    /No task file found with id "task-2"/
-  );
-});
-
-QUnit.test('Archive untracked task should throw "task not indexed" error', async assert => {
-
-  // Create a mock index and untracked task
-  mockFileSystem({
-    '.kanbn': {
-      'index.md': '# Test Project\n\n## Test Column 1',
-      'tasks': {
-        'test-task.md': '# Test Task'
-      }
-    }
+    }).testDir;
+    
+    originalCwd = process.cwd();
+    process.chdir(testDir);
+    
+    kanbn = kanbnFactory();
   });
 
-  // Try to archive an untracked task
-  assert.throwsAsync(
-    async () => {
-      await kanbn.archiveTask('test-task');
-    },
-    /Task "test-task" is not in the index/
-  );
-});
+  afterEach(() => {
+    process.chdir(originalCwd);
+    realFs.cleanupFixtures(testDir);
+  });
 
-QUnit.test(
-  'Archive task with a duplicate already in the archive should throw "already archived" error',
-  async assert => {
+  test('Archive task in uninitialised folder should throw "not initialised" error', async () => {
+    // Create a fresh directory without kanbn initialization
+    const timestamp = Date.now();
+    const uninitializedDir = realFs.createTestDirectory(`uninitialized-test-${timestamp}`);
+    
+    const originalCwd = process.cwd();
+    process.chdir(uninitializedDir);
+    
+    const uninitializedKanbn = kanbnFactory();
+    
+    await expect(async () => {
+      await uninitializedKanbn.archiveTask('task-1');
+    }).toThrowAsync(/Not initialised in this folder/);
+    
+    process.chdir(originalCwd);
+    realFs.cleanupFixtures(uninitializedDir);
+  });
 
-    // Create a mock index and untracked task
-    mockFileSystem({
-      '.kanbn': {
-        'index.md': '# Test Project\n\n## Test Column 1\n\n- [test-task](test-task.md)',
-        'tasks': {
-          'test-task.md': '# Test Task'
-        },
-        'archive': {
-          'test-task.md': '# Test Task'
-        }
-      }
-    });
+  test('Archive non-existent task should throw "task file not found" error', async () => {
+    await expect(async () => {
+      await kanbn.archiveTask('task-2');
+    }).toThrowAsync(/No task file found with id "task-2"/);
+  });
+
+  test('Archive untracked task should throw "task not indexed" error', async () => {
+    // Create a task file that's not in the index
+    const fs = require('fs');
+    const taskPath = path.join(testDir, '.kanbn', 'tasks', 'untracked-task.md');
+    fs.writeFileSync(taskPath, '# Untracked Task\n\nThis task is not in the index.');
+
+    await expect(async () => {
+      await kanbn.archiveTask('untracked-task');
+    }).toThrowAsync(/Task "untracked-task" is not in the index/);
+  });
+
+  test('Archive task with a duplicate already in the archive should throw "already archived" error', async () => {
+    // Create an archived task file manually
+    const fs = require('fs');
+    const archivedTaskPath = path.join(testDir, '.kanbn', 'archive', 'task-1.md');
+    fs.writeFileSync(archivedTaskPath, '# Task 1\n\nThis task is already archived.');
 
     // Try to archive a task that has a duplicate in the archive
-    assert.throwsAsync(
-      async () => {
-        await kanbn.archiveTask('test-task');
-      },
-      /An archived task with id "test-task" already exists/
-    );
-  }
-);
+    await expect(async () => {
+      await kanbn.archiveTask('task-1');
+    }).toThrowAsync(/An archived task with id "task-1" already exists/);
+  });
 
-QUnit.test('Archive a task', async assert => {
-  const BASE_PATH = await kanbn.getMainFolder();
+  test('Archive a task', async () => {
+    const BASE_PATH = await kanbn.getMainFolder();
 
-  await kanbn.archiveTask('task-1');
-  context.archiveFolderExists(assert, BASE_PATH);
-  context.archivedTaskFileExists(assert, BASE_PATH, 'task-1');
-  context.taskFileExists(assert, BASE_PATH, 'task-1', false);
+    await kanbn.archiveTask('task-1');
+    // Check archive folder exists
+    expect(fs.existsSync(path.join(BASE_PATH, 'archive'))).toBe(true);
+    // Check archived task file exists
+    expect(fs.existsSync(path.join(BASE_PATH, 'archive', 'task-1.md'))).toBe(true);
+    // Check original task file no longer exists
+    context.taskFileExists(BASE_PATH, 'task-1', false);
+  });
 });

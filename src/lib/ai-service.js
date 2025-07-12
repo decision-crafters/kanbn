@@ -7,8 +7,9 @@
 
 const fs = require('fs');
 const path = require('path');
-const OpenRouterClient = require('./openrouter-client');
-const OllamaClient = require('./ollama-client');
+const { OpenRouterClient } = require('../ai');
+const { normaliseAiError, RateLimitError } = require('../errors/AiError');
+const { OllamaClient } = require('../ai');
 const utility = require('../utility');
 
 class AIService {
@@ -64,7 +65,26 @@ class AIService {
    * @returns {Promise<string>} AI response
    */
   async chatCompletion(messages, options = {}) {
-    const { streamCallback, logCallback } = options;
+
+
+    // helper with simple exponential back-off for rate-limit
+    const execWithRetry = async (fn) => {
+      let delay = 500;
+      for (let attempt = 0; attempt < 3; attempt += 1) {
+        try {
+          return await fn();
+        } catch (err) {
+          const aiErr = normaliseAiError(err);
+          if (aiErr instanceof RateLimitError && attempt < 2) {
+            await new Promise(r => setTimeout(r, delay));
+            delay *= 2;
+            continue;
+          }
+          throw aiErr;
+        }
+      }
+    };
+
 
     // Try OpenRouter first if API key is available
     if (this.options.apiKey) {

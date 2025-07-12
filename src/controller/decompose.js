@@ -2,7 +2,7 @@ const Kanbn = require('../main');
 const utility = require('../utility');
 const inquirer = require('inquirer');
 const fuzzy = require('fuzzy');
-const axios = require('axios');
+const { OpenRouterClient } = require('../ai');
 const getGitUsername = require('git-user-name');
 const AILogging = require('../lib/ai-logging');
 
@@ -67,32 +67,21 @@ async function callOpenRouterAPI(kanbnInstance, description, task, includeRefere
       context: systemMessage.content
     });
 
-    // Send request to OpenRouter API
-    const response = await axios.post(
-      'https://openrouter.ai/api/v1/chat/completions',
-      {
-        model: model,
-        messages: [
-          systemMessage,
-          {
-            role: 'user',
-            content: `Please decompose the following task into smaller, actionable subtasks:\n\n${description}`
-          }
-        ],
-        response_format: { type: 'json_object' }
-      },
-      {
-        headers: {
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json',
-          'HTTP-Referer': 'https://github.com/decision-crafters/kanbn',
-          'X-Title': 'Kanbn Task Decomposition'
-        }
-      }
-    );
 
-    console.log('OpenRouter API call completed successfully.');
-    const content = response.data.choices[0].message.content;
+    const client = new OpenRouterClient(apiKey, model);
+    const content = await client.chat([
+      systemMessage,
+      {
+        role: 'user',
+        content: `Please decompose the following task into smaller, actionable subtasks:\n\n${description}`
+      }
+    ]);
+
+
+
+
+    
+    
     const parsedContent = JSON.parse(content);
 
     // Log the response

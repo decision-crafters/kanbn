@@ -1,5 +1,7 @@
 const Kanbn = require('./main');
 const { findTaskColumn } = require('./main');
+const fs = require('fs');
+const KanbnError = require('./errors/KanbnError');
 const term = require('terminal-kit').terminal;
 const formatDate = require('dateformat');
 const utility = require('./utility');
@@ -106,7 +108,7 @@ module.exports = (() => {
           !('views' in index.options) ||
           (viewSettings = index.options.views.find(v => v.name === view)) === undefined
         ) {
-          throw new Error(`No view found with name "${view}"`);
+          throw new KanbnError(`No view found with name "${view}"`);
         }
       }
 

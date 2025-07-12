@@ -7,7 +7,7 @@ const fs = require('fs');
 const ChatHandler = require('../lib/chat-handler');
 const MemoryManager = require('../lib/memory-manager');
 const PromptLoader = require('../lib/prompt-loader');
-const OpenRouterClient = require('../lib/openrouter-client');
+const { OpenRouterClient } = require('../ai');
 const openRouterConfig = require('../config/openrouter');
 const eventBus = require('../lib/event-bus');
 

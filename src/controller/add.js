@@ -337,9 +337,21 @@ module.exports = async args => {
   const taskIds = [...await kanbn.findTrackedTasks()];
 
   // Get task settings from arguments
+  // Debug: log the args object
+  if (process.env.DEBUG === 'true') {
+    console.log('DEBUG: add controller args:', JSON.stringify(args));
+  }
+  
   // Name
   if (args.name) {
     taskData.name = utility.strArg(args.name);
+    if (process.env.DEBUG === 'true') {
+      console.log('DEBUG: taskData.name set to:', taskData.name);
+    }
+  } else {
+    if (process.env.DEBUG === 'true') {
+      console.log('DEBUG: args.name is missing or falsy');
+    }
   }
 
   // Description

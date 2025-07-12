@@ -1,3 +1,5 @@
+const KanbnError = require('../errors/KanbnError');
+
 /**
  * OpenRouter API configuration
  * Centralizes all OpenRouter-related configuration settings
@@ -53,7 +55,7 @@ function useStreaming() {
  */
 function validateApiKey(apiKey) {
   if (!apiKey) {
-    throw new Error('OpenRouter API key not found. Please set the OPENROUTER_API_KEY environment variable or use the --api-key option.');
+    throw new KanbnError('OpenRouter API key not found. Please set the OPENROUTER_API_KEY environment variable or use the --api-key option.');
   }
   return true;
 }

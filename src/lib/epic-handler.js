@@ -5,6 +5,7 @@
  * An epic is a high-level task that can be broken down into smaller tasks
  */
 
+const path = require('path');
 const AIService = require('./ai-service');
 const PromptLoader = require('./prompt-loader');
 const AILogging = require('./ai-logging');

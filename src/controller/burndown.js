@@ -1,4 +1,5 @@
-const kanbnModule = require('../main');
+const Kanbn = require('../main');
+const KanbnError = require('../errors/KanbnError');
 const utility = require('../utility');
 const asciichart = require('asciichart');
 const term = require('terminal-kit').terminal;
@@ -11,7 +12,7 @@ module.exports = async args => {
 
     // Make sure kanbn has been initialised
     if (!await kanbn.initialised()) {
-      throw new Error('Kanbn has not been initialised in this folder\nTry running: kanbn init');
+      throw new KanbnError('Kanbn has not been initialised in this folder\nTry running: kanbn init');
     }
 
     const index = await kanbn.getIndex();
@@ -32,7 +33,7 @@ module.exports = async args => {
       for (const sprint of sprints) {
         const sprintName = typeof sprint === 'number' ? `Sprint ${sprint}` : sprint;
         if (!index.columns[sprintName]) {
-          throw new Error(`Sprint "${sprintName}" not found`);
+          throw new KanbnError(`Sprint "${sprintName}" not found`);
         }
       }
     }
@@ -45,7 +46,7 @@ module.exports = async args => {
         for (let i = 0; i < dates.length; i++) {
           const dateValue = chrono.parseDate(dates[i]);
           if (dateValue === null) {
-            throw new Error(`Unable to parse date: "${dates[i]}"`);
+            throw new KanbnError(`Unable to parse date: "${dates[i]}"`);
           }
           dates[i] = dateValue;
         }
@@ -65,7 +66,7 @@ module.exports = async args => {
       // Verify columns exist
       for (const column of columns) {
         if (!index.columns[column]) {
-          throw new Error(`Column "${column}" not found`);
+          throw new KanbnError(`Column "${column}" not found`);
         }
       }
     }
@@ -74,7 +75,7 @@ module.exports = async args => {
     let normalise = null;
     if (args.normalise) {
       if (args.normalise === '0') {
-        throw new Error('Normalisation value cannot be zero');
+        throw new KanbnError('Normalisation value cannot be zero');
       }
       normalise = args.normalise.toLowerCase();
       if (!['days', 'hours', 'minutes', 'seconds'].includes(normalise)) {

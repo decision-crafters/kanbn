@@ -1035,6 +1035,10 @@ class Kanbn {
    * @return {Promise<string>} The id of the task that was deleted
    */
   async deleteTask(taskId, removeFile = false) {
+    // Check if this folder has been initialised
+    if (!(await this.initialised())) {
+      throw new Error("Not initialised in this folder");
+    }
     const index = await this.loadIndex();
     return indexUtils.deleteTask(
       index,
@@ -1588,17 +1592,17 @@ class Kanbn {
       throw new Error(`No task file found with id "${taskId}"`);
     }
 
-    // Get index and make sure the task is indexed
-    let index = await this.loadIndex();
-    if (!taskInIndex(index, taskId)) {
-      throw new Error(`Task "${taskId}" is not in the index`);
-    }
-
     // Make sure there isn't already an archived task with the same id
     const archiveFolder = await this.getArchiveFolderPath();
     const archivedTaskPath = getTaskPath(archiveFolder, taskId);
     if (await fileUtils.exists(archivedTaskPath)) {
       throw new Error(`An archived task with id "${taskId}" already exists`);
+    }
+
+    // Get index and make sure the task is indexed
+    let index = await this.loadIndex();
+    if (!taskInIndex(index, taskId)) {
+      throw new Error(`Task "${taskId}" is not in the index`);
     }
 
     // Create archive folder if it doesn't already exist
