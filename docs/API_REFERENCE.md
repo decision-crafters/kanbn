@@ -2,267 +2,388 @@
 
 ## Overview
 
-Kanbn is a CLI-based Kanban board management tool with AI-powered task management features. It provides a simple yet powerful way to organize and track tasks using a markdown-based storage system. Key features include:
+Kanbn is a CLI-based Kanban board management tool with AI integration features. It provides a simple yet powerful way to manage tasks in a Kanban workflow directly from your terminal. Key features include:
 
-- Task management with columns, metadata, and relationships
-- AI-powered task decomposition and project initialization
+- Task management with columns (Backlog, In Progress, Done, etc.)
+- AI-powered task creation and decomposition
 - Natural language interaction via chat interface
-- Customizable workflows and views
+- Burndown charts and progress tracking
+- Customizable workflows and task templates
 - Integration with AI services (OpenRouter, Ollama)
-- Comprehensive reporting and statistics
+
+## Installation
+
+```bash
+npm install -g @tosin2013/kanbn
+```
+
+## CLI Commands
+
+### Board Management
+
+#### `kanbn init`
+Initialize a new Kanbn board in the current directory.
+
+Options:
+- `--ai` - Use AI to help initialize the board
+- `--prompt` - Custom prompt for AI initialization
+- `--model` - Specify AI model to use
+
+#### `kanbn board`
+Display the Kanban board.
+
+Options:
+- `--view` - Specify view to display
+- `--json` - Output as JSON
+
+### Task Management
+
+#### `kanbn add`
+Add a new task.
+
+Options:
+- `--column` - Specify column to add task to
+- `--interactive` - Interactive task creation
+- `--untracked` - Add untracked tasks
+
+#### `kanbn edit <taskId>`
+Edit an existing task.
+
+Options:
+- `--column` - Move task to specified column
+- `--interactive` - Interactive task editing
+
+#### `kanbn move <taskId>`
+Move a task to another column.
+
+Options:
+- `--position` - Position in new column
+- `--relative` - Treat position as relative
+
+#### `kanbn remove <taskId>`
+Remove a task.
+
+Options:
+- `--file` - Also remove task file
+
+#### `kanbn archive <taskId>`
+Archive a task.
+
+#### `kanbn restore <taskId>`
+Restore an archived task.
+
+### AI Features
+
+#### `kanbn chat [message]`
+Start an interactive chat session with the AI assistant.
+
+Options:
+- `--model` - Specify AI model to use
+- `--stream` - Stream responses
+- `--conversation` - Conversation ID to continue
+
+#### `kanbn decompose <taskId>`
+Decompose a task into subtasks using AI.
+
+Options:
+- `--interactive` - Interactive decomposition
+- `--references` - Include references in context
+
+#### `kanbn integrations`
+Manage AI context integrations.
+
+Subcommands:
+- `list` - List available integrations
+- `add` - Add new integration
+- `remove` - Remove integration
+
+### Utility Commands
+
+#### `kanbn status`
+Show project status.
+
+Options:
+- `--sprint` - Show sprint status
+- `--due` - Show overdue tasks
+- `--untracked` - Show untracked tasks
+
+#### `kanbn burndown`
+Show burndown chart data.
+
+Options:
+- `--sprint` - Specify sprint
+- `--dates` - Date range
+- `--normalise` - Normalize dates
 
 ## API Reference
 
 ### Core Modules
 
-#### `src/main.js`
-
-The main Kanbn module that provides core functionality.
+#### `main.js`
+The core Kanbn module that provides all board and task management functionality.
 
 ```javascript
 const Kanbn = require('@tosin2013/kanbn');
 const kanbn = Kanbn();
+
+// Example usage
+kanbn.initialised()
+  .then(initialised => {
+    if (initialised) {
+      return kanbn.loadIndex();
+    }
+    throw new Error('Kanbn not initialized');
+  })
+  .then(index => {
+    console.log(index);
+  });
 ```
 
-**Key Methods:**
+Key methods:
+- `initialised()` - Check if board is initialized
+- `loadIndex()` - Load board index
+- `loadTask(taskId)` - Load specific task
+- `addTask(taskData, columnName)` - Add new task
+- `moveTask(taskId, columnName, position)` - Move task
+- `deleteTask(taskId, removeFile)` - Delete task
 
-- `initialised()` - Check if Kanbn is initialized in current directory
-- `init(options)` - Initialize a new Kanbn board
-- `getIndex()` - Get the board index
-- `getTask(taskId)` - Get a task by ID
-- `createTask(taskData, columnName)` - Create a new task
-- `updateTask(taskId, taskData, columnName)` - Update an existing task
-- `deleteTask(taskId, removeFile)` - Delete a task
-- `moveTask(taskId, columnName, position, relative)` - Move a task between columns
-- `archiveTask(taskId)` - Archive a task
-- `restoreTask(taskId, columnName)` - Restore an archived task
-- `search(filters, quiet)` - Search for tasks
-- `status(options)` - Get project status
-- `burndown(options)` - Generate burndown chart data
-
-#### `src/board.js`
-
-Handles board visualization and display.
+#### `board.js`
+Handles board display and visualization.
 
 ```javascript
-const board = require('@tosin2013/kanbn/src/board');
+const showBoard = require('@tosin2013/kanbn/src/board');
+
+showBoard(index, tasks, view, jsonFormat);
 ```
 
-**Key Methods:**
+### AI Integration
 
-- `getTaskString(index, task)` - Format task for display
-- `getColumnHeading(index, columnName)` - Format column heading
-- `showBoard(index, tasks, view, json)` - Display the Kanban board
+#### `ai/index.js`
+Central AI client abstraction layer.
 
-### Controllers
+```javascript
+const { getDefaultClient } = require('@tosin2013/kanbn/src/ai');
 
-#### Task Management
+const aiClient = getDefaultClient();
+```
 
-- `src/controller/add.js` - Add new tasks
-- `src/controller/edit.js` - Edit existing tasks
-- `src/controller/move.js` - Move tasks between columns
-- `src/controller/remove.js` - Remove tasks
-- `src/controller/rename.js` - Rename tasks
-- `src/controller/archive.js` - Archive tasks
-- `src/controller/restore.js` - Restore archived tasks
-- `src/controller/comment.js` - Add comments to tasks
+#### `lib/ai-service.js`
+AI service abstraction with automatic fallback.
 
-#### AI Features
+```javascript
+const AIService = require('@tosin2013/kanbn/src/lib/ai-service');
 
-- `src/controller/chat.js` - Natural language chat interface
-- `src/controller/chat-controller.js` - Core chat functionality
-- `src/controller/decompose.js` - AI-powered task decomposition
-- `src/controller/init.js` - AI-powered project initialization
+const ai = new AIService({
+  apiKey: process.env.OPENROUTER_API_KEY,
+  model: 'gpt-4'
+});
 
-#### Utilities
+ai.chatCompletion(messages)
+  .then(response => {
+    console.log(response);
+  });
+```
 
-- `src/controller/find.js` - Search for tasks
-- `src/controller/sort.js` - Sort tasks
-- `src/controller/task.js` - View task details
-- `src/controller/integrations.js` - Manage AI context integrations
+#### `lib/project-context.js`
+Gathers project context for AI assistance.
 
-### Libraries
+```javascript
+const ProjectContext = require('@tosin2013/kanbn/src/lib/project-context');
 
-#### AI Services
-
-- `src/lib/ai-service.js` - Abstraction layer for AI providers
-- `src/lib/openrouter-client.js` - OpenRouter API client
-- `src/lib/ollama-client.js` - Ollama API client (local fallback)
-
-#### Chat System
-
-- `src/lib/chat-handler.js` - Core chat command processing
-- `src/lib/chat-context.js` - Maintains chat conversation context
-- `src/lib/interactive-chat.js` - Interactive chat session handler
-- `src/lib/memory-manager.js` - Manages chat history and context
-
-#### Project Context
-
-- `src/lib/project-context.js` - Gathers project information for AI
-- `src/lib/rag-manager.js` - Retrieval-Augmented Generation for context
-- `src/lib/integration-manager.js` - Manages external integrations
-
-#### Utilities
-
-- `src/lib/index-utils.js` - Index manipulation utilities
-- `src/lib/task-utils.js` - Task manipulation utilities
-- `src/lib/filter-utils.js` - Task filtering utilities
-- `src/lib/status-utils.js` - Status calculation utilities
-- `src/lib/event-bus.js` - Centralized event system
-
-## CLI Commands
-
-### Basic Commands
-
-```bash
-kanbn init [--ai]          # Initialize a new Kanbn board
-kanbn board [--json]       # Show the Kanban board
-kanbn status               # Show project status
-kanbn burndown             # Show burndown chart
+const context = new ProjectContext(kanbnInstance);
+context.getContext()
+  .then(ctx => {
+    console.log(ctx);
+  });
 ```
 
 ### Task Management
 
-```bash
-kanbn add [--interactive]  # Add a new task
-kanbn edit <taskId>        # Edit a task
-kanbn move <taskId>        # Move a task
-kanbn remove <taskId>      # Remove a task
-kanbn rename <taskId>      # Rename a task
-kanbn archive <taskId>     # Archive a task
-kanbn restore <taskId>     # Restore archived task
-kanbn comment <taskId>     # Add comment to task
-kanbn task <taskId>        # Show task details
+#### `lib/task-utils.js`
+Utility functions for task operations.
+
+```javascript
+const {
+  findTaskColumn,
+  addTaskToIndex,
+  removeTaskFromIndex
+} = require('@tosin2013/kanbn/src/lib/task-utils');
+
+const column = findTaskColumn(index, taskId);
 ```
 
-### AI Features
+#### `lib/index-utils.js`
+Index management utilities.
 
-```bash
-kanbn chat [message]       # Start interactive chat session
-kanbn decompose <taskId>   # Decompose task into subtasks
-kanbn init --ai            # AI-powered project initialization
-kanbn integrations         # Manage AI context integrations
+```javascript
+const {
+  loadIndex,
+  saveIndex,
+  sortColumnInIndex
+} = require('@tosin2013/kanbn/src/lib/index-utils');
+
+loadIndex(getIndexPath)
+  .then(index => {
+    // Modify index
+    return saveIndex(index, getIndexPath);
+  });
 ```
 
-### Search & Filtering
+### Configuration
 
-```bash
-kanbn find [--filter]      # Search for tasks
-kanbn sort <column>        # Sort tasks in column
-```
-
-## Configuration
-
-### Environment Variables
-
+Environment variables:
 - `OPENROUTER_API_KEY` - API key for OpenRouter service
-- `OPENROUTER_MODEL` - Default model to use with OpenRouter
-- `OLLAMA_MODEL` - Default model to use with Ollama
-- `OLLAMA_URL` - URL for Ollama API (default: http://localhost:11434)
-- `KANBN_QUIET` - Suppress non-essential output when set to "true"
-- `DEBUG` - Enable debug logging when set to "true"
+- `OLLAMA_HOST` - URL for local Ollama instance
+- `OLLAMA_MODEL` - Model to use with Ollama
+- `KANBN_QUIET` - Suppress non-essential output
+- `DEBUG` - Enable debug logging
 
-### Configuration Files
-
-Kanbn stores configuration in `.kanbn/index.md` with the following structure:
-
-```markdown
----
-# YAML front matter with board configuration
-name: My Project
-columns:
-  Backlog: []
-  Doing: []
-  Done: []
-options:
-  dateFormat: "yyyy-mm-dd"
-  taskTemplate: |
-    {b}{name}{b}
-    {d}ID: {id}{d}
-...
-
-# Rest of markdown file contains optional documentation
-```
-
-## AI Integration
-
-Kanbn provides several AI-powered features:
-
-### AI Services
-
-- **OpenRouter** (default) - Cloud-based AI service with multiple models
-- **Ollama** (fallback) - Local AI service for offline use
-
-### AI Features
-
-1. **Task Decomposition** - Break down complex tasks into subtasks
-   ```bash
-   kanbn decompose <taskId>
-   ```
-
-2. **Project Initialization** - AI-assisted board setup
-   ```bash
-   kanbn init --ai
-   ```
-
-3. **Natural Language Interface** - Chat with your board
-   ```bash
-   kanbn chat "What tasks are in progress?"
-   ```
-
-4. **Context Integration** - Enhance AI with project documentation
-   ```bash
-   kanbn integrations add <name> <url|file>
-   ```
-
-### Customizing AI Behavior
-
-Create custom prompts in `.kanbn/prompts/` to tailor AI responses.
+Configuration files:
+- `.kanbn/index.md` - Board index with columns and options
+- `.kanbn/tasks/*.md` - Individual task files
+- `.kanbn/archive/*.md` - Archived tasks
 
 ## Examples
 
-### Initialize a New Project
+### Initialize a new board with AI
 
 ```bash
 kanbn init --ai
-# Follow interactive prompts to set up your board
 ```
 
-### Create a Task
+### Add a new task interactively
 
 ```bash
 kanbn add --interactive
-# Or directly:
-kanbn add -n "Implement feature X" -d "Add new functionality" --column "Backlog"
 ```
 
-### Chat with Your Board
+### Decompose a task with AI
 
 ```bash
-kanbn chat "What tasks are overdue?"
-kanbn chat "Move task 'Fix bug' to 'In Progress'"
-kanbn chat "Create a new task for documentation updates"
+kanbn decompose task-123 --interactive
 ```
 
-### Generate Burndown Chart
+### Chat with the AI assistant
 
 ```bash
-kanbn burndown --sprint current
+kanbn chat "What tasks are in progress?"
 ```
 
-### AI-Powered Task Decomposition
+### Get burndown data for current sprint
 
 ```bash
-kanbn decompose "Implement user authentication"
-# AI will suggest subtasks like:
-# - Create login page
-# - Set up auth middleware
-# - Implement password reset
+kanbn burndown --sprint current --json
 ```
 
-### Manage Integrations
+### Move a task to "In Progress"
 
 ```bash
-kanbn integrations add api-docs https://example.com/api-docs.md
-kanbn integrations list
+kanbn move task-123 --column "In Progress"
 ```
+
+## Error Handling
+
+Kanbn uses custom error classes for consistent error handling:
+
+```javascript
+const { KanbnError, AiError } = require('@tosin2013/kanbn/src/errors');
+
+try {
+  // Kanbn operation
+} catch (error) {
+  if (error instanceof KanbnError) {
+    console.error('Kanbn error:', error.message);
+  } else if (error instanceof AiError) {
+    console.error('AI error:', error.message);
+  } else {
+    console.error('Unexpected error:', error);
+  }
+}
+```
+
+## Advanced Usage
+
+### Custom Task Templates
+
+Define custom task display templates in the index options:
+
+```yaml
+---
+options:
+  taskTemplate: |
+    {b}{name}{b}
+    Status: {column}
+    Created: {created}
+    {description}
+columns:
+  Backlog: []
+  ...
+---
+```
+
+### Custom Date Formats
+
+Specify date formatting in index options:
+
+```yaml
+---
+options:
+  dateFormat: 'yyyy-mm-dd HH:MM'
+columns:
+  ...
+---
+```
+
+### AI-Powered Initialization
+
+Create a custom initialization prompt:
+
+```bash
+kanbn init --ai --prompt "Create a Kanban board for a React project with columns for Design, Development, Testing, and Deployment"
+```
+
+### Integration with CI/CD
+
+Example GitHub Actions workflow:
+
+```yaml
+name: Kanbn Board Update
+on: [push]
+jobs:
+  update-board:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Setup Node
+      uses: actions/setup-node@v2
+      with:
+        node-version: '16'
+    - run: npm install -g @tosin2013/kanbn
+    - run: kanbn status
+```
+
+## Troubleshooting
+
+### Debugging
+
+Set `DEBUG=true` environment variable for detailed logs:
+
+```bash
+DEBUG=true kanbn board
+```
+
+### Common Issues
+
+1. **AI Service Not Responding**
+   - Verify API keys are set
+   - Check network connectivity
+   - Try alternative AI provider
+
+2. **Task Not Found**
+   - Verify task ID exists
+   - Check for typos
+   - Run `kanbn status --untracked` to see all tasks
+
+3. **Board Not Initialized**
+   - Run `kanbn init` in project directory
+   - Verify `.kanbn` directory exists
